@@ -173,7 +173,6 @@ bool Mpegfileplayer::openfile(char *filename,char *device, soundtype write2file)
 			delete loader;
 		if((loader=Soundinputstream::hopen(filename,&err))==NULL)
 		{
-			debug("Failed in hopen\n");
 			return seterrorcode(err);
 		}
 	}
@@ -184,13 +183,11 @@ bool Mpegfileplayer::openfile(char *filename,char *device, soundtype write2file)
 
   if((server=new Mpegtoraw(loader,player))==NULL)
 	{
-		debug("Error in mpegtoraw\n");
     return seterrorcode(SOUND_ERROR_MEMORYNOTENOUGH);
 	}
 
 // Initialize server
   if (!server->initialize(filename)) {
-	debug("error in initialize\n");
 	return seterrorcode(server->geterrorcode());
   }
 

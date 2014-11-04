@@ -616,7 +616,10 @@ main(int argc, char *argv[])
 		for (int i = 0; i < (argc - optind); i++)
 		{
 			bla[0] = (const char*)playmp3s[i];
-			bla[1] = chop_path(playmp3s[i]);
+			if (is_httpstream(bla[0]))
+				bla[1] = bla[0];
+			else
+				bla[1] = chop_path(playmp3s[i]);
 			bla[2] = NULL;
 			mp3_curwin->addItem(bla, foo, CP_FILE_MP3);
 			delete[] playmp3s[i];
@@ -795,10 +798,10 @@ fw_end()
 		for (i = 0; i < nselfiles; i++)
 		{
 			bla[0] = (const char*)selected_files[i];
-			if (strncasecmp(selected_files[i], "http://", 7))
-				bla[1] = chop_path(selected_files[i]);
-			else
+			if (is_httpstream(selected_files[i]))
 				bla[1] = (const char*)selected_files[i];
+			else
+				bla[1] = chop_path(selected_files[i]);
 			bla[2] = NULL;
 			sw->addItem(bla, foo, CP_FILE_MP3);
 			free(selected_files[i]);
@@ -1024,7 +1027,7 @@ draw_static(int file_mode)
 		attrset(COLOR_PAIR(CP_DEFAULT)|A_NORMAL);
 	}
 	//Draw Next Song:
-	move(8,2);
+	move(7,2);
 	addstr("Next Song      :");
 	//mw_settxt("Visit http://tutorial.mp3blaster.cx/");
 
@@ -2548,11 +2551,19 @@ recsel_files(const char *path, short d2g=0, int d2g_init=0)
 			closedir(dir2);
 
 			int i = 0;
+			short skip_dir = 0;
+
 			while (baddirs[i])
+			{
 				if (!strcmp(dummy, baddirs[i++]))
-					continue; /* next while-loop */
-		
-			recsel_files(newpath, d2g);
+				{
+					skip_dir = 1;
+					break;
+				}
+			}	
+
+			if (!skip_dir)
+				recsel_files(newpath, d2g);
 		}
 		else if (is_audiofile(newpath))
 		{
@@ -3313,7 +3324,7 @@ fw_addurl()
 		return;
 
 	add_selected_file(urlname);
-	sw->swRefresh(0);
+	//sw->swRefresh(0);
 	free(urlname);
 }
 
@@ -4196,7 +4207,7 @@ reset_next_song()
 	char emptyline[width+1];
 
 	next_song = -1;
-	move(8,19);
+	move(7,19);
 	//clear old text
 	memset(emptyline, ' ', width * sizeof(char));
 	emptyline[width] = '\0';
@@ -4217,9 +4228,9 @@ draw_next_song(const char *ns)
 	memset((void*)empty, ' ', mywidth * sizeof(char));
 	empty[mywidth] = '\0';
 
-	move(8,19);
+	move(7,19);
 	addstr(empty);
-	move(8,19);
+	move(7,19);
 	addnstr(ns, COLS-19-14);
 	refresh();
 }
@@ -4269,8 +4280,6 @@ fw_markfilebad(const char *file)
 		bdstat;
 	short
 		result = 0;
-
-	debug("blaat\n");
 
 if (file){ debug("FILE: ");debug(file);debug("\n");}
 	baditem = chop_path(file);

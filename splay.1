@@ -1,0 +1,117 @@
+.ds PX \s-1UNIX\s+1
+.TH SPLAY 1 "Aug 3 1997" "by Woo-jae Jung" "Applications/Sound"
+.SH NAME
+splay \- MPEG-1,2 Audio layer 1,2,3 and Wave file player
+
+.SH SYNOPSIS
+.B splay
+[-2VMWmrsv] [-d dev] [-l list] [-t num]
+.I filenames...
+
+.B xsplay
+[-2Vemrsv] [-d dev] [-l list] [-t num]
+.I filenames...
+
+.SH DESCRIPTION
+.I Splay
+is the sound file player such as MPEG-1,2 Audio files and Wave files.
+And you can play these files using list file. With pthread, it can play
+sound files smoother. And it has X-interface with libqt. Splay with qt
+may make you splay easily.
+
+.SH OPTIONS
+.I Splay
+has several options.
+.TP
+.BI \-2
+play MPEG-Audio files with half-frequency.\fR
+If you use this option, you may play MPEG audio files with job which exhausts
+CPU very much.
+.PD 0
+.TP
+.BI \-e
+exit when play is done. (xsplay)
+.TP
+.BI \-m
+force to mono.\fR
+.PD 0 
+Play with mono even if file have stereo quality.
+.PD 0
+.TP
+.BI \-r
+Repeat forever. (Not X-interface)
+If you \-r with \-s, list files would be shuffled everytime.
+.PD 0
+.TP
+.BI \-s
+Shuffle play. If you give list file or a number of files,
+Splay will makes them rearranged randomly. And with \-r
+Everytime the order of files would be changed.
+.PD 0
+.TP
+.BI \-v
+Verbose, Very verbose, Very very verbose. (Note: splay
+version supplied with mp3blaster does not have this
+feature anymore)
+.PD 0
+.TP
+.BI \-M
+Play MPEG file as standard input.
+.PD 0
+.TP
+.BI \-W
+Play Wave file as standard input.
+.PD 0
+.TP
+.BI \-V
+Show version number.
+.TP
+.PD
+.B \-t " num"
+.I num
+of frames were saved during playing. When CPU is so busy and prevents
+splay from decoding, splay will play back using saved frames. This feature
+makes you do other job freely with listing MPEG music.
+.PD 0
+.TP
+.B \-d " dev"
+Change device file. Default device file is
+.I /dev/dsp.
+If you can't use this device file or you can output raw type data to file,
+you can use this option.
+If the first character of
+.I dev
+is
+.B /
+,
+.I dev
+would be considered as device file,
+If the first character of
+.I dev
+is
+.B -
+,
+.I dev
+would be considered as standard output,
+otherwise
+.I dev
+would be considered as normal file.
+.PD 0
+.TP
+.B \-l " list"
+Select list file. 
+.B http://
+can be used. (e.g. http://localhost/abc.m3u)
+.PD 0
+.TP
+.B filenames
+You can put several files, and use
+.B http://
+If filename contains .mp or .MP,
+it will be considered as MPEG-Audio file.
+Otherwise be considered as Wave file.
+But if you use
+.B -l
+option, these will be ignored.
+
+.SH SEE ALSO

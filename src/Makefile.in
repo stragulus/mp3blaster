@@ -238,6 +238,27 @@ distdir: $(DISTFILES)
 	    || cp -p $$d/$$file $(distdir)/$$file || :; \
 	  fi; \
 	done
+config.o: config.cc mp3blaster.h global.h
+fileman.o: fileman.cc mp3blaster.h getopt.h fileman.h scrollwin.h \
+	winitem.h global.h
+getopt.o: getopt.c
+getopt1.o: getopt1.c
+global.o: global.cc getopt.h mp3blaster.h
+id3parse.o: id3parse.cc id3parse.h genretab.h
+main.o: main.cc mp3blaster.h getopt.h global.h scrollwin.h winitem.h \
+	mp3win.h fileman.h ../mpegsound/mpegsound.h ../nmixer/nmixer.h \
+	keybindings.h
+mp3item.o: mp3item.cc mp3item.h winitem.h mp3blaster.h mp3win.h \
+	scrollwin.h
+mp3tag.o: mp3tag.cc getopt.h ../mpegsound/mpegsound.h id3parse.h \
+	mp3blaster.h
+mp3win.o: mp3win.cc mp3win.h scrollwin.h mp3blaster.h winitem.h \
+	mp3item.h
+scrollwin.o: scrollwin.cc mp3blaster.h global.h scrollwin.h winitem.h
+splay.o: splay.cc getopt.h ../mpegsound/mpegsound.h splay.h
+splay_common.o: splay_common.cc ../mpegsound/mpegsound.h splay.h
+windows.o: windows.cc mp3blaster.h getopt.h
+winitem.o: winitem.cc mp3blaster.h scrollwin.h winitem.h
 
 info-am:
 info: info-am

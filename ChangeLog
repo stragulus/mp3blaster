@@ -1,3 +1,10 @@
+V3.0pre5 2001/01/25
+===================
+-Fixed a bug that caused recursive file selecting to loop forever.
+-Rewrote manual for version 3.0*, including configuration file docs.
+-HTTP streaming works again - no shoutcast *.pls parsing yet, you have to
+ read the HTTP-address to the audiostream from the file yourself for now.
+
 V3.0pre4 2001/01/24
 ===================
 -Finally fixed bugs in the mpegsound lib that caused crashes (notably
@@ -68,6 +75,15 @@ V3.0pre1 2000/08/28
  it's no longer needed.
 -playlists (*.pls by default) can be loaded from within the file browser.
 -Many more minor changes
+
+V2.0b18: 2001/01/21
+===================
+-Several changes in the mpegsound libary that fix numerous SIGFPU/SIGSEGV's.
+-Using non-blocking I/O to soundcard which reduces CPU-load (esp. on FreeBSD).
+-Nmixer program can view/set recording devices now.
+-Fixed compilation errors
+-Should produce normal audio on big-endian machines - couldn't test though.
+ (thanks go once again to Martijn van Buul)
 
 V2.0b17: 1900/01/18
 ===================

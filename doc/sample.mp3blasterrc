@@ -1,3 +1,6 @@
+#Read man mp3blaster, section MP3BLASTERRC, to get all the keywords
+#and values.
+
 #With DownFrequency, sound is downsampled to 22Khz.
 DownFrequency = No
 

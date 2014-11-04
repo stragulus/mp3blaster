@@ -1,3 +1,4 @@
+-http streaming
 -hide cursor (again?)
 -show files as their id3 tag info, not filenames (optional)
 -if a song's finished in a playlist, it gets cut off because the decoding is

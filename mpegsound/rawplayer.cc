@@ -237,7 +237,7 @@ bool Rawplayer::putblock(void *buffer,int size)
 		while(getprocessed()>quota)usleep(3);
 
 #ifdef AUDIO_NONBLOCKING
-	ssize_t
+	register ssize_t
 		wsize,
 		remainsize = modifiedsize;
 	char *wbuf = (char*)buffer;

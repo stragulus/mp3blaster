@@ -680,6 +680,8 @@ bool Mpegtoraw::run(int frames)
       if(lastfrequency>0)
 	    seterrorcode(SOUND_ERROR_BAD);
       lastfrequency=frequency;
+			player->setsoundtype(outputstereo,AFMT_S16_NE,
+				frequencies[version][frequency]>>downfrequency);
     }
     if(frames<0)
     {

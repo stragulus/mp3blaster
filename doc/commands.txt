@@ -5,11 +5,11 @@ playlist displayed in the main window. In File Mode, you can
 browse and add files using a file manager in the main
 window. You can switch between these two modes using F1
 (this is the default keybinding, you can alter it in the
-config file, see the mp3blasterrc manpage).
+config file, see the mp3blaster manpage).
 To see which command is mapped to which key, check the help
 window on top of the screen in mp3blaster; you can browse
 through this window using '-' and '+'. For most commands the
-keybinding can be configured - read the mp3blasterrc
+keybinding can be configured - read the mp3blaster
 manpage.
 
 Commands specific to Normal Mode:
@@ -152,7 +152,7 @@ LOAD/ADD PLAYLIST
   The location where your playlists are stoed is 
   the homedir of the user running it. It can be
   overridden using the keyword 'PlaylistDir' in the config
-  file (man mp3blasterrc).
+  file (man mp3blaster).
 
 WRITE PLAYLIST
   This will save your current playlist to a file. You will
