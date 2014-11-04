@@ -1,7 +1,7 @@
 #ifndef _MP3B_GLOBAL_
 #define _MP3B_GLOBAL_
 #include "mp3blaster.h"
-#include NCURSES
+#include NCURSES_HEADER
 #include <stdio.h>
 
 enum cf_error { CF_NONE, TOOMANYVALS, BADVALTYPE, BADKEYWORD, BADVALUE,

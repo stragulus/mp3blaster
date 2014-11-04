@@ -7,9 +7,10 @@ libmpegsound_a_SOURCES  = soundinputstream.cc fileinput.cc httpinput.cc \
 			  mpeglayer3.cc bitwindow.cc huffmantable.cc \
 			  wavetoraw.cc sidplayer.cc \
 			  fileplayer.cc nasplayer.cc oggplayer.cc \
-				xingheader.cc xingheader.h
+				xingheader.cc xingheader.h esdplayer.cc \
+				sdlplayer.cc cyclicbuffer.cc cyclicbuffer.h
 
 noinst_HEADERS		= mpegsound.h mpegsound_locals.h
 
 INCLUDES                = -I$(srcdir) -I$(includedir)
-CXXFLAGS                = @CXXFLAGS@ @NAS_CFLAGS@
+AM_CXXFLAGS             = @NAS_CFLAGS@

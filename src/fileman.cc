@@ -207,18 +207,18 @@ fileManager::readDir()
 
 	int diritems = 0;
 
+
 	while ( (entry = readdir(dir)) )
 	{
-		PTH_YIELD;
 		entries = (char **)realloc (entries, (++diritems) * sizeof(char *));
 	
-		entries[diritems - 1] = (char *)malloc( ((entry->d_reclen) + 1) *
+		entries[diritems - 1] = (char *)malloc( (strlen(entry->d_name) + 1) *
 			sizeof(char));
 		strcpy(entries[diritems - 1], entry->d_name);
 	}
 	
 	closedir(dir);
-	
+
 	/* sort char **entries */
 	if (diritems > 1)
 	{
@@ -328,20 +328,7 @@ fileManager::readDir()
 			id3name = NULL;
 			bla[0] = entries[i];
 			bla[1] = fdesc;
-#if 0
-			if (globalopts.want_id3names && is_audiofile(entries[i]))
-			{
-				id3name = id3_filename(entries[i]); //must be deleted later!
-				if (id3name)
-					bla[2] = id3name; 
-				else
-					bla[2] = entries[i];
-			}
-			else
-				bla[2] = "[ID3] File.ID3Names not enabled in config file";
-#else
 			bla[2] = NULL;
-#endif
 			bla[3] = NULL;
 
 			if (is_audiofile(entries[i]))

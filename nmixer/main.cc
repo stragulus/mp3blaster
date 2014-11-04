@@ -7,19 +7,15 @@
 #ifdef HAVE_GETOPT_H
 #  include <getopt.h>
 #else
-#  include "getopt.h"
+#  include "getopt_local.h"
 #endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#ifdef HAVE_SYS_SOUNDCARD_H
-#include <sys/soundcard.h>
-#elif HAVE_MACHINE_SOUNDCARD_H
-#include <machine/soundcard.h>
-#elif HAVE_SOUNDCARD_H
-#include <soundcard.h>
+#ifdef WANT_OSS
+#include SOUNDCARD_HEADERFILE
 #endif
 
 #ifdef __cplusplus
@@ -158,6 +154,7 @@ main(int argc, char *argv[])
 short
 is_mixer_device(const char *mdev)
 {
+#ifdef WANT_OSS
 	const char *devlabels[] = SOUND_DEVICE_NAMES;
 	short isdev = -1;
 
@@ -170,6 +167,9 @@ is_mixer_device(const char *mdev)
 	}
 
 	return isdev;
+#else
+	return 0;
+#endif
 }
 
 /* Function   : usage
@@ -190,9 +190,13 @@ usage()
 		"Valid mixer-devices for your system (not necessarily supported " \
 		"by your sound hardware!) are:", MIXER_DEVICE);
 
+#ifdef WANT_OSS
 	const char *devs[] = SOUND_DEVICE_NAMES;
 	for (int i = 0; i < SOUND_MIXER_NRDEVICES; i++)
 		fprintf(stderr, " %s", devs[i]);
+#else
+		fprintf(stderr, " none");
+#endif
 	fprintf(stderr, ".\n");
 	exit(1);
 }

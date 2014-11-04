@@ -144,9 +144,18 @@ NMixer::InitMixerDevice() {
 #ifdef HAVE_NASPLAYER
 	if (mixdev && !strcmp(mixdev, "NAS")) //NAS-mixer
 		mixers = new NASMixer(mixdev);
-	else
 #endif
+
+#ifdef WANT_OSS
+	if (!mixers)
 		mixers = new OSSMixer(mixdev);
+#endif
+
+	if (!mixers)
+	{
+		//fallback option if no mixers are available
+		mixers = new NullMixer(mixdev);
+	}
 
 	supported = mixers->GetDevices(&nrbars);
 

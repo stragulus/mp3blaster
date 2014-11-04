@@ -2,6 +2,9 @@
 |*|  OSSMixer
 |*|  Class for accessing the OSS mixer device (/dev/mixer)
 \*/
+#include "config.h"
+
+#ifdef WANT_OSS
 
 #include <nmixer.h>
 
@@ -9,13 +12,7 @@
 extern "C" {
 #endif
 
-#ifdef HAVE_SYS_SOUNDCARD_H
-#include <sys/soundcard.h>
-#elif HAVE_MACHINE_SOUNDCARD_H
-#include <machine/soundcard.h>
-#elif HAVE_SOUNDCARD_H
-#include <soundcard.h>
-#endif
+#include SOUNDCARD_HEADERFILE
 
 #ifdef __cplusplus
 }
@@ -29,17 +26,6 @@ OSSMixer::OSSMixer(const char *mixerDevice, baseMixer *next) : baseMixer(mixerDe
 	ioctl(mixer, MIXER_READ(SOUND_MIXER_DEVMASK), &setting);
 	for (int i = 0; i < SOUND_MIXER_NRDEVICES; i++)
 		if (setting & (1 << i)) AddDevice(i);
-
-
-#ifdef MOZART
-	/* On my system, the mozart souncard I have (with OTI-601 chipset) 
-	 * produces a lot of noise and fuss after initialisation. Setting 
-	 * SOUND_MIXER_LINE2 to zero stops this (what actual setting does this
-	 * change on the mozart card???)
-	 */
-	setting = 0;
-	ioctl(mixer, MIXER_WRITE(SOUND_MIXER_LINE2), &setting);
-#endif
 }
 
 OSSMixer::~OSSMixer()
@@ -105,3 +91,5 @@ bool OSSMixer::GetRecord(int device)
 	ioctl(mixer, MIXER_READ(SOUND_MIXER_RECSRC), &setting);
 	return (setting & (1 << device));
 }
+
+#endif /* WANT_OSS */

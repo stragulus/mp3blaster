@@ -297,6 +297,10 @@ One of: black, red, green, yellow, blue, magenta, cyan, white
 .PP
 These keywords are currently supported:
 .TP
+\fBAudioDriver\fR (string)
+Which audiodriver to use for playback. Currently, you can choose between the following drivers: \fBoss\fR, \fBesd\fR, \fBnas\fR and \fBsdl\fR. If SDL is available, it will be used by default. OSS is the next alternative. ESD should only be used if everything else fails.
+Note that, if you use SDL as audio driver, you can select from many output devices by setting the environment variable \fBSDL_AUDIODRIVER\fR. This is an SDL feature, please refer to the FAQ on libsdl.org for more information.
+.TP
 \fBAudiofileMatching\fR (list of strings)
 List of file patterns (in regexp format) that determines which files will be
 considered audiofiles (default: all files ending on .mp3, .wav, and files

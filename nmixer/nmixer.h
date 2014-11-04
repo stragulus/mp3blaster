@@ -18,15 +18,8 @@
 #include <errno.h>
 #endif
 
-#ifdef HAVE_NCURSES_H
-#include <ncurses.h>
-#elif HAVE_NCURSES_CURSES_H
-#include <ncurses/curses.h>
-#elif HAVE_CURSES_H
-#include <curses.h>
-#else
-#error "Can't find any ncurses include file!"
-#endif
+#include NCURSES_HEADER
+
 #ifdef HAVE_NASPLAYER
 #include <audio/audiolib.h>
 #endif
@@ -71,6 +64,8 @@ private:
 	int mixerID;
 };
 
+#ifdef WANT_OSS
+
 class OSSMixer : public baseMixer
 {
 public:
@@ -87,15 +82,34 @@ private:
 	int mixer;
 };
 
+#endif /* WANT_OSS */
+
+class NullMixer : public baseMixer
+{
+public:
+	NullMixer(const char *mixerDevice = NULL, baseMixer *next = NULL);
+	~NullMixer() {}
+	bool CanRecord(int device);
+	bool GetRecord(int device);
+	bool SetRecord(int device, bool set);
+protected:
+	bool Set(int device, struct volume *vol);
+	bool Get(int device, struct volume *vol);
+	const char *Label(int device);
+private:
+	int setting;
+};
+
+
 #ifdef HAVE_NASPLAYER
 class NASMixer : public baseMixer
 {
 public:
 	NASMixer(const char *mixerDevice = NULL, baseMixer *next = 0);
 	~NASMixer();
-	bool CanRecord(int device) { return false; }
-	bool GetRecord(int device) { return false; }
-	bool SetRecord(int device, bool set) { return false; }
+	bool CanRecord(int device) { (void)device; return false; }
+	bool GetRecord(int device) { (void)device; return false; }
+	bool SetRecord(int device, bool set) { (void)device; (void)set; return false; }
 protected:
 	bool Set(int device, struct volume *vol);
 	bool Get(int device, struct volume *vol);

@@ -82,7 +82,7 @@ static void play(char *filename)
     Mpegfileplayer *player;
 		bool didopen = false;
 
-    player=new Mpegfileplayer;
+    player=new Mpegfileplayer(Fileplayer::AUDIODRV_OSS);
 		if (!strcmp(splay_devicename, "-"))
 			didopen = player->openfile(filename, "/dev/stdout", WAV);
 		else
@@ -109,7 +109,7 @@ static void play(char *filename)
   {
     Wavefileplayer *player;
   
-    player=new Wavefileplayer;
+    player=new Wavefileplayer(Fileplayer::AUDIODRV_OSS);
     if(!player->openfile(filename,splay_devicename))
     {
       error(player->geterrorcode());
@@ -151,7 +151,7 @@ int main(int argc,char *argv[])
 			}
       case 'M':
 	{
-	  Mpegfileplayer player;
+	  Mpegfileplayer player(Fileplayer::AUDIODRV_OSS);
 
 	  player.openfile(NULL,splay_devicename);
 	  playing(&player);
@@ -159,7 +159,7 @@ int main(int argc,char *argv[])
 	}
       case 'W':
 	{
-	  Wavefileplayer player;
+	  Wavefileplayer player(Fileplayer::AUDIODRV_OSS);
 
 	  player.openfile(NULL,splay_devicename);
 	  playing(&player);

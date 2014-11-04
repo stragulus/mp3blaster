@@ -19,8 +19,6 @@
 extern "C" {
 #endif
 
-#include SOUNDCARD_HEADERFILE
-
 #ifdef __cplusplus
 }
 #endif
@@ -127,15 +125,7 @@ int Rawtofile::putblock_nt(void *buffer, int size)
 	{
 		int wordsize;
 	
-		switch(rawsamplesize)
-		{
-		case AFMT_S16_LE:
-		case AFMT_S16_BE:
-			wordsize=16;
-			break;
-		default:
-			wordsize=8;
-		}
+		wordsize = rawsamplesize;
 
 		if (filetype == WAV)
 		{
@@ -160,8 +150,9 @@ int Rawtofile::putblock_nt(void *buffer, int size)
 	}
 	init_putblock = 0;
 #ifdef WORDS_BIGENDIAN
-	if(rawsamplesize==AFMT_S16_BE)
+	if (rawsamplesize == 16)
 	{
+		/* big endian -> switch bytes in output file */
 		unsigned short *sh_buffer=(unsigned short *)(buffer);
 		int modifiedsize=size/2;
 		/* data is in 16 bits bigendian, target is 16 bits little endian. */

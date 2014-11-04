@@ -4,7 +4,7 @@
 #define _WINITEM_CLASS_
 
 #include "mp3blaster.h"
-#include NCURSES
+#include NCURSES_HEADER
 
 #define NAMEDIM 9
 

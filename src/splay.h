@@ -30,11 +30,6 @@ extern char *splay_Sounderrors[];
 extern int  splay_threadnum;
 #endif
 
-/*****************/
-/* Sound quality */
-/*****************/
-int  Setvolume(int volume);
-
 /***************/
 /* Manage list */
 /***************/

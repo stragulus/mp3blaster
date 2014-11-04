@@ -13,6 +13,7 @@
 #include <unistd.h>
 
 #include "mpegsound.h"
+#include "mpegsound_locals.h"
 
 // File player superclass
 Fileplayer::Fileplayer()
@@ -32,6 +33,7 @@ Fileplayer::Fileplayer()
 	info.mp3_version = 0;
 	info.samplerate = 0;
 	info.totaltime = 0;
+	audiodriver = AUDIODRV_OSS; //default audio driver
 };
 
 Fileplayer::~Fileplayer()
@@ -39,30 +41,65 @@ Fileplayer::~Fileplayer()
   delete player;
 };
 
+/* shared by all subclasses */
 bool Fileplayer::opendevice(char *device, soundtype write2file)
 {
-	if (player) delete player;
-	if (!write2file) {
-#ifdef HAVE_NASPLAYER
-		if (device && strrchr(device, ':')) //device=hostname:port?
-			player = NASplayer::opendevice(device);
-		if (player) return true;
-#endif /*\ HAVE_NASPLAYER \*/
-		player = Rawplayer::opendevice(device);
-		if (player) return true;
+	delete player; //delete possibly existing player
+	
+	if (write2file)
+	{
+		player = Rawtofile::opendevice(device);
+		return (player && ((Rawtofile*)player)->setfiletype(write2file));
 	}
-	player = Rawtofile::opendevice(device);
-	if (player && ((Rawtofile*)player)->setfiletype(write2file))
-		return true;
-	return false;
+
+	//Choose an audio driver for audio playback
+	switch (audiodriver)
+	{
+#ifdef WANT_OSS
+	case AUDIODRV_OSS:
+		debug("Using OSS audiodriver\n");
+		player = Rawplayer::opendevice(device);
+		break;
+#endif
+#ifdef WANT_NAS
+	case AUDIODRV_NAS:
+		debug("Using NAS audiodriver\n");
+		player = NASplayer::opendevice(device);
+		break;
+#endif	
+#ifdef WANT_ESD
+	case AUDIODRV_ESD:
+		debug("Using ESD audiodriver\n");
+		player = new EsdPlayer(); //TODO: accept HOST param
+		break;
+#endif
+#ifdef WANT_SDL
+	case AUDIODRV_SDL:
+		debug("Using SDL audiodriver\n");
+		player = new SDLPlayer();
+		break;
+#endif
+	default:
+		debug("Unsupported audiodriver!\n");
+		return false;
+	}
+
+	return player != NULL;
+}
+
+void
+Fileplayer::set_driver(audiodriver_t driver)
+{
+	this->audiodriver = driver;
 }
 
 // Wave file player
-Wavefileplayer::Wavefileplayer()
+Wavefileplayer::Wavefileplayer(audiodriver_t driver)
 {
   loader=NULL;
   server=NULL;
 	filename = NULL;
+	set_driver(driver);
 }
 
 Wavefileplayer::~Wavefileplayer()
@@ -105,13 +142,19 @@ void Wavefileplayer::setforcetomono(short flag)
 
 bool Wavefileplayer::playing()
 {
-  if(!server->run())return false; // Read first time
+  if(!server->run())
+	{
+		return false; // Read first time
+	}
 
-  while(server->run());           // Playing
+  while(server->run())
+	{
+		// Playing
+	}
 
   seterrorcode(server->geterrorcode());
-  if(geterrorcode()==SOUND_ERROR_FINISH)return true;
-  return false;
+
+  return (geterrorcode() == SOUND_ERROR_FINISH);
 }
 
 bool Wavefileplayer::run(int)
@@ -175,13 +218,14 @@ bool Wavefileplayer::initialize(void *init_args)
 
 
 // Mpegfileplayer
-Mpegfileplayer::Mpegfileplayer()
+Mpegfileplayer::Mpegfileplayer(audiodriver_t driver)
 {
   loader=NULL;
   server=NULL;
   player=NULL;
 	filename = NULL;
 	use_threads = 0;
+	set_driver(driver);
 };
 
 Mpegfileplayer::~Mpegfileplayer()
@@ -252,8 +296,7 @@ bool Mpegfileplayer::playing()
   while(server->run(10))USLEEP(10000);                // Playing
 
   seterrorcode(server->geterrorcode());
-  if(seterrorcode(SOUND_ERROR_FINISH))return true;
-  return false;
+  return geterrorcode() == SOUND_ERROR_FINISH;
 }
 
 bool Mpegfileplayer::initialize(void *init_args)
@@ -396,16 +439,29 @@ bool Mpegfileplayer::playingwiththread(int framenumbers)
 {
   if(framenumbers<20)return playing();
 
-  server->makethreadedplayer(framenumbers);
+  if (!server->makethreadedplayer(framenumbers))
+	{
+		return seterrorcode(server->geterrorcode());
+	}
 
-  if(!server->run(-1))return false;       // Initialize MPEG Layer 3
-  while(server->run(100));                // Playing
+  if(!server->run(-1))
+	{
+		server->freethreadedplayer();
+		return seterrorcode(server->geterrorcode());
+	}
+
+  while(server->run(100)) 
+	{
+		//Playing
+	}
+
   server->freethreadedplayer();
   
   seterrorcode(server->geterrorcode());
-  if(seterrorcode(SOUND_ERROR_FINISH))return true;
-  return false;
+
+  return geterrorcode() == SOUND_ERROR_FINISH;
 }
+
 #endif
 #endif /* NEWTHREAD */
 

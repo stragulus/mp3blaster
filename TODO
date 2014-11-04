@@ -64,3 +64,4 @@ LOW PRIORITY
 -file viewer in filemanager.
 -rename group->getPlayedmode() to group->randomOrder()
 -pulldown menus instead of space-consuming help window/option to hide help
+-move copies of getopt.[ch] to a shared dir instead of copying them

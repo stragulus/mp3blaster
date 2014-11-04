@@ -1,13 +1,6 @@
 #include <config.h>
-#ifdef HAVE_NCURSES_NCURSES_H
-#include <ncurses/ncurses.h>
-#elif defined(HAVE_NCURSES_H)
-#include <ncurses.h>
-#elif defined(HAVE_CURSES_H)
-#include <curses.h>
-#else
-#error No [n]curse, no glory
-#endif
+
+#include NCURSES_HEADER
 #include <string.h>
 
 class getInput
@@ -58,8 +51,10 @@ public:
 	 * everything at and after that spot one pos to the left */
 	void deleteChar(unsigned short left=1);
 
-	/* returns input at the time of calling. Memory is allocated using malloc. */
-	char *getString() { return strdup(input); }
+	/* returns input at the time of calling. Reference will be invalid as soon
+	 * as this object is deleted.
+	 */
+	const char *getString() { return input; }
 
 	/* sets cursor to the correct position in input box. If redraw is 1,
 	 * force a redraw of the characters in input box */
@@ -71,9 +66,9 @@ public:
 	 * being a char-pointer, the second being a void pointer ('args' will be
 	 * put in that parameter).
 	 */
-	void setCallbackFunction(void (*f)(char *, void *), void *args);
+	void setCallbackFunction(void (*f)(const char *, void *), void *args);
 	//void getCallbackFunction(void (**f)(char *, void *)) { f = &func; }
-	void (*getCallbackFunction())(char *, void *) { return func; }
+	void (*getCallbackFunction())(const char *, void *) { return func; }
 	void *getCallbackData() { return func_args; }
 
 	//sets and returns new insert mode
@@ -96,6 +91,6 @@ private:
 	WINDOW
 		*win;
 	void
-		(*func)(char *, void*), //function to call at end of input
+		(*func)(const char *, void*), //function to call at end of input
 		*func_args;
 };

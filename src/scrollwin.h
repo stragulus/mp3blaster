@@ -7,7 +7,7 @@
 #define _SCROLLWIN_CLASS_
 
 #include "mp3blaster.h"
-#include NCURSES
+#include NCURSES_HEADER
 #include "winitem.h"
 #include <stdio.h>
 

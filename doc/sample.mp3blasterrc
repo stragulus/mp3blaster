@@ -1,11 +1,26 @@
 #Read man mp3blaster, section MP3BLASTERRC, to get any keywords
-#and values not here. Items mentioned here that are not described, are
-#well described in the manual, so please use that as a reference!
+#and values not mentioned here. Items mentioned here that are not described,
+#are #well described in the manual, so please use that as a reference!
 #All values shown here without description are the default values.
 
 #DownFrequency = No
 #Threads=250
+
+#SDL is only the default if available (which is recommended). Otherwise, 
+#'oss' will be used. Explicitly requesting a driver that does not exist on
+#your system results in an error message.
+#AudioDriver = sdl
+
+#Sound device to use if AudioDriver is 'oss':
+#AudioDriver = oss
 #SoundDevice = /dev/dsp
+
+#Audio over NAS
+#AudioDriver = nas
+#SoundDevice = localhost:8000
+
+#Audio over esd (only works on localhost)
+#AudioDriver = esd
 
 #AudiofileMatching is a list of regular expressions that determine which file
 #is considered a valid audiofile. matching is done using default settings and

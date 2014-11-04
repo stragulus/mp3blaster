@@ -39,8 +39,6 @@ Mpegtoraw *decoder;
 extern "C" {
 #endif
 
-#include SOUNDCARD_HEADERFILE
-
 #ifdef __cplusplus
 }
 #endif
@@ -330,24 +328,12 @@ Mpegtoraw::get_buffer(short index)
 void
 Mpegtoraw::createplayer(void)
 {
-	//struct sched_param param;
-	//int policy;
 	pth_attr_t attr;
 	if(play_thread)
 		return;
-	//pthread_create(&(this->play_thread),NULL,&(tp_hack),NULL);
 	attr = pth_attr_new();
 	pth_attr_set(attr, PTH_ATTR_PRIO, PTH_PRIO_MAX);
 	this->play_thread = pth_spawn(attr, tp_hack, NULL);
-#if 0
-	pthread_getschedparam(this->play_thread,&policy,&param);
-	do
-	{
-		++(param.sched_priority);
-	}
-	while (!pthread_setschedparam(this->play_thread,policy,&param))
-		;
-#endif
 }
 
 void
@@ -364,7 +350,7 @@ Mpegtoraw::abortplayer(void)
 		return;
 	if(!pth_join(play_thread,NULL)) /* Wait for the playthread to die! */
 	{
-		perror("pthread_join");
+		perror("pth_join");
 		exit(1);
 	}
 	play_thread=(pth_t)NULL;
@@ -554,7 +540,10 @@ Mpegtoraw::Mpegtoraw(Soundinputstream *loader,Soundplayer *player)
 
 Mpegtoraw::~Mpegtoraw()
 {
-	if(frameoffsets)delete [] frameoffsets;
+	if(frameoffsets)
+	{
+		delete [] frameoffsets;
+	}
 #ifdef NEWTHREAD
 	buffer_node *temp;
 	abortplayer(); 
@@ -1134,16 +1123,27 @@ void Mpegtoraw::clearbuffer(void)
 #ifdef PTHREADEDMPEG
 	if(threadflags.thread)
 	{
+		/* stop the playback loop */
 		threadflags.criticalflag=false;
 		threadflags.criticallock=true;
 		while(!threadflags.criticalflag)USLEEP(1);
 		threadqueue.head=threadqueue.tail=0;
+	}
+#endif
+#endif /* NEWTHREAD */
+
+	//give player the chance to reset itself
+	player->abort();
+	player->resetsoundtype();
+
+#ifndef NEWTHREAD
+#ifdef PTHREADEDMPEG
+	if(threadflags.thread)
+	{
 		threadflags.criticallock=false;
 	}
 #endif
 #endif /* NEWTHREAD */
-	player->abort();
-	player->resetsoundtype();
 }
 
 //find a valid frame. If an invalid frame is found, the filepointer
@@ -1362,6 +1362,8 @@ static void *threadlinker(void *arg)
 
 bool Mpegtoraw::makethreadedplayer(int framenumbers)
 {
+	pthread_attr_t attrs;
+
 	threadqueue.buffer=
 		(short int *)malloc(sizeof(short int)*RAWDATASIZE*framenumbers);
 	if(threadqueue.buffer==NULL)
@@ -1378,8 +1380,13 @@ bool Mpegtoraw::makethreadedplayer(int framenumbers)
 	threadflags.pause=threadflags.criticallock=false;
 
 	threadflags.thread=true;
-	if(pthread_create(&thread,0,threadlinker,this))
+	(void)pthread_attr_init(&attrs);
+	(void)pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_DETACHED);
+	if(pthread_create(&thread,&attrs,threadlinker,this))
+	{
 		seterrorcode(SOUND_ERROR_THREADFAIL);
+		return false;
+	}
 
 	return true;
 }
@@ -1401,9 +1408,6 @@ void Mpegtoraw::freethreadedplayer(void)
 		threadqueue.sizes = NULL;
 	}
 }
-
-
-
 
 void Mpegtoraw::stopthreadedplayer(void)
 {
@@ -1538,7 +1542,7 @@ bool Mpegtoraw::run(int frames)
 
 		if (frames < 0)
 		{
-			if (!player->setsoundtype(outputstereo,AFMT_S16_NE,
+			if (!player->setsoundtype(outputstereo,16,
 				frequencies[version][frequency]>>downfrequency))
 			{
 				debug("Error in (re)setting sound type.\n");

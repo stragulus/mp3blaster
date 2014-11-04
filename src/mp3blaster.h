@@ -7,23 +7,6 @@
 #include <stdarg.h>
 #include <config.h>
 
-/* NCURSES is the location of the ncurses headerfile 
- * I should use config.h that can be generated from autoconf for this
- * hassle, but it's just this ncurses-file that's a known bugger.
- */
-#ifdef HAVE_NCURSES_NCURSES_H
-#define NCURSES <ncurses/ncurses.h>
-#elif defined(HAVE_NCURSES_CURSES_H)
-#define NCURSES <ncurses/curses.h>
-#elif defined(HAVE_NCURSES_H)
-#define NCURSES <ncurses.h>
-#elif defined(HAVE_CURSES_H)
-#define NCURSES <curses.h>
-#else
-#error "?Ncurses include files not found  error"
-//#define NCURSES <ncurses.h>
-#endif 
-
 #ifdef LIBPTH
 #define PTH_YIELD pth_yield((pth_t)0)
 #else
@@ -72,6 +55,13 @@ enum playmode {
 	PLAY_GROUPS_RANDOMLY, /* play all songs grouped by groups, with random
 	                         group-order */
 	PLAY_SONGS };         /* play all songs from all groups in random order */
+
+enum audiodevice_t {
+	AUDIODEV_OSS,         // OSS audio driver
+	AUDIODEV_ESD,         // ESD audio driver
+	AUDIODEV_SDL,         // SDL audio driver
+	AUDIODEV_NAS          // NAS audio driver
+	};
 
 struct keybind_t {
 	int key;
@@ -132,6 +122,7 @@ struct _globalopts /* global options, exported for other classes */
 	short scan_mp3s;
 	bool wraplist;	// non-zero if user wants scrollwins to wrap on scrolling
 	short pan_size;
+	audiodevice_t audio_driver;
 };
 
 enum keydescs { Main_SelectFiles, Fileman_AddFiles, Playwin_Previous };

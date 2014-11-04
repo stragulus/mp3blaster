@@ -15,16 +15,10 @@
 #ifdef HAVE_BOOL_H
 #include <bool.h>
 #endif
-#ifdef PTHREADEDMPEG
-#  ifdef HAVE_PTHREAD_H
-#    include <pthread.h>
-#  else
-#    ifdef HAVE_PTHREAD_MIT_PTHREAD_H
-#      include <pthread/mit/pthread.h>
-#    endif
-#  endif
-#elif defined(LIBPTH)
-#  include <pth.h>
+#ifdef LIBPTH
+# include <pth.h>
+#elif defined(PTHREADEDMPEG)
+# include <pthread.h>
 #endif
 
 #ifndef _L__SOUND__
@@ -349,7 +343,6 @@ public:
   virtual ~Soundplayer();
 
   virtual void abort(void);
-  virtual int  getprocessed(void);
 
   virtual bool setsoundtype(int stereo,int samplesize,int speed)=0;
   virtual void set8bitmode()=0;
@@ -394,7 +387,9 @@ private:
   WAVEHEADER hdr;
 };
 
-// Class for playing raw data
+#ifdef WANT_OSS
+
+// Class for playing raw data using OSS audio driver
 class Rawplayer : public Soundplayer
 {
 public:
@@ -404,7 +399,6 @@ public:
   static int getdevicehandle(const char *filename);
 
   void abort(void);
-  int  getprocessed(void);
 
   bool setsoundtype(int stereo,int samplesize,int speed);
   void set8bitmode() { want8bit = 1; }
@@ -437,7 +431,82 @@ private:
 #endif
 };
 
-#ifdef HAVE_NASPLAYER
+#endif /* WANT_OSS */
+
+#ifdef WANT_ESD
+// Class for playing raw data via Enlightened Sound Daemon
+class EsdPlayer : public Soundplayer
+{
+public:
+  EsdPlayer(const char *host = NULL);
+
+  ~EsdPlayer(void);
+
+  void abort(void);
+
+  bool setsoundtype(int stereo,int samplesize,int speed);
+  void set8bitmode();
+  bool resetsoundtype(void);
+  void releasedevice(void);
+  bool attachdevice(void);
+
+  bool putblock(void *buffer,int size);
+  int  putblock_nt(void *buffer,int size);
+  int  getblocksize(void);
+
+  static char *defaultdevice;
+  static int  setvolume(int volume);
+  int  fix_samplesize(void *buffer, int size);
+private:
+	const char *host;
+	int esd_handle;
+
+  int  rawstereo,rawsamplesize,rawspeed,want8bit;
+  short forcetomono,forceto8;
+};
+
+#endif /* WANT_ESD */
+
+#ifdef WANT_SDL
+#include "cyclicbuffer.h"
+
+// Class for playing raw data via Enlightened Sound Daemon
+class SDLPlayer : public Soundplayer
+{
+public:
+  SDLPlayer(void);
+
+  ~SDLPlayer(void);
+
+  void abort(void);
+
+  bool setsoundtype(int stereo,int samplesize,int speed);
+  void set8bitmode();
+  bool resetsoundtype(void);
+  void releasedevice(void);
+  bool attachdevice(void);
+
+  bool putblock(void *buffer,int size);
+  int  putblock_nt(void *buffer,int size);
+  int  getblocksize(void);
+
+  static char *defaultdevice;
+  static int  setvolume(int volume);
+  int  fix_samplesize(void *buffer, int size);
+
+	static int sdl_init;
+private:
+  int  rawstereo,rawsamplesize,rawspeed,want8bit;
+  short forcetomono,forceto8;
+	CyclicBuffer *buffer;
+	int readIndex;
+	int writeIndex;
+};
+
+#endif /* WANT_ESD */
+
+
+#ifdef WANT_NAS
 #include <audio/audiolib.h>
 
 // Playing raw audio over a Network Audio System
@@ -458,6 +527,7 @@ public:
 	bool attachdevice(void) { return true; }
 
 	bool putblock(void *buffer, int size);
+	int  putblock_nt(void *buffer, int size);
 
 	int  getblocksize(void);
 
@@ -477,7 +547,7 @@ private:
 	int buffer_ms;
 	int req_size;
 };
-#endif /*\ HAVE_NASPLAYER \*/
+#endif /*\ WANT_NAS \*/
 
 /*********************************/
 /* Data format converter classes */
@@ -886,8 +956,11 @@ public:
 class Fileplayer
 {
 public:
-  Fileplayer();
-  virtual ~Fileplayer();
+	enum audiodriver_t {
+		AUDIODRV_OSS, AUDIODRV_ESD, AUDIODRV_SDL, AUDIODRV_NAS
+	};
+
+  virtual ~Fileplayer(); //anyone may destruct a FilePlayer object directly
 
   int geterrorcode(void)        {return __errorcode;};
 	struct song_info getsonginfo() { return info;};
@@ -911,7 +984,10 @@ public:
 	virtual int remaining_time()                       =0;
   
 protected:
+  Fileplayer(); //thou shallt not instantiate fileplayer itself.
+
   bool opendevice(char *device, soundtype write2file=NONE);
+	void set_driver(audiodriver_t driver);
   bool seterrorcode(int errorno){__errorcode=errorno;return false;};
   Soundplayer *player;
 	struct song_info info;
@@ -919,6 +995,7 @@ protected:
 
 private:
   int __errorcode;
+	audiodriver_t audiodriver;
 };
 
 struct init_opts
@@ -932,7 +1009,7 @@ struct init_opts
 class Wavefileplayer : public Fileplayer
 {
 public:
-  Wavefileplayer();
+  Wavefileplayer(audiodriver_t driver);
   ~Wavefileplayer();
 
   bool openfile(char *filename,char *device, soundtype write2file=NONE);
@@ -965,7 +1042,7 @@ protected:
 class Mpegfileplayer : public Fileplayer
 {
 public:
-  Mpegfileplayer();
+  Mpegfileplayer(audiodriver_t driver);
   ~Mpegfileplayer();
 
   bool openfile(char *filename,char *device, soundtype write2file=NONE);
@@ -1013,7 +1090,7 @@ protected:
 class Oggplayer : public Fileplayer
 {
 public:
-  Oggplayer();
+  Oggplayer(audiodriver_t driver);
   ~Oggplayer();
 
   bool openfile(char *filename,char *device, soundtype write2file=NONE);
@@ -1060,7 +1137,7 @@ protected:
 class SIDfileplayer : public Fileplayer
 {
 public:
-	SIDfileplayer();
+	SIDfileplayer(audiodriver_t driver);
 	~SIDfileplayer();
 
 	bool openfile(char *filename,char *device, soundtype write2file=NONE);

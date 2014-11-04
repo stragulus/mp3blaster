@@ -86,7 +86,6 @@ winItem::getName(short index)
 		if(descr)
 		{
 			names[index].value = descr;
-			strcpy(names[index].value, descr);
 		}
 		else
 		{

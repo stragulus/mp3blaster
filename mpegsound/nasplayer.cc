@@ -6,12 +6,11 @@
 // Playing raw audio over Network Audio System (by NCD)
 // By Willem (willem@stack.nl)
 
-#ifdef HAVE_NASPLAYER
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
+#ifdef WANT_NAS
 #include "mpegsound.h"
+#include "mpegsound_locals.h"
 #include <unistd.h>
 
 NASplayer::NASplayer(AuServer *aud)
@@ -37,8 +36,15 @@ NASplayer::~NASplayer()
 NASplayer *NASplayer::opendevice(char *server)
 {
 	AuServer *aud;
-	aud = AuOpenServer(server, 0, 0, 0, 0, 0);
-	if (!aud) return NULL;
+	char *return_status;
+	aud = AuOpenServer(server, 0, 0, 0, 0, &return_status);
+	if (!aud)
+	{
+		debug("NASplayer:: AuOpenServer(%s) failed: %s\n", server, return_status);
+		free(return_status); //should we?
+		return NULL;
+	}
+
 	return new NASplayer(aud);
 }
 
@@ -111,6 +117,27 @@ bool NASplayer::resetsoundtype(void)
 	return true;
 }
 
+//non-blocking putblock, may do partial writes
+int NASplayer::putblock_nt(void *buffer, int size)
+{
+	int writeSize;
+
+	AuHandleEvents(aud); //check for events
+
+	if (!req_size)
+		return 0; //no space to write (yet)
+	
+	writeSize = req_size;
+	if (req_size > size)
+	{
+		writeSize = size;
+	}
+
+	req_size -= writeSize;
+	AuWriteElement(aud, flow, 0, writeSize, buffer, AuFalse, 0);
+	return writeSize;
+}
+
 bool NASplayer::putblock(void *buffer, int size)
 {
 	while (size > req_size) {
@@ -164,4 +191,4 @@ AuBool NASplayer::event_handler(AuEvent *ev)
 	}
 	return AuTrue;
 }
-#endif /*\ HAVE_NASPLAYER \*/
+#endif /*\ WANT_NAS \*/

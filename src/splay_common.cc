@@ -60,11 +60,6 @@ char *splay_Sounderrors[SOUND_ERROR_UNKNOWN]=
 };
 
 
-int Setvolume(int volume)
-{
-  return Rawplayer::setvolume(volume);
-}
-
 /***************/
 /* Manage list */
 /***************/

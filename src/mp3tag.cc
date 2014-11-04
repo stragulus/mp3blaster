@@ -9,26 +9,16 @@
 #include <string.h>
 #include <mpegsound.h>
 #include <stdarg.h>
-#ifdef WANT_MYSQL
-#include MYSQL_H
-#endif
 #include "id3parse.h"
 
 extern char *genre_table[];
 _globalopts globalopts;
 
-//MySQL global variables.
 int
 	cdnr = -1,
 	add2sql = 0,
 	mergeID3 = 0,
 	change = 0;
-#ifdef WANT_MYSQL
-int
-	add_mysql_record(const char*,const struct id3header*);
-MYSQL
-	mysql; //database handler
-#endif
 struct
 	id3header *hdr = NULL;
 char
@@ -68,15 +58,6 @@ usage(const char *bla="mp3tag2")
 		"[-y <year>] [-e etcetera] [-g genre] [-k track] [-r] filename "\
 		"[..filename]\n",
 		bla);
-#ifdef WANT_MYSQL
-	fprintf(stderr,
-		"or\t%s -m mysql_dbname -n <pathoncd> -t tablename -u user -p passwd "\
-		"-c cdnr -d <cdtype:(CD|HQ)> [-l non-ID3 album] [-e <non-ID3 comment>]"\
-		"filename [..filename]\n\n" \
-		"With the -m option (which must be the first option given!) info "\
-		"of the mp3 is added to a mysql database (all the other options"\
-		"to alter the ID3 tag are thus useless)\n\n", bla);
-#endif
 	fprintf(stderr,
 		"Flag -r merges new ID3-info with existing ID3-tag in file.\n"\
 		"For a list of supported genres, use '-g list' "\
@@ -197,17 +178,6 @@ main(int argc, char *argv[])
 					albumname = strdup(optarg);
 				}
 				break;
-			case 'm':
-#ifdef WANT_MYSQL
-				add2sql = 1;
-				free(dbname);
-				dbname = strdup(optarg);
-#else
-				fprintf(stderr, "WARNING: Mp3tag is not compiled with "\
-					"MySQL support, bailing out!!!\n");
-				usage();
-#endif
-				break;
 			case 'n':
 				if (!add2sql) usage();
 				free(fullpath);
@@ -251,20 +221,6 @@ main(int argc, char *argv[])
 	}
 	if (!filelist)
 		 usage(argv[0]);
-
-#ifdef WANT_MYSQL
-	if (add2sql)
-	{
-		mysql_init(&mysql);
-		if (!mysql_real_connect(&mysql, "localhost", user, passwd, dbname, 0,
-			NULL, 0))
-		{
-			fprintf(stderr, "Failed to connect to database: Error: %s\n",
-				mysql_error(&mysql));
-			return 1;
-		}
-	}
-#endif
 
 	struct _filelist *fl = filelist;
 	while (fl)
@@ -357,16 +313,6 @@ parse_mp3(const char *flnam)
 	delete tmp3;
 	bla = NULL;
 
-#ifdef WANT_MYSQL
-	if (add2sql)
-	{
-		int retval = add_mysql_record(flnam, oldtag);
-		if (oldtag)
-			delete oldtag;
-		return retval;
-	}
-#endif
-
 	id3Parse *mp3tje = new id3Parse(flnam);
 	header = new id3header;
 	dupheader(header, hdr);
@@ -441,76 +387,6 @@ parse_mp3(const char *flnam)
 
 //adds a record to myasql database. Gets info from global mp3info and
 //from given id3header.
-#ifdef WANT_MYSQL
-int
-add_mysql_record(const char *flnam, const struct id3header *id3)
-{
-	struct stat finf;
-	const char *flnam2;
-
-	//did the user specify enough/correct parameters?
-	if ( cdnr < 0 || !fullpath || !cdtype || !user || !passwd || !table ||
-		!dbname || (strcmp(cdtype, "CD") && strcmp(cdtype, "HQ")) || !flnam)
-		usage();
-
-	if (stat(flnam, &finf) == -1)
-	{
-		return -1;
-	}
-	//remove trailing path from filename.
-	if ( (flnam2 = strrchr(flnam, '/')) )
-		flnam2 += 1;
-	else
-		flnam2 = flnam;
-
-	char tmp_flnam[strlen(flnam2)*2 + 1],
-		tmp_songname[strlen(id3->songname)*2 + 1],
-		tmp_artist[strlen(id3->artist)*2 + 1],
-		tmp_id3album[strlen(id3->type)*2 + 1],
-		tmp_comment[strlen(id3->etc)*2 + 1],
-		tmp_year[strlen(id3->year)*2 + 1],
-		tmp_table[strlen(table)*2 + 1],
-		tmp_owncomment[(owncomment ? (strlen(owncomment)*2 +1) : 1)],
-		tmp_album[(albumname ? (strlen(albumname)*2 +1) : 1)],
-		tmp_fullpath[strlen(fullpath)*2 + 1];
-	mysql_escape_string(tmp_flnam, flnam2, strlen(flnam2));
-	mysql_escape_string(tmp_songname, id3->songname, strlen(id3->songname));
-	mysql_escape_string(tmp_artist, id3->artist, strlen(id3->artist));
-	mysql_escape_string(tmp_id3album, id3->type, strlen(id3->type));
-	mysql_escape_string(tmp_comment, id3->etc, strlen(id3->etc));
-	mysql_escape_string(tmp_year, id3->year, strlen(id3->year));
-	mysql_escape_string(tmp_table, table, strlen(table));
-	mysql_escape_string(tmp_fullpath, fullpath, strlen(fullpath));
-	if (owncomment)
-		mysql_escape_string(tmp_owncomment, owncomment, strlen(owncomment));
-	else
-		tmp_owncomment[0] = '\0';
-	if (albumname)
-		mysql_escape_string(tmp_album, albumname, strlen(albumname));
-	else
-		tmp_album[0] = '\0';
-
-	char sql_query[strlen(tmp_flnam)+strlen(tmp_table)+2000];
-	sprintf(sql_query, "INSERT INTO %s (CD,CDTYPE,FILE,PATH,FILESIZE,MPEGVER,"\
-		"LAYER,BITRATE,FREQUENCY,MODE,ID3_SONGNAME,ID3_ARTIST,"\
-		"ID3_ALBUM,ID3_COMMENT,ID3_YEAR,ID3_GENRE,COMMENT,ALBUM) VALUES(%u,"\
-		"'%s','%s','%s',%u,%u,%u,%u,%u,'%s','%s','%s','%s','%s','%s',"\
-		"%u,'%s','%s')", tmp_table, (unsigned int)cdnr, cdtype, tmp_flnam,
-		tmp_fullpath, (unsigned int)finf.st_size, mp3info.version,
-		mp3info.layer, mp3info.bitrate, mp3info.frequency, mp3info.mode,
-		tmp_songname, tmp_artist, tmp_id3album, tmp_comment, tmp_year, 
-		(unsigned int)id3->genre,tmp_owncomment, tmp_album);
-	int result = mysql_query(&mysql, sql_query);
-
-	if (result)
-	{
-		fprintf(stderr, "SQL Query failed! Error: %s\n",
-			mysql_error(&mysql));
-		return 1;
-	}
-	return 0;
-}
-#endif
 
 //needed for libmpegsound; not pretty.
 

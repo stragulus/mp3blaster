@@ -13,24 +13,17 @@
 #include <vorbis/vorbisfile.h>
 #include <stdio.h>
 #include <string.h>
-#include SOUNDCARD_HEADERFILE
 
-Oggplayer::Oggplayer()
+Oggplayer::Oggplayer(audiodriver_t driver)
 {
 	of = NULL;
 	wordsize = 2; //2 bytes
 	bigendian = 0;
-/* Martijn suggests that big endiannes is already taken care of in the rawplayer
- * class.
- */
-#if 0 && defined(WORDS_BIGENDIAN)
-	bigendian = 1;
-#endif
-	//TODO: On what hardware is data unsigned, and how do I know?
 	signeddata = 1;
 	mono = 0;
 	downfreq = 0;
 	resetsound = 1;
+	set_driver(driver);
 }
 
 Oggplayer::~Oggplayer()
@@ -183,7 +176,7 @@ bool Oggplayer::run(int sec)
 	if (resetsound)
 	{
 		debug("OggVorbis channels/samplerate changed.\n");
-		player->setsoundtype(vi->channels - 1, (wordsize == 2 ? AFMT_S16_NE : AFMT_S8),
+		player->setsoundtype(vi->channels - 1, (wordsize == 2 ? 16 : 8),
 			vi->rate >> downfreq);
 		char bla[100];
 		sprintf(bla, "channels/wordsize/rate=%d/%d/%ld\n",vi->channels,wordsize,

@@ -1,27 +1,20 @@
 /*\
 |*|  Class for playing C=64 tunes
 \*/
+#include "config.h"
 
-#include <mpegsound.h>
+#include "mpegsound.h"
 #include "mpegsound_locals.h"
 
 #ifdef HAVE_SIDPLAYER
-#ifdef __cplusplus
-extern "C" {
-#endif
 
-#include SOUNDCARD_HEADERFILE
-
-#ifdef __cplusplus
-}
-#endif
-
-SIDfileplayer::SIDfileplayer()
+SIDfileplayer::SIDfileplayer(audiodriver_t driver)
 {
 	bufSize = 0;
 	buffer = 0;
 	tune = 0;
 	emu.getConfig(emuConf);
+	set_driver(driver);
 #if 0
 	emuConf.frequency = 32000;
 	emuConf.channels = SIDEMU_MONO;
@@ -51,7 +44,7 @@ bool SIDfileplayer::openfile(char *filename, char *device, soundtype write2file)
 	if ((!tune) || (!*tune))
 		return seterrorcode(SOUND_ERROR_FILEOPENFAIL);
 	
-	ssize = (emuConf.bitsPerSample == SIDEMU_16BIT ? AFMT_S16_NE : AFMT_S8);
+	ssize = (emuConf.bitsPerSample == SIDEMU_16BIT ? 16 : 8);
 
 	player->setsoundtype((emuConf.channels == SIDEMU_STEREO?1:0),
 				ssize, emuConf.frequency);
@@ -81,6 +74,7 @@ void SIDfileplayer::closefile(void)
 
 void SIDfileplayer::setforcetomono(short flag)
 {
+	(void)flag;
 	/*\
 	emuConf.channels = flag ? SIDEMU_MONO : SIDEMU_STEREO;
 	emu.setConfig(emuConf);

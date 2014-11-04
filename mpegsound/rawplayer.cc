@@ -11,6 +11,8 @@
 #include "config.h"
 #endif
 
+#ifdef WANT_OSS
+
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/time.h>
@@ -166,28 +168,18 @@ void Rawplayer::abort(void)
 	IOCTL(audiohandle,SNDCTL_DSP_RESET,a);
 }
 
-int Rawplayer::getprocessed(void)
-{
-	audio_buf_info info;
-	int r;
-
-	if (audiohandle == -1)
-		return -1;
-
-	IOCTL(audiohandle,SNDCTL_DSP_GETOSPACE,info);
-
-	r=(info.fragstotal-info.fragments)*info.fragsize;
-
-	return r;
-}
-
 bool Rawplayer::setsoundtype(int stereo,int samplesize,int speed)
 {
 	int changed = 0;
+	int samplesize_oss = (samplesize == 16 ? AFMT_S16_NE : AFMT_U8);
 
 	debug("Rawplayer::setsoundtype(%d,%d,%d)\n", stereo, samplesize, speed);
 	if (rawstereo != stereo) { rawstereo = stereo; changed++; }
-	if (rawsamplesize != samplesize) { rawsamplesize = samplesize; changed++; }
+	if (rawsamplesize != samplesize_oss)
+	{
+		rawsamplesize = samplesize_oss;
+		changed++;
+	}
 	if (rawspeed != speed) { rawspeed = speed; changed++; }
 	forceto8 = (want8bit && samplesize == AFMT_S16_NE ? true : false);
 	forcetomono = 0;
@@ -414,11 +406,6 @@ bool Rawplayer::putblock(void *buffer,int size)
 		}
 	}
 
-#if 0
-	if(quota)
-		while(getprocessed()>quota)USLEEP(3);
-#endif
-
 #if defined(AUDIO_NONBLOCKING) || defined(NEWTHREAD)
 	register ssize_t
 		wsize,
@@ -492,3 +479,5 @@ int Rawplayer::getblocksize(void)
 {
 	return audiobuffersize;
 }
+
+#endif /* WANT_OSS */

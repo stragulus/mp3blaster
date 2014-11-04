@@ -50,11 +50,11 @@
 #elif defined (LIBPTH) && defined(HAVE_PTH_H)
 #include <pth.h>
 #endif
-#include NCURSES
+#include NCURSES_HEADER
 #ifdef HAVE_GETOPT_H
 #include <getopt.h>
 #else
-#include "getopt.h"
+#include "getopt_local.h"
 #endif
 #ifdef HAVE_ERRNO_H
 #include <errno.h>
@@ -81,13 +81,6 @@
 #ifndef FILENAME_MAX
 #define FILENAME_MAX 1024
 #endif
-
-/* Define this to have more efficient (blocking) threads. If not defined,
- * 2 threads will loop continuously, otherwise just 1. In the latter case
- * not all status updates on the screen might be visible. It might be
- * more efficient though
- */
-#undef TEMPIE
 
 /* values for global var 'window' */
 enum _action { AC_NONE, AC_REWIND, AC_FORWARD, AC_NEXT, AC_PREV,
@@ -117,9 +110,6 @@ void mw_settxt(const char*);
 short read_playlist(const char *);
 short write_playlist(const char *);
 void *play_list(void *);
-#ifdef TEMPIE
-void *curses_thread(void *);
-#endif
 short start_song(short was_playing=0);
 void set_one_mp3(char*);
 void stop_song();
@@ -141,9 +131,9 @@ void usage();
 void show_help();
 void draw_static(int file_mode=0);
 void draw_settings(int cleanit=0);
-void fw_getpath(char *, void *);
-void fw_convmp3(char *, void *);
-void fw_addurl(char *, void *);
+void fw_getpath(const char *, void *);
+void fw_convmp3(const char *, void *);
+void fw_addurl(const char *, void *);
 void fw_search_next_char(char);
 void fw_start_search(int timeout=2);
 void fw_end_search();
@@ -157,7 +147,7 @@ char *determine_song(short set_played=1);
 void set_song_info(const char *fl, struct song_info si);
 void set_song_status(playstatus_t);
 void set_song_time(int,int);
-void popup_win(const char **label, void (*func)(char *, void *),  void *func_args = NULL, const char *init_str = NULL, short want_input=0, int maxlen=0);
+void popup_win(const char **label, void (*func)(const char *, void *),  void *func_args = NULL, const char *init_str = NULL, short want_input=0, int maxlen=0);
 int myrand(int);
 void reset_playlist(int);
 void cw_draw_repeat();
@@ -191,25 +181,21 @@ void wake_player();
 void add_init_opt(struct init_opts *myopts, const char *option, void *value);
 void get_input(
 	WINDOW *win, const char*defval, unsigned int size, unsigned int maxlen,
-	int y, int x, void (*got_input)(char *, void *), void *args = NULL
+	int y, int x, void (*got_input)(const char *, void *), void *args = NULL
 );
 void set_inout_opts();
-void select_files_by_pattern(char *, void *);
-void playlist_write(char *playlistfile, void *args);
-void fw_rename_file(char *newname, void *args);
+void select_files_by_pattern(const char *, void *);
+void playlist_write(const char *playlistfile, void *args);
+void fw_rename_file(const char *newname, void *args);
 void *lirc_loop(void *);
-#ifdef TEMPIE
-#define LOCK_NCURSES (!pthread_mutex_trylock(&ncurses_mutex))
-#define UPDATE_CURSES pthread_cond_signal(&ncurses_cond)
-#define UNLOCK_NCURSES pthread_mutex_unlock(&ncurses_mutex)
-#elif defined(PTHREADEDMPEG)
-#define LOCK_NCURSES (!pthread_mutex_lock(&ncurses_mutex))
-#define UPDATE_CURSES
-#define UNLOCK_NCURSES pthread_mutex_unlock(&ncurses_mutex)
+#if defined(PTHREADEDMPEG)
+# define LOCK_NCURSES (!pthread_mutex_lock(&ncurses_mutex))
+# define UPDATE_CURSES
+# define UNLOCK_NCURSES pthread_mutex_unlock(&ncurses_mutex)
 #elif defined(LIBPTH)
-#define LOCK_NCURSES (pth_mutex_acquire(&ncurses_mutex, FALSE, NULL) != -1)
-#define UPDATE_CURSES
-#define UNLOCK_NCURSES pth_mutex_release(&ncurses_mutex)
+# define LOCK_NCURSES (pth_mutex_acquire(&ncurses_mutex, FALSE, NULL) != -1)
+# define UPDATE_CURSES
+# define UNLOCK_NCURSES pth_mutex_release(&ncurses_mutex)
 #endif
 
 #define OPT_LOADLIST 1
@@ -252,6 +238,7 @@ struct playopts_t
 	Fileplayer *player;
 	time_t tyd;
 	time_t newtyd;
+	short quit_program;
 } playopts;
 
 struct ptag_t
@@ -270,18 +257,10 @@ pthread_mutex_t
 	onemp3_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t
 	playing_cond = PTHREAD_COND_INITIALIZER;
-#ifdef TEMPIE
-pthread_cond_t
-	ncurses_cond = PTHREAD_COND_INITIALIZER;
-#endif
 pthread_t
 	thread_playlist; //thread that handles playlist (main handles input)
 #ifdef INCLUDE_LIRC
 	pthread_t thread_lirc;
-#endif
-#ifdef TEMPIE
-pthread_t
-	thread_ncurses; //thread that modifies ncurses structures
 #endif
 #elif defined(LIBPTH)
 pth_mutex_t
@@ -364,6 +343,8 @@ main(int argc, char *argv[], char *envp[])
 	tmp.sound_device = NULL;
 	tmp.mixer_device = NULL;
 	tmp.play_mode = NULL;
+	tmp.fpl = 5;
+	tmp.threads = 10;
 	
 	environment = envp;
 
@@ -506,6 +487,9 @@ main(int argc, char *argv[], char *envp[])
 		case 'v': /* version info */
 			printf("%s version %s - http://mp3blaster.sourceforge.net/\n",
 				argv[0], VERSION);
+			printf("Supported audio formats: " BUILDOPTS_AUDIOFORMATS "\n");
+			printf("Supported audio output drivers: " BUILDOPTS_AUDIODRIVERS "\n");
+			printf("Build features: " BUILDOPTS_FEATURES "\n");
 			exit(0);
 			break;
 		default:
@@ -563,9 +547,9 @@ main(int argc, char *argv[], char *envp[])
 
 	startup_path = get_current_working_path();
 
-	if (LINES < 24 || COLS < 80)
+	if (LINES < 23 || COLS < 80)
 	{
-		mvaddstr(0, 0, "You'll need at least an 80x24 screen, sorry.\n");
+		mvaddstr(0, 0, "You'll need at least an 80x23 screen, sorry.\n");
 		getch();
 		endwin();
 		exit(1);
@@ -751,12 +735,9 @@ main(int argc, char *argv[], char *envp[])
 
 #ifdef PTHREADEDMPEG
 	pthread_create(&thread_playlist, NULL, play_list, NULL);
-#ifdef INCLUDE_LIRC
-	pthread_create(&thread_lirc, NULL, lirc_loop, NULL);
-#endif
-#ifdef TEMPIE
-	pthread_create(&thread_ncurses, NULL, curses_thread, NULL);
-#endif
+# ifdef INCLUDE_LIRC
+	 pthread_create(&thread_lirc, NULL, lirc_loop, NULL);
+# endif
 #elif defined(LIBPTH)
 	warning("Setting up PTH thread");
 
@@ -769,18 +750,22 @@ main(int argc, char *argv[], char *envp[])
 	pth_yield(NULL);
 #endif /* PTHREADEDMPEG */
 
-	/* read input from keyboard */
-#ifdef TEMPIE
-	while ( (key = handle_input(0)) >= 0);
-#else
-	while ( (key = handle_input(1)) >= 0);
-#endif
+	/* read input */
+	while ( (key = handle_input(1)) >= 0)
+	{
+	}
 	
+	/* signal running threads to terminate themselves */
+	playopts.quit_program = 1;
+	wake_player();
+
 #ifdef PTHREADEDMPEG
-#ifdef TEMPIE
-	pthread_cancel(thread_ncurses);
+	pthread_join(thread_playlist, NULL);
+	//the lirc thread blocks..sod it.
+#elif defined (LIBPTH)
+	pth_join(thread_playlist, NULL);
 #endif
-#endif
+
 	endwin();
 	return 0;
 }
@@ -1008,7 +993,7 @@ fw_changedir(const char *newpath = 0)
 /* PRE: Be in PM_FILESELECTION
  */
 void
-fw_getpath(char *npath, void *opts)
+fw_getpath(const char *npath, void *opts)
 {
 	DIR
 		*dir = NULL;
@@ -1019,8 +1004,6 @@ fw_getpath(char *npath, void *opts)
 
 	if (!npath || !(newpath = expand_path(npath)))
 		return;
-
-	delete[] npath;
 
 	if ( !(dir = opendir(newpath))) 
 	{
@@ -1221,7 +1204,7 @@ add_group(const char *newgroupname=0)
  * SideEffects: None.
  */
 void
-set_group_name(char *name, void *args)
+set_group_name(const char *name, void *args)
 {
 	const char
 		*nm;
@@ -1241,7 +1224,6 @@ set_group_name(char *name, void *args)
 
 	if (!strcmp(name, ".."))
 	{
-		free(name);
 		return;
 	}
 	char tmpname[strlen(name)+3];
@@ -1250,7 +1232,6 @@ set_group_name(char *name, void *args)
 	mp3Win *gr = sw->getGroup(index);
 	if (gr)
 		gr->setTitle(tmpname);
-	free(name);
 }
 
 void
@@ -1402,7 +1383,7 @@ void
 popup_win
 (
 	const char **label, 
-	void (*func)(char *, void *), void *func_args,
+	void (*func)(const char *, void *), void *func_args,
 	const char *init_str,
 	short want_input, int maxlen
 )
@@ -2138,7 +2119,7 @@ cw_draw_play_mode(short cleanit)
 void *
 play_list(void *arg)
 {
-	if (arg);
+	(void)arg; //unused
 
 #ifdef PTHREADEDMPEG
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL),
@@ -2152,6 +2133,7 @@ play_list(void *arg)
 	while (1)
 	{
 		_action my_action;
+
 #ifdef PTHREADEDMPEG
 		pthread_testcancel();
 #elif defined(LIBPTH)
@@ -2169,9 +2151,31 @@ play_list(void *arg)
 #elif defined(LIBPTH)
 				pth_cond_await(&playing_cond, &playing_mutex, NULL);
 #endif
+				if (playopts.quit_program)
+				{
+					break; //we need to die.
+				}
 			}
 			debug("THREAD playing woke up!\n");
 		}
+
+		/* are we requested to die? */
+		if (playopts.quit_program)
+		{
+			if (playopts.player)
+			{
+				//clean up the player
+				debug("destroying player - we're quitting\n");
+				playopts.player->stop();
+				delete playopts.player;
+				debug("Destroyed!\n");
+			}
+
+			//exit loop and terminate thread
+			break;
+		}
+
+
 		my_action = action;
 		playopts.playing = 1;
 		unlock_playing_mutex();
@@ -2180,6 +2184,7 @@ play_list(void *arg)
 		{
 		case AC_STOP:
 		case AC_STOP_LIST:
+			/* explicit user stop request */
 			stop_song(); //sets action to AC_NONE
 			lock_playing_mutex();
 			playopts.playing = 0;
@@ -2187,6 +2192,7 @@ play_list(void *arg)
 			update_songinfo(PS_NONE, 16);
 			if (my_action == AC_STOP_LIST)
 				reset_playlist(1);
+			playopts.playing_one_mp3 = 0;
 		break;
 		case AC_NEXT:
 			stop_song(); //status => AC_NONE
@@ -2329,9 +2335,13 @@ play_list(void *arg)
 		pth_yield(NULL);
 #endif
 	}
+
+	return NULL;
 }
+
 #ifdef INCLUDE_LIRC
-void *lirc_loop(void *arg)
+void *
+lirc_loop(void *arg)
 {
 	struct lirc_config *config;
 
@@ -2339,7 +2349,9 @@ void *lirc_loop(void *arg)
 
 	if (lirc_init("mp3blaster", 1) == -1)
 	{
+		LOCK_NCURSES;
 	  warning("Couldn't initialize LIRC support (no config?)");
+		UNLOCK_NCURSES;
 	  return NULL;
   }
 
@@ -2349,7 +2361,7 @@ void *lirc_loop(void *arg)
 		char *name;
 		int ret;
 
-		while (lirc_nextcode(&code) == 0 && code)
+		while (lirc_nextcode(&code) == 0 && code) //blocks
 		{
 			while ((ret = lirc_code2char(config, code, &name)) == 0 && name)
 			{
@@ -2626,6 +2638,7 @@ start_song(short was_playing)
 	 */
 	if (!(song = get_one_mp3()) && playopts.playing_one_mp3 == 2)
 	{
+		debug("Not going to play a new song.\n");
 		playopts.playing_one_mp3 = 0;
 		return -1;
 	}
@@ -2683,16 +2696,27 @@ start_song(short was_playing)
 	set_one_mp3((const char*)NULL);
 
 	void *init_args = NULL;
+	Fileplayer::audiodriver_t audiodriver = Fileplayer::AUDIODRV_SDL;
+
+	switch(globalopts.audio_driver)
+	{
+	case AUDIODEV_SDL: audiodriver = Fileplayer::AUDIODRV_SDL; break;
+	case AUDIODEV_OSS: audiodriver = Fileplayer::AUDIODRV_OSS; break;
+	case AUDIODEV_ESD: audiodriver = Fileplayer::AUDIODRV_ESD; break;
+	case AUDIODEV_NAS: audiodriver = Fileplayer::AUDIODRV_NAS; break;
+	//TODO: 'dump' driver which dumps output to a file! Better than current
+	//crappy mp3->wav converter class..
+	}
 
 	if (is_wav(song))
-		playopts.player = new Wavefileplayer();
+		playopts.player = new Wavefileplayer(audiodriver);
 #ifdef HAVE_SIDPLAYER
 	else if (is_sid(song))
-		playopts.player = new SIDfileplayer();
+		playopts.player = new SIDfileplayer(audiodriver);
 #endif
 #ifdef INCLUDE_OGG
 	else if (is_ogg(song))
-		playopts.player = new Oggplayer();
+		playopts.player = new Oggplayer(audiodriver);
 #endif
 	else if (is_audiofile(song)) //mp3 assumed
 	{
@@ -2710,7 +2734,7 @@ start_song(short was_playing)
 		//init options have been set?
 		if (opts->option[0])
 			init_args = (void *)opts;
-		playopts.player = new Mpegfileplayer();
+		playopts.player = new Mpegfileplayer(audiodriver);
 	}
 
 	if (!playopts.player)
@@ -2918,7 +2942,7 @@ recsel_files(const char *path, char ***files, unsigned int *fileCount, short d2g
 	while ( (entry = readdir(dir)) )
 	{
 		DIR *dir2 = NULL;
-		char *newpath = (char *)malloc((entry->d_reclen + 2 + strlen(path)) *
+		char *newpath = (char *)malloc((strlen(entry->d_name) + 2 + strlen(path)) *
 			sizeof(char));
 
 		PTH_YIELD;
@@ -3182,7 +3206,7 @@ handle_input(short no_delay)
 #endif 
 		debug("THREAD main woke up!\n");
 	}
-#ifndef TEMPIE
+
 	if (LOCK_NCURSES);
 
 	if (songinf.update)
@@ -3192,7 +3216,6 @@ handle_input(short no_delay)
 	}
 	
 	UNLOCK_NCURSES;
-#endif
 
 	if (no_delay && key == ERR)
 	{
@@ -3206,17 +3229,16 @@ handle_input(short no_delay)
 		return 0;
 	}
 
-#ifdef TEMPIE
-	//lock the ncurses mutex during the entire input loop.
-	LOCK_NCURSES;
-#endif
-
 #ifdef INCLUDE_LIRC
-	if (lirc_cmd != CMD_NONE) {
+	if (lirc_cmd != CMD_NONE)
+	{
 		cmd = lirc_cmd;
 		lirc_cmd = CMD_NONE;
 	}
-	else cmd = get_command(key, progmode);
+	else
+	{
+		cmd = get_command(key, progmode);
+	}
 #else
 	cmd = get_command(key, progmode);
 #endif
@@ -3272,7 +3294,7 @@ handle_input(short no_delay)
 		case KEY_END: global_input->moveToEnd(); break;
 		case 13: 
 		{
-			void (*callback_fun)(char *, void*);
+			void (*callback_fun)(const char *, void*);
 			//global_input->getCallbackFunction(&callback_fun);
 			clean_popup();
 			set_inout_opts();
@@ -3298,19 +3320,12 @@ handle_input(short no_delay)
 
 	if (retval)
 	{
-#ifdef TEMPIE
-		UNLOCK_NCURSES;
-#endif
 		return retval;
 	}
 
 	switch(cmd)
 	{
-		case CMD_PLAY_PLAY: set_action(AC_PLAY); 
-			wake_player();
-	
-		break;
-	//wake up playlist
+		case CMD_PLAY_PLAY: set_action(AC_PLAY); wake_player(); break;
 		case CMD_PLAY_NEXT: set_action(AC_NEXT); break;
 		case CMD_PLAY_PREVIOUS: set_action(AC_PREV); break;
 		case CMD_PLAY_FORWARD: set_action(AC_FORWARD); break;
@@ -3331,30 +3346,7 @@ handle_input(short no_delay)
 			sw->swRefresh(1);
 		break;
 		case CMD_QUIT_PROGRAM: //quit mp3blaster
-#if 0
-			lock_playing_mutex();
-			if (!playopts.playing)
-			{
-				retval = -1;
-				unlock_playing_mutex();
-			}
-			else
-			{
-				unlock_playing_mutex(); //otherwise deadlock occurs..
-#ifdef PTHREADEDMPEG
-				pthread_cancel(thread_playlist); //MUST do this first.
-				pthread_join(thread_playlist, NULL);
-#elif defined(LIBPTH)
-				pth_cancel(thread_playlist);
-				pth_join(thread_playlist, NULL);
-#endif
-				stop_song();
-				stop_list();
-				retval = -1;
-			}
-#else
 			retval = -1;
-#endif
 		break;
 		case CMD_HELP:
 			if (progmode == PM_HELP)
@@ -3752,9 +3744,6 @@ handle_input(short no_delay)
 				mixer->ProcessKey(key);
 	}
 	
-#ifdef TEMPIE
-	UNLOCK_NCURSES;
-#endif
 	return retval;
 }
 
@@ -3861,7 +3850,7 @@ draw_settings(int cleanit)
 }
 
 void
-fw_convmp3(char *tmp, void *args)
+fw_convmp3(const char *tmp, void *args)
 {
 	char **selitems;
 	int nselected;
@@ -3882,8 +3871,6 @@ fw_convmp3(char *tmp, void *args)
 		refresh();
 		return;
 	}
-	delete[] tmp; 
-	tmp = NULL;
 
 	if (!dir2write || !is_dir(dir2write))
 	{
@@ -3947,7 +3934,8 @@ fw_convmp3(char *tmp, void *args)
 			char bla[strlen(file)+80];
 			Mpegfileplayer *decoder = NULL;
 
-			if (!(decoder = new Mpegfileplayer) || !decoder->openfile(file,
+			if (!(decoder = new Mpegfileplayer(Fileplayer::AUDIODRV_OSS)) ||
+				!decoder->openfile(file,
 				file2write, WAV) || !decoder->initialize(NULL))
 			{
 				sprintf(bla, "Decoding of %s failed.", selitems[i]);
@@ -3989,7 +3977,7 @@ fw_convmp3(char *tmp, void *args)
 }
 
 void
-fw_addurl(char *urlname, void *args)
+fw_addurl(const char *urlname, void *args)
 {
 	mp3Win
 		*sw;
@@ -3998,14 +3986,12 @@ fw_addurl(char *urlname, void *args)
 
 	if (!urlname || progmode != PM_FILESELECTION)
 	{
-		free(urlname);
 		return;
 	}
 
 	sw = mp3_curwin;
 
 	add_selected_file(urlname);
-	free(urlname);
 }
 
 void
@@ -4932,6 +4918,7 @@ init_playopts()
 	playopts.playing = 0;
 	playopts.one_mp3 = NULL;
 	playopts.player = NULL;
+	playopts.quit_program = 0;
 }
 
 void
@@ -4972,6 +4959,13 @@ init_globalopts()
 	globalopts.selectitems_caseinsensitive = 1; //only works for regexp search
 	globalopts.scan_mp3s = 0; //scan mp3's to calculate correct total time.
 	globalopts.wraplist = true;
+#if WANT_SDL
+	globalopts.audio_driver = AUDIODEV_SDL; //recommended for hick-free playback
+#elif WANT_OSS
+	globalopts.audio_driver = AUDIODEV_OSS;
+#else
+	globalopts.audio_driver - AUDIODEV_ESD; //hicks too much, don't use or fix.
+#endif
 }
 
 void
@@ -5179,48 +5173,6 @@ update_ncurses()
 	songinf.update = 0;
 }
 
-#ifdef TEMPIE
-//The curses thread.
-//There are only 2 threads that are allowed to modify ncurses structures:
-//The main thread (handle_input), and this one. The ncurses_mutex is used
-//to make sure not both of these threads are modifying ncurses structures at
-//the same time. 
-//TODO: Currently, the main thread might lock the ncurses_mutex for a long
-//      while if user input is required. In order to make sure the playing
-//      thread does not have to wait until the ncurses_mutex is available,
-//      it should always use pthread_mutex_trylock() so it can continue if
-//      it cannot get at the ncurses_mutex. A drawback to this approach is
-//      that the playing thread will simply drop ncurses modifications (
-//      playback status) if it can't lock the ncurses_mutex. The only way
-//      to get around this, is to write a non-blocking version of get[n]str
-//      so that the main thread doesn't have to lock the ncurses_mutex until
-//      the user has finished input (e.g. F4 in file mode, change to subdir).
-//      Or, write a curses events queueing system.
-void *
-curses_thread(void *arg)
-{
-	if (arg); //suppress warning about non-used variables
-
-	while(1)
-	{
-		LOCK_NCURSES;
-		if (!songinf.update)
-		{
-			debug("THREAD ncurses going to sleep.\n");
-#ifdef PTHREADEDMPEG
-			pthread_cond_wait(&ncurses_cond, &ncurses_mutex);
-#elif defined(LIBPTH)
-			pth_cond_await(&ncurses_cond, &ncurses_mutex, NULL);
-#endif
-		}
-		debug("THREAD ncurses woke up!\n");
-
-		update_ncurses();
-		UNLOCK_NCURSES;
-	}
-}
-#endif
-
 void
 update_songinfo(playstatus_t status, short update)
 {
@@ -5426,11 +5378,13 @@ lock_playing_mutex()
 void
 wake_player()
 {	
+	debug("wake_player\n");
 #ifdef PTHREADEDMPEG
 	pthread_cond_signal(&playing_cond);
 #elif defined(LIBPTH)
 	pth_cond_notify(&playing_cond, TRUE);
 #endif
+	debug("/wake_player\n");
 }
 
 void
@@ -5457,7 +5411,7 @@ add_init_opt(struct init_opts *myopts, const char *option, void *value)
 void
 get_input(
 	WINDOW *win, const char*defval, unsigned int size, unsigned int maxlen, int y, int x,
-	void (*got_input)(char *, void *), void *args
+	void (*got_input)(const char *, void *), void *args
 )
 {
 	if (global_input)
@@ -5488,13 +5442,13 @@ set_inout_opts()
 /* Function   : select_files_by_pattern
  * Description: Select a bunch of files by giving a pattern. Function is called
  *            : from popup_win
- * Parameters : pattern: Pattern to search files for. free() after use.
+ * Parameters : pattern: Pattern to search files for.
  *            : args:    pointer to scrollWin instance to search in
  * Returns    : Nothing.
  * SideEffects: Selects files in the scrollWin instance.
  */
 void
-select_files_by_pattern(char *pattern, void *args)
+select_files_by_pattern(const char *pattern, void *args)
 {
 	scrollWin
 		*mainwindow = (scrollWin*)args;
@@ -5502,8 +5456,6 @@ select_files_by_pattern(char *pattern, void *args)
 	if (!pattern || !strlen(pattern))
 	{
 		warning("No pattern given.");
-		if (pattern)
-			free(pattern);
 		return;
 	}
 
@@ -5516,7 +5468,6 @@ select_files_by_pattern(char *pattern, void *args)
 		SW_SEARCH_NONE),
 		mainwindow->getDisplayMode());
 	mainwindow->swRefresh(0);
-	free(pattern);
 }
 
 /* Function   : playlist_write
@@ -5529,33 +5480,34 @@ select_files_by_pattern(char *pattern, void *args)
  * SideEffects: None.
  */
 void
-playlist_write(char *playlistfile, void *args)
+playlist_write(const char *playlistfile, void *args)
 {
 	const char
 		*plistfile = NULL;
 	char
 		*org_path = NULL;
+	char
+		*tmp_pfile = NULL;
 
 	if (args);
 
-	if (!playlistfile)
+	if (!playlistfile || !strlen(playlistfile))
 		return;
-	if (!strlen(playlistfile))
+
+	if (!is_playlist(playlistfile))
 	{
-		free(playlistfile);
-		return;
+		tmp_pfile = (char*)malloc((strlen(playlistfile) + 5) * sizeof(char));
+		sprintf(tmp_pfile, "%s.lst", playlistfile);
+		plistfile = chop_path(tmp_pfile);
+	}
+	else
+	{
+		plistfile = chop_path(playlistfile);
 	}
 
-	if (!is_playlist((const char*)playlistfile))
-	{
-		playlistfile = (char*)realloc(playlistfile, (strlen(playlistfile) + 5) *
-			sizeof(char));
-		strcat(playlistfile, ".lst");
-	}
-	plistfile = chop_path((const char*)playlistfile);
 	if (!plistfile || !strlen(plistfile))
 	{
-		free(playlistfile);
+		free(tmp_pfile);
 		return;
 	}
 
@@ -5587,11 +5539,11 @@ playlist_write(char *playlistfile, void *args)
 
 	chdir(org_path);
 	free(org_path);
-	free(playlistfile);
+	free(tmp_pfile);
 }
 
 void
-fw_rename_file(char *newname, void *args)
+fw_rename_file(const char *newname, void *args)
 {
 	fileManager
 		*fm = file_window;
@@ -5717,6 +5669,44 @@ set_charset_table(const char *tabName)
 	if (!strlen(tabName))
 		return 0;
 	return read_recode_table(tabName);
+}
+
+short
+set_audio_driver(const char *driverName)
+{
+#ifdef WANT_OSS
+	if (!strcasecmp(driverName, "oss"))
+	{
+		globalopts.audio_driver = AUDIODEV_OSS;
+		return 1;
+	}
+#endif
+
+#ifdef WANT_ESD
+	if (!strcasecmp(driverName, "esd"))
+	{
+		globalopts.audio_driver = AUDIODEV_ESD;
+		return 1;
+	}
+#endif
+
+#ifdef WANT_SDL
+	if (!strcasecmp(driverName, "sdl"))
+	{
+		globalopts.audio_driver = AUDIODEV_SDL;
+		return 1;
+	}
+#endif
+
+#ifdef WANT_NAS
+	if (!strcasecmp(driverName, "nas"))
+	{
+		globalopts.audio_driver = AUDIODEV_NAS;
+		return 1;
+	}
+#endif
+
+	return 0; //bad value or unsupported audio driver
 }
 
 short

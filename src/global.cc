@@ -36,7 +36,7 @@
 #include "id3parse.h"
 #include <stdarg.h>
 
-#include NCURSES
+#include NCURSES_HEADER
 extern _globalopts globalopts;
 void debug(const char *fmt, ...);
 

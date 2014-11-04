@@ -34,7 +34,7 @@
  * TODO: Remove the debug() calls once the new scrollwin code seems stable.
  */
 #include "mp3blaster.h"
-#include NCURSES
+#include NCURSES_HEADER
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -213,7 +213,7 @@ scrollWin::setTitle(const char *tmp)
 void scrollWin::swRefresh(short scroll)
 {
 	int i;
-	int barpos;
+	int barpos = -1;
 	winItem *current = NULL;
 
 	if (scroll >= 1)
@@ -294,8 +294,6 @@ void scrollWin::swRefresh(short scroll)
 
 	if (barpos > -1)
 	{
-		debug("moving cursor to line %d\n", barpos);
-
 		/* move cursor to selection bar to aid the blind */
 		move(by + barpos, bx + xoffset);
 	}

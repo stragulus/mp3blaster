@@ -25,10 +25,6 @@ void Soundplayer::abort(void)
   // Nothing....
 }
 
-int Soundplayer::getprocessed(void)
-{
-  return 0;
-}
 bool Soundplayer::resetsoundtype(void)
 {
   return true;

@@ -51,7 +51,7 @@ CPPFLAGS = @CPPFLAGS@
 CXX = @CXX@
 CXXCPP = @CXXCPP@
 CXXDEPMODE = @CXXDEPMODE@
-CXXFLAGS = @CXXFLAGS@ @NAS_CFLAGS@
+CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
@@ -65,16 +65,16 @@ INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LDFLAGS = @LDFLAGS@
+LIBESD = @LIBESD@
 LIBMPEGSOUND = @LIBMPEGSOUND@
-LIBMYSQL = @LIBMYSQL@
 LIBNMIXER = @LIBNMIXER@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
+LIBSDL = @LIBSDL@
 LIRC_LIBS = @LIRC_LIBS@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
-MP3B_MODULES = @MP3B_MODULES@
 NAS_CFLAGS = @NAS_CFLAGS@
 NAS_LIBS = @NAS_LIBS@
 NCURSES_LIBS = @NCURSES_LIBS@
@@ -88,6 +88,9 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 RANLIB = @RANLIB@
+SDL11_CONFIG = @SDL11_CONFIG@
+SDL12_CONFIG = @SDL12_CONFIG@
+SDL_CONFIG = @SDL_CONFIG@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 SID_LIBS = @SID_LIBS@
@@ -137,12 +140,14 @@ libmpegsound_a_SOURCES = soundinputstream.cc fileinput.cc httpinput.cc \
 			  mpeglayer3.cc bitwindow.cc huffmantable.cc \
 			  wavetoraw.cc sidplayer.cc \
 			  fileplayer.cc nasplayer.cc oggplayer.cc \
-				xingheader.cc xingheader.h
+				xingheader.cc xingheader.h esdplayer.cc \
+				sdlplayer.cc cyclicbuffer.cc cyclicbuffer.h
 
 
 noinst_HEADERS = mpegsound.h mpegsound_locals.h
 
 INCLUDES = -I$(srcdir) -I$(includedir)
+AM_CXXFLAGS = @NAS_CFLAGS@
 subdir = mpegsound
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
@@ -159,22 +164,25 @@ am_libmpegsound_a_OBJECTS = soundinputstream.$(OBJEXT) \
 	mpeglayer1.$(OBJEXT) mpeglayer2.$(OBJEXT) mpeglayer3.$(OBJEXT) \
 	bitwindow.$(OBJEXT) huffmantable.$(OBJEXT) wavetoraw.$(OBJEXT) \
 	sidplayer.$(OBJEXT) fileplayer.$(OBJEXT) nasplayer.$(OBJEXT) \
-	oggplayer.$(OBJEXT) xingheader.$(OBJEXT)
+	oggplayer.$(OBJEXT) xingheader.$(OBJEXT) esdplayer.$(OBJEXT) \
+	sdlplayer.$(OBJEXT) cyclicbuffer.$(OBJEXT)
 libmpegsound_a_OBJECTS = $(am_libmpegsound_a_OBJECTS)
 
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
 @AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/bitwindow.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/fileinput.Po ./$(DEPDIR)/fileplayer.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/filter.Po ./$(DEPDIR)/filter_2.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/httpinput.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/cyclicbuffer.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/esdplayer.Po ./$(DEPDIR)/fileinput.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/fileplayer.Po ./$(DEPDIR)/filter.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/filter_2.Po ./$(DEPDIR)/httpinput.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/huffmantable.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/mpeglayer1.Po ./$(DEPDIR)/mpeglayer2.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/mpeglayer3.Po ./$(DEPDIR)/mpegtable.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/mpegtoraw.Po ./$(DEPDIR)/nasplayer.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/oggplayer.Po ./$(DEPDIR)/rawplayer.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/rawtofile.Po ./$(DEPDIR)/sidplayer.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/rawtofile.Po ./$(DEPDIR)/sdlplayer.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/sidplayer.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/soundinputstream.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/soundplayer.Po ./$(DEPDIR)/wavetoraw.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/xingheader.Po
@@ -198,7 +206,7 @@ all: all-am
 
 .SUFFIXES:
 .SUFFIXES: .cc .o .obj
-$(srcdir)/Makefile.in:  Makefile.am  $(top_srcdir)/configure.in $(ACLOCAL_M4)
+$(srcdir)/Makefile.in:  Makefile.am  $(top_srcdir)/configure.ac $(ACLOCAL_M4)
 	cd $(top_srcdir) && \
 	  $(AUTOMAKE) --gnu  mpegsound/Makefile
 Makefile:  $(srcdir)/Makefile.in  $(top_builddir)/config.status
@@ -220,6 +228,8 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bitwindow.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cyclicbuffer.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/esdplayer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fileinput.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fileplayer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/filter.Po@am__quote@
@@ -235,6 +245,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/oggplayer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rawplayer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rawtofile.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sdlplayer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sidplayer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/soundinputstream.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/soundplayer.Po@am__quote@

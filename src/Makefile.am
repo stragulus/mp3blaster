@@ -7,7 +7,7 @@ mp3blaster_SOURCES	= fileman.cc \
 			  getopt1.c \
 			  fileman.h \
 			  genretab.h \
-			  getopt.h \
+			  getopt_local.h \
 				id3parse.cc \
 			  id3parse.h \
 			  mp3blaster.h \
@@ -29,12 +29,12 @@ mp3blaster_SOURCES	= fileman.cc \
 			  @MP3B_MODULES@
 splay_SOURCES = splay.cc splay.h splay_common.cc
 splay_DEPENDENCIES = ../mpegsound/libmpegsound.a
-splay_LDADD = @LIBMPEGSOUND@
+splay_LDADD = @LIBMPEGSOUND@ @LIBESD@ @LIBSDL@
 mp3tag_SOURCES = id3parse.cc mp3tag.cc id3parse.h
 mp3tag_DEPENDENCIES = ../mpegsound/libmpegsound.a ../nmixer/libnmixer.a
-mp3tag_LDADD = @LIBMPEGSOUND@ @LIBMYSQL@
+mp3tag_LDADD = @LIBMPEGSOUND@ @LIBESD@ @LIBSDL@
 mp3blaster_DEPENDENCIES = ../mpegsound/libmpegsound.a ../nmixer/libnmixer.a
 INCLUDES		= -I$(top_srcdir)/mpegsound -I/usr/include/ncurses -I$(top_srcdir)/nmixer -I$(includedir)
-mp3blaster_LDADD	= @LIBMPEGSOUND@ @LIBNMIXER@ @NAS_LIBS@ @SID_LIBS@ @OGG_LIBS@ @LIRC_LIBS@ @NCURSES_LIBS@
+mp3blaster_LDADD	= @LIBMPEGSOUND@ @LIBNMIXER@ @NAS_LIBS@ @SID_LIBS@ @OGG_LIBS@ @LIRC_LIBS@ @NCURSES_LIBS@ @LIBESD@ @LIBSDL@
 EXTRA_DIST = FILES
-CXXFLAGS	= @CXXFLAGS@ @NAS_CFLAGS@ -DMP3BLASTER_DOCDIR=\"${pkgdatadir}\"
+AM_CXXFLAGS	= @NAS_CFLAGS@ -DMP3BLASTER_DOCDIR=\"${pkgdatadir}\"

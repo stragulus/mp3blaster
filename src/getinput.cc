@@ -176,7 +176,7 @@ getInput::updateCursor(short redraw)
 }
 
 void
-getInput::setCallbackFunction(void (*f)(char *,void *), void *args)
+getInput::setCallbackFunction(void (*f)(const char *,void *), void *args)
 {
 	//TODO: finish..
 	func = f;

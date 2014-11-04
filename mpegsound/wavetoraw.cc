@@ -9,10 +9,10 @@
 #include "config.h"
 #endif
 
-#ifdef __FreeBSD__
 #include <stdlib.h>
-#else
-#include <malloc.h>
+
+#ifdef HAVE_MALLOC_H
+#  include <malloc.h>
 #endif
 
 #include "mpegsound.h"
@@ -20,8 +20,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include SOUNDCARD_HEADERFILE
 
 #ifdef __cplusplus
 }
@@ -89,8 +87,8 @@ bool Wavetoraw::initialize(void)
 
 	if (!testwave(tmpbuffer))
 		return false;
-	int ssize = (samplesize == 16 ? AFMT_S16_LE : AFMT_U8);
-	if (!(player->setsoundtype(stereo, ssize, speed)))
+	//int ssize = (samplesize == 16 ? AFMT_S16_LE : AFMT_U8);
+	if (!(player->setsoundtype(stereo, samplesize, speed)))
 		return false;
 
   if (!buffer)

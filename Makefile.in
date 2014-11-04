@@ -65,16 +65,16 @@ INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LDFLAGS = @LDFLAGS@
+LIBESD = @LIBESD@
 LIBMPEGSOUND = @LIBMPEGSOUND@
-LIBMYSQL = @LIBMYSQL@
 LIBNMIXER = @LIBNMIXER@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
+LIBSDL = @LIBSDL@
 LIRC_LIBS = @LIRC_LIBS@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
-MP3B_MODULES = @MP3B_MODULES@
 NAS_CFLAGS = @NAS_CFLAGS@
 NAS_LIBS = @NAS_LIBS@
 NCURSES_LIBS = @NCURSES_LIBS@
@@ -88,6 +88,9 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 RANLIB = @RANLIB@
+SDL11_CONFIG = @SDL11_CONFIG@
+SDL12_CONFIG = @SDL12_CONFIG@
+SDL_CONFIG = @SDL_CONFIG@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 SID_LIBS = @SID_LIBS@
@@ -149,8 +152,8 @@ RECURSIVE_TARGETS = info-recursive dvi-recursive pdf-recursive \
 	installdirs-recursive install-recursive uninstall-recursive \
 	check-recursive installcheck-recursive
 DIST_COMMON = README $(srcdir)/Makefile.in $(srcdir)/configure AUTHORS \
-	COPYING ChangeLog INSTALL Makefile.am NEWS TODO acconfig.h \
-	aclocal.m4 config.h.in configure.in depcomp install-sh missing \
+	COPYING ChangeLog INSTALL Makefile.am NEWS TODO aclocal.m4 \
+	config.h.in configure configure.ac depcomp install-sh missing \
 	mkinstalldirs
 DIST_SUBDIRS = $(SUBDIRS)
 all: config.h
@@ -160,7 +163,7 @@ all: config.h
 
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno
-$(srcdir)/Makefile.in:  Makefile.am  $(top_srcdir)/configure.in $(ACLOCAL_M4)
+$(srcdir)/Makefile.in:  Makefile.am  $(top_srcdir)/configure.ac $(ACLOCAL_M4)
 	cd $(top_srcdir) && \
 	  $(AUTOMAKE) --gnu  Makefile
 Makefile:  $(srcdir)/Makefile.in  $(top_builddir)/config.status
@@ -168,10 +171,10 @@ Makefile:  $(srcdir)/Makefile.in  $(top_builddir)/config.status
 
 $(top_builddir)/config.status: $(srcdir)/configure $(CONFIG_STATUS_DEPENDENCIES)
 	$(SHELL) ./config.status --recheck
-$(srcdir)/configure:  $(srcdir)/configure.in $(ACLOCAL_M4) $(CONFIGURE_DEPENDENCIES)
+$(srcdir)/configure:  $(srcdir)/configure.ac $(ACLOCAL_M4) $(CONFIGURE_DEPENDENCIES)
 	cd $(srcdir) && $(AUTOCONF)
 
-$(ACLOCAL_M4):  configure.in 
+$(ACLOCAL_M4):  configure.ac 
 	cd $(srcdir) && $(ACLOCAL) $(ACLOCAL_AMFLAGS)
 
 config.h: stamp-h1
@@ -184,7 +187,7 @@ stamp-h1: $(srcdir)/config.h.in $(top_builddir)/config.status
 	@rm -f stamp-h1
 	cd $(top_builddir) && $(SHELL) ./config.status config.h
 
-$(srcdir)/config.h.in:  $(top_srcdir)/configure.in $(ACLOCAL_M4) $(top_srcdir)/acconfig.h
+$(srcdir)/config.h.in:  $(top_srcdir)/configure.ac $(ACLOCAL_M4) 
 	cd $(top_srcdir) && $(AUTOHEADER)
 	touch $(srcdir)/config.h.in
 

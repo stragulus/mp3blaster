@@ -1,7 +1,10 @@
+#include "config.h"
+
 /*\
 |*| Network Audio System specific mixer routines
 \*/
 #ifdef HAVE_NASPLAYER
+#include <string.h>
 #include <nmixer.h>
 #include <audio/audiolib.h>
 #include <audio/audio.h>

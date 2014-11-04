@@ -22,7 +22,7 @@
 #include <string.h>
 #include "mp3blaster.h"
 #include "global.h"
-#include NCURSES
+#include NCURSES_HEADER
 
 #define WORDMATCH(x) !strcasecmp(string, (x))
 #define MP3BLASTER_RCFILE "~/.mp3blasterrc"
@@ -39,6 +39,7 @@ extern short set_sort_mode(const char*);
 extern void bindkey(command_t,int);
 extern short set_charset_table(const char *);
 extern short set_pan_size(int);
+extern short set_audio_driver(const char *);
 #ifdef PTHREADEDMPEG
 extern short set_threads(int);
 #endif
@@ -162,6 +163,7 @@ struct _confopts
 { "Key.Home", 2 },
 { "Key.End", 2 },
 { "PanSize", 0 },
+{ "AudioDriver", 15 },
 { NULL, 0 }, /* last entry's keyword MUST be NULL */
 };
 
@@ -533,6 +535,9 @@ cf_add_keyword(int keyword, const char **values, int nrvals)
 			error = BADVALUE;
 			return 0;
 		}
+		break;
+	case 104: //audio driver
+		if (!set_audio_driver(values[0])) { error = BADVALUE; return 0; }
 		break;
 	}
 
