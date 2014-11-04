@@ -88,6 +88,9 @@ static void play(char *filename)
 		else
 			didopen = player->openfile(filename, splay_devicename);
 
+		if (didopen)
+			player->initialize(NULL);
+
     if(!didopen)
     {
       error(player->geterrorcode());

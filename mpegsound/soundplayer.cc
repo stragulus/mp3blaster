@@ -38,3 +38,9 @@ int Soundplayer::getblocksize(void)
 {
   return 1024; // Default value
 }
+
+int Soundplayer::fix_samplesize(void *buffer, int size)
+{
+    buffer=buffer;
+    return size;
+}

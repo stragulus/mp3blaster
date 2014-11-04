@@ -25,11 +25,13 @@
 #include <sys/shm.h>
 #include <signal.h>
 #include <sys/time.h>
+#include <errno.h>
 
 pth_mutex_t queue_mutex;
 
 Mpegtoraw *decoder;
-#define THREAD_TIMES 1 
+#define THREAD_TIMES 10
+#define THREAD_LIMIT 512
 #endif
 
 #ifdef __cplusplus
@@ -44,8 +46,6 @@ extern "C" {
 
 #define MY_PI 3.14159265358979323846
 #undef DEBUG
-
-extern void debug(const char*);
 
 #ifdef NEWTHREAD
 void
@@ -163,6 +163,8 @@ Mpegtoraw::dequeue_first(void)
 	free(temp);
 }
 
+	
+
 void
 Mpegtoraw::dequeue_buf(short index)
 {
@@ -197,13 +199,27 @@ Mpegtoraw::dequeue_buf(short index)
 void Mpegtoraw::threadplay(void *bla)
 {
 	struct mpeg_buffer *bufje;
-	short int sound_buf[RAWDATASIZE*THREAD_TIMES];
-	int cnt;
-	int offset;
+	int offset=0;
+	int remaining=RAWDATASIZE*THREAD_TIMES*sizeof(short int);
 	bla=bla;
-	int tellertje=0;
+	int processed=0;
+	static	unsigned char sound_buf[RAWDATASIZE*THREAD_TIMES*sizeof(short int)];
+	/* This has to be a static array, otherwise it is allocated from the
+	 * stack. threadplay() is called within a pth|pthreads thread, so stack
+	 * is scarce.  Leads to very nasty (and very untrackable) segmentation
+	 * faults, happening at very odd places (since the stack has been
+	 * corrupted). Under normal conditions, the stack is automagically
+	 * expanded if so required, or a segmentation fault is generated when
+	 * stack and heap collide in case of an OS with a somewhat 'less 
+	 * modern' memory system. MacOS prior to OS X comes to mind. 
+	 *
+	 * Or a modern system when using threads....
+	 *
+	 * Another option would be to make this a global variable, but that's
+	 * even more yucky.
+	 */ 
+
 	bufje=NULL; /* So gcc will not complain. Pfft. */
-	if(tellertje);
 	/* Enable other threads to kill us */
 	/* But only if we feel like it! */
 	pth_cancel_state(PTH_CANCEL_ENABLE|PTH_CANCEL_DEFERRED, NULL);
@@ -217,42 +233,80 @@ void Mpegtoraw::threadplay(void *bla)
 		pth_mutex_acquire(&queue_mutex, FALSE, NULL); /* Enter critical zone */
 		if(!player_run || !queue)
 		{
+			pth_event_t ev;
 			pth_mutex_release(&queue_mutex); /* Leave critical zone */
-			USLEEP(100000);  //implicit pth_yield (I hope)
+			ev=pth_event(PTH_EVENT_TIME,pth_timeout(0,100000)); 
+			pth_wait(ev);
+			pth_event_free(ev,PTH_FREE_THIS);
 			/* Player is either paused, or has a buffer
 				 underrun.Pause 100 msec. */
 		}
 		else
 		{
-			for(cnt=0,offset=0;(queue);cnt++)
+			/* Fill buffer as much as possible */
+			while (queue && 
+			       (bufje=get_buffer(queue->index)) &&
+			       bufje->framesize <= remaining )
 			{
-				bufje=get_buffer(queue->index);
-				if(offset+bufje->framesize>THREAD_TIMES*(RAWDATASIZE*2))
-				{
-					break;
-				}
+		    int modifiedsize;
 				//amplify(bufje->data,bufje->framesize);
-				memcpy(&(sound_buf[offset]),bufje->data,bufje->framesize);
-				/* framesize is in bytes !*/
-				offset+=bufje->framesize/sizeof(short int);
-				/* But the sound buffer are short ints.. */
-
-				//framesize=bufje->framesize;
-				/* Prevent thread from blocking while in critical zone! */
+		    memcpy(sound_buf+offset,bufje->data,bufje->framesize);
+		    modifiedsize=player->fix_samplesize(
+		    sound_buf+offset, bufje->framesize);
+		    offset+=modifiedsize;
+		    remaining-=modifiedsize;
 				currentframe=bufje->framenumber;
 				dequeue_first();
 			}
 			pth_mutex_release(&queue_mutex); /* Leave critical zone */
 
-			/* So, the actual sound output is done -outside- the critical
-				 zone. This means that the data is copied once too much,
-				 but it prevents the decoding thread from blocking because
-				 the playing thread is blocked by the sound hardware while 
-				 in the critical zone.*/
-			player->putblock(sound_buf,offset*sizeof(short int));
-			pth_yield(NULL);
-			//USLEEP(100); /* Let's be nice */
-//			USLEEP(1);
+			/* So, the actual sound output is done -outside- the
+			 * critical zone. This means that the data is copied
+			 * once too much, but it prevents the decoding thread
+			 * from blocking because the playing thread is blocked
+			 * by the sound hardware while in the critical zone.*/
+			debug("Starting loop\n");
+			do
+			{
+		    processed=player->putblock_nt(sound_buf,offset);
+		    debug("mpegtoraw.cc:putblock_nt: Wrote %d bytes.\n",processed);
+		    /* move processed data out of the way */
+		    if (processed==-1)
+		    {
+					if(errno!=EAGAIN)
+						debug("putblock_nt: %s", strerror(errno));
+		    }
+				else
+		    {
+					int tomove= offset - processed;
+					memmove(sound_buf, sound_buf + processed,
+							tomove);
+					/* Patch offset and remaining */
+					offset=tomove;
+					remaining=THREAD_TIMES*RAWDATASIZE * sizeof(short int) - offset;
+#if 0
+					/* enabling this code on my system totally prevents -1 writes. */
+					if (processed > 1024)
+					{
+						debug("Breaking, wrote enough for now.\n");
+						break;
+					}
+#endif
+			  }
+			} while (remaining > 0 && processed >= THREAD_LIMIT);
+
+			pth_event_t ev;
+			/* I really hoped to use something like 
+
+			    ev=pth_event(PTH_EVENT_FD|PTH_UNTIL_FD_WRITEABLE,
+				player->audiohandle);
+
+			 * But this doesn't seem to work. The event occurs
+			 * immediately. Such a shame. */
+
+			ev=pth_event(PTH_EVENT_TIME,pth_timeout(0,5000)); 
+			pth_wait(ev);
+			pth_event_free(ev,PTH_FREE_THIS);
 		}
 	}
 	/* The playing thread never quits */
@@ -475,8 +529,9 @@ Mpegtoraw::Mpegtoraw(Soundinputstream *loader,Soundplayer *player)
 	__errorcode=SOUND_ERROR_OK;
 	frameoffsets=NULL;
 
-	forcetomonoflag=0;
-	downfrequency=0;
+	forcetomonoflag = 0;
+	downfrequency = 0;
+	scan_mp3 = 1;
 
 	this->loader=loader;
 	this->player=player;
@@ -587,8 +642,7 @@ void Mpegtoraw::setforcetomono(short flag)
 
 void Mpegtoraw::setdownfrequency(int value)
 {
-	downfrequency=0;
-	if(value)downfrequency=1;
+	downfrequency = (value ? 1 : 0);
 }
 
 short Mpegtoraw::getforcetomono(void)
@@ -843,11 +897,8 @@ bool Mpegtoraw::initialize(char *filename)
 		//Calculate length of [vbr] mp3.
 		if (1) 
 		{
-			char d[100];
-
 			// Get frame offsets, by calculating all offsets of the headers.
-			sprintf(d, "Totalframe(0): %d\n", totalframe);
-			debug(d);
+			debug("Totalframe(0): %d\n", totalframe);
 
 			setframe(totalframe - 1);
 
@@ -863,8 +914,7 @@ bool Mpegtoraw::initialize(char *filename)
 			}
 			totalframe = i;
 
-			sprintf(d, "Totalframe(1): %d\n", totalframe);
-			debug(d);
+			debug("Totalframe(1): %d\n", totalframe);
 
 			// Reset position
 			setframe(0);
@@ -1400,8 +1450,11 @@ bool Mpegtoraw::run(int frames)
 
 #ifdef NEWTHREAD
 	if (geterrorcode() != SOUND_ERROR_OK && queue)
+	{
+		/* Done decoding, but there's still music in the buffer */
+		USLEEP(10000);
 		seterrorcode(SOUND_ERROR_OK);
-
+	}
 	if (getfreebuffers() < 10) //buffer is quite full, let's wait a bit
 		USLEEP(10000);
 #endif

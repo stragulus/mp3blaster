@@ -15,6 +15,7 @@
 #include <unistd.h>
 
 #include "mpegsound.h"
+#include "mpegsound_locals.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -32,8 +33,6 @@
 #ifndef INADDR_NONE
 #define INADDR_NONE 0xffffffff
 #endif
-
-extern void debug(const char*);
 
 static const char *httpstr="http://";
 

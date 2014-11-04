@@ -8,6 +8,7 @@
 #ifndef _L__SOUND_LOCALS__
 #define _L__SOUND_LOCALS__
 
+extern void debug(const char*, ... );
 // Inline functions
 inline int Mpegtoraw::getbyte(void)
 {

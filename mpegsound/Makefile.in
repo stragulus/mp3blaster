@@ -210,6 +210,26 @@ distdir: $(DISTFILES)
 	    || cp -p $$d/$$file $(distdir)/$$file || :; \
 	  fi; \
 	done
+bitwindow.o: bitwindow.cc ../config.h mpegsound.h
+fileinput.o: fileinput.cc ../config.h mpegsound.h
+fileplayer.o: fileplayer.cc ../config.h mpegsound.h
+filter.o: filter.cc ../config.h mpegsound.h
+filter_2.o: filter_2.cc ../config.h mpegsound.h
+httpinput.o: httpinput.cc ../config.h mpegsound.h mpegsound_locals.h
+huffmantable.o: huffmantable.cc ../config.h mpegsound.h
+mpeglayer1.o: mpeglayer1.cc ../config.h mpegsound.h
+mpeglayer2.o: mpeglayer2.cc ../config.h mpegsound.h
+mpeglayer3.o: mpeglayer3.cc ../config.h mpegsound.h mpegsound_locals.h
+mpegtable.o: mpegtable.cc ../config.h mpegsound.h
+mpegtoraw.o: mpegtoraw.cc ../config.h mpegsound.h mpegsound_locals.h
+nasplayer.o: nasplayer.cc
+oggplayer.o: oggplayer.cc mpegsound.h ../config.h mpegsound_locals.h
+rawplayer.o: rawplayer.cc ../config.h mpegsound.h mpegsound_locals.h
+rawtofile.o: rawtofile.cc ../config.h mpegsound.h
+sidplayer.o: sidplayer.cc mpegsound.h ../config.h mpegsound_locals.h
+soundinputstream.o: soundinputstream.cc ../config.h mpegsound.h
+soundplayer.o: soundplayer.cc ../config.h mpegsound.h
+wavetoraw.o: wavetoraw.cc ../config.h mpegsound.h
 
 info-am:
 info: info-am

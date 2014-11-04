@@ -27,7 +27,6 @@ extern "C" {
 }
 #endif
 
-extern void debug(const char *);
 
 Wavetoraw::Wavetoraw(Soundinputstream *loader,Soundplayer *player)
 {

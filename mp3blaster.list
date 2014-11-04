@@ -1,0 +1,48 @@
+# mp3blaster list file
+# tested with epm 2.5 and mp3blaster 3.0p2
+
+# Directories...
+$prefix=/usr
+$bindir=${prefix}/bin
+$confdir=/etc
+$docdir=${prefix}/share/mp3blaster/
+$mandir=${prefix}/man/man1
+$srcdir=.
+
+# Product information
+%product MP3blaster
+%copyright GPL
+%vendor Bram Avontuur <brama@stack.nl>
+%license ${srcdir}/COPYING
+%readme ${srcdir}/README
+%description mp3blaster - An interactive text-console based mp3 player. 
+%version 3.0p8
+%packager Giuseppe "Cowo" Corbelli <cowo@lugbs.linux.it>
+
+# Manpage extensions...
+$MAN1EXT=1
+
+# Executables
+%system all
+f 0555 root sys ${bindir}/nmixer ${srcdir}/nmixer/nmixer
+f 0555 root sys ${bindir}/mp3blaster ${srcdir}/src/mp3blaster
+f 0555 root sys ${bindir}/mp3tag ${srcdir}/src/mp3tag
+# Doc
+f 0444 root sys ${docdir}/README $srcdir/README
+f 0444 root sys ${docdir}/COPYING $srcdir/COPYING
+f 0444 root sys ${docdir}/AUTHORS $srcdir/AUTHORS
+f 0444 root sys ${docdir}/BUGS $srcdir/BUGS
+f 0444 root sys ${docdir}/CREDITS $srcdir/CREDITS
+f 0444 root sys ${docdir}/INSTALL $srcdir/INSTALL
+f 0444 root sys ${docdir}/NEWS $srcdir/NEWS
+f 0444 root sys ${docdir}/TODO $srcdir/TODO
+f 0444 root sys ${docdir}/commands.txt $srcdir/doc/commands.txt
+f 0444 root sys ${docdir}/sample.mp3blasterrc $srcdir/sample.mp3blasterrc
+
+# Man pages
+f 0444 root sys ${mandir}/mp3blaster.$MAN1EXT $srcdir/mp3blaster.1
+f 0444 root sys ${mandir}/nmixer.$MAN1EXT $srcdir/nmixer.1
+
+#
+# End of "$Id: mp3blaster.list,v 1.1 2001/06/18 20:57:57 brama Exp $".
+#

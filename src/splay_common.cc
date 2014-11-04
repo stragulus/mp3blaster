@@ -14,12 +14,12 @@
 #include <time.h>
 
 #include <mpegsound.h>
-
+#include <stdarg.h>
 #include "splay.h"
 
 int  splay_verbose=0;
 char *splay_progname;
-char *splay_devicename=NULL;
+char *splay_devicename="/dev/dsp";
 
 char *splay_list[MAXLISTSIZE];
 int  splay_listsize=0;
@@ -192,7 +192,12 @@ void shufflelist(void)
   }
 }
 
-void debug(const char*txt)
+void 
+debug(const char *fmt, ... )
 {
-	fprintf(stderr, "%s", txt);
+	va_list ap;
+	va_start(ap, fmt);
+	vfprintf(stderr,fmt,ap);
+	va_end(ap);
 }
+

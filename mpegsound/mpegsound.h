@@ -34,8 +34,7 @@
  * This code is taken from linux' <sys/soundcard.h, OSS version 0x030802
  */
 #ifndef AFMT_S16_NE
-#if defined(_AIX) || defined(AIX) || defined(sparc) || defined(HPPA) || defined(PPC)
-/* Big endian machines */
+#ifdef WORDS_BIGENDIAN
 #  define _PATCHKEY(id) (0xfd00|id)
 #  define AFMT_S16_NE AFMT_S16_BE
 #else
@@ -337,10 +336,12 @@ public:
   virtual bool resetsoundtype(void);
 
   virtual bool putblock(void *buffer,int size)                  =0;
+  virtual int  putblock_nt(void *buffer, int size)		=0;
   virtual int  getblocksize(void);
 
   int geterrorcode(void) {return __errorcode;};
-
+  int audiohandle;  
+  virtual int fix_samplesize(void *buffer, int size);
 protected:
   bool seterrorcode(int errorno) {__errorcode=errorno; return false;};
 
@@ -359,9 +360,10 @@ public:
   void set8bitmode() { want8bit = 1; }
   bool setfiletype(enum soundtype);
   bool putblock(void *buffer,int size);
+  int putblock_nt(void *buffer,int size);
 private:
   Rawtofile(int filehandle);
-  int filehandle, init_putblock;
+  int init_putblock;
   int rawstereo,rawsamplesize,rawspeed,want8bit;
   soundtype filetype;
   WAVEHEADER hdr;
@@ -382,7 +384,7 @@ public:
   bool resetsoundtype(void);
 
   bool putblock(void *buffer,int size);
-
+  int  putblock_nt(void *buffer,int size);
   int  getblocksize(void);
 
   void setquota(int q){quota=q;};
@@ -390,12 +392,12 @@ public:
 
   static char *defaultdevice;
   static int  setvolume(int volume);
-
+  int  fix_samplesize(void *buffer, int size);
 private:
   Rawplayer(int audiohandle, int audiobuffersize);
   short int rawbuffer[RAWDATASIZE];
   int  rawbuffersize;
-  int  audiohandle,audiobuffersize;
+  int  audiobuffersize;
   int  rawstereo,rawsamplesize,rawspeed,want8bit;
   short forcetomono,forceto8;
   int  quota;
@@ -691,6 +693,9 @@ private:
   /*****************************/
   /* Loading MPEG-Audio stream */
   /*****************************/
+public:
+	//set_time_scan(short scan) { scan_mp3 = (scan ? 1 : 0); }
+
 private:
   Soundinputstream *loader;   // Interface
   union
@@ -700,6 +705,7 @@ private:
   }u;
   char buffer[4096];
   int  bitindex;
+	short scan_mp3; //default = 1 => scan entire mp3 to calculate length in sec.
   bool fillbuffer(int size){bitindex=0;return loader->_readbuffer(buffer,size);};
   void sync(void)  {bitindex=(bitindex+7)&0xFFFFFFF8;};
   bool issync(void){return (bitindex&7);};
@@ -875,11 +881,20 @@ protected:
   bool seterrorcode(int errorno){__errorcode=errorno;return false;};
   Soundplayer *player;
 	struct song_info info;
+	char *filename;
 
 private:
   int __errorcode;
 };
 
+#if 0
+struct init_opts
+{
+	char option[30];
+	void *value;
+	struct init_opts_t *next;
+};
+#endif
 
 // Class for playing wave file
 class Wavefileplayer : public Fileplayer
@@ -995,6 +1010,7 @@ private:
 	short signeddata;
 	int   channels;
 	long  srate;
+	short resetsound;
 
 protected:
 	OggVorbis_File *of;

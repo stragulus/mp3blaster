@@ -19,6 +19,7 @@
 #include <sys/ioctl.h>
 
 #include "mpegsound.h"
+#include "mpegsound_locals.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -40,7 +41,6 @@ extern "C" {
 
 /* IOTRUBBEL : Massive debugging of my implementation of blocking writes..*/
 #undef IOTRUBBEL
-extern void debug(const char *);
 
 /* AUDIO_NONBLOCKING : If defined, non-blocking audio playback is used. */
 
@@ -90,24 +90,14 @@ Rawplayer::~Rawplayer()
 
 Rawplayer *Rawplayer::opendevice(char *filename)
 {
-	int flag;
 	int audiohandle, audiobuffersize;
 
 	if (!filename) filename = defaultdevice;
-
+#if defined(AUDIO_NONBLOCKING) || defined(NEWTHREAD)
 	if((audiohandle=open(filename,O_WRONLY|O_NDELAY,0))==-1)
-		return NULL;
-
-	if((flag=fcntl(audiohandle,F_GETFL,0))<0)
-		return NULL;
-	flag&=~O_NDELAY;
-
-#ifdef AUDIO_NONBLOCKING
-	flag|=O_NDELAY; //don't block!
-	debug("Using non-blocking audio writes. This might hurt the sound.\n");
+#else
+	if((audiohandle=open(filename,O_WRONLY,0))==-1)
 #endif
-
-	if(fcntl(audiohandle,F_SETFL,flag)<0)
 		return NULL;
 
 #ifdef AIOSSIZE
@@ -123,9 +113,14 @@ Rawplayer *Rawplayer::opendevice(char *filename)
 		return NULL;
 
 	//maybe this will prevent sound hickups on some cards..
+#if 0
 	int fragsize = (16<<16) | 10;
-	ioctl(audiohandle, SNDCTL_DSP_SETFRAGMENT, &fragsize);
 
+	/* XXX */
+
+	fragsize=2048;
+	ioctl(audiohandle, SNDCTL_DSP_SETFRAGMENT, &fragsize);
+#endif
 	return new Rawplayer(audiohandle, audiobuffersize);
 }
 
@@ -206,7 +201,54 @@ bool Rawplayer::resetsoundtype(void)
 
 	return true;
 }
+int Rawplayer::fix_samplesize(void *buffer, int size)
+{
+	int modifiedsize=size;
 
+	if(forcetomono || forceto8)
+	{
+		register unsigned char modify=0;
+		register unsigned char *source,*dest;
+		int increment=0,c;
+
+		source=dest=(unsigned char *)buffer;
+
+		if(forcetomono)increment++;
+		if(forceto8)
+		{
+			increment++;
+#ifndef WORDS_BIGENDIAN
+			source++;
+#endif
+			modify=128;
+		}
+
+		c=modifiedsize=size>>increment;
+		increment<<=1;
+
+		while(c--)
+		{
+			*(dest++)=(*source)+modify;
+			source+=increment;
+		}
+	}
+    return modifiedsize;
+}
+
+int Rawplayer::putblock_nt(void *buffer, int size)
+{
+	/* I'm not sure if pth_write is called for here, since we're doing non-blocked
+	   I/O anyway */
+
+#ifdef LIBPTH
+	return pth_write(audiohandle, buffer, size);
+#else
+
+	return write(audiohandle, buffer, size);
+ 
+#endif
+
+}
 bool Rawplayer::putblock(void *buffer,int size)
 {
 	int modifiedsize=size;
@@ -270,9 +312,7 @@ bool Rawplayer::putblock(void *buffer,int size)
 	while ((selectval = select(audiohandle + 1, NULL, &writefds, NULL, &tv)) !=
 		1)
 	{
-		char flupje[255];
-		sprintf(flupje, "Selectval is: %d\n", selectval);
-		debug(flupje);
+		debug("Selectval is: %d\n", selectval);
 	}
 #endif
 

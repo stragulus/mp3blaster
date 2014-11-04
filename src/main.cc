@@ -21,7 +21,12 @@
  * May 21 2000: removed all calls to attr_get() since not all [n]curses 
  *            : versions use the same paramaters (sigh)
  * Dec 31 2000: Applied a patch from Rob Funk to fix randomness bug
+ * Newer dates: changes made are stored in CVS.
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#include "history.h"
 #include "mp3blaster.h"
 #include <string.h>
 #include <stdio.h>
@@ -38,8 +43,6 @@
 #include <pthread.h>
 #elif defined (LIBPTH) && defined(HAVE_PTH_H)
 #include <pth.h>
-#else
-#error "No pthreads/pth, no mp3blaster."
 #endif
 #include NCURSES
 #ifdef HAVE_GETOPT_H
@@ -289,6 +292,8 @@ char
 	*fw_searchstring,
 	**played_songs = NULL,
 	**environment = NULL;
+History
+	*history = NULL;
 
 int
 main(int argc, char *argv[], char *envp[])
@@ -333,6 +338,7 @@ main(int argc, char *argv[], char *envp[])
 	helpwin = NULL;
 	bighelpwin = NULL;
 	mp3_groupwin = NULL;
+	history = new History();
 	long_index = 0;
 	played_songs = (char**)malloc(sizeof(char*));
 	played_songs[0] = NULL;
@@ -1571,21 +1577,17 @@ parse_playlist_token(const char *str)
 	debug("Scanning done\n");
 	{
 		short i;
-		char dummy[255];
 
-		sprintf(dummy, "tag[tag]: \"%s\"\n", restag.tag);
-		debug(dummy);
+		debug("tag[tag]: \"%s\"\n", restag.tag);
 		for (i = 0; i < 5; i++)
 		{
 			if (restag.keywords[i][0])
 			{
-				sprintf(dummy, "tag.keywords[%d] = \"%s\"\n", i, restag.keywords[i]);
-				debug(dummy);
+				debug("tag.keywords[%d] = \"%s\"\n", i, restag.keywords[i]);
 			}
 			if (restag.values[i][0])
 			{
-				sprintf(dummy, "tag.values[%d] = \"%s\"\n", i, restag.values[i]);
-				debug(dummy);
+				debug("tag.values[%d] = \"%s\"\n", i, restag.values[i]);
 			}
 		}
 	}
@@ -1689,7 +1691,7 @@ read_playlist(const char *filename)
 					strncat(gname, group_name, 48);
 					strcat(gname, "]");
 
-					debug("GroupName: " ); debug(gname); debug("\n");
+					debug("GroupName: %s\n",gname);
 					mp3Win *new_group = newgroup();
 					if (!new_group)
 						continue;
@@ -2140,6 +2142,19 @@ play_list(void *arg)
 				stop_list();
 			 */
 		break;
+		case AC_PREV: //previous song
+			if (!history->atStart())
+			{
+				/* skip 2 places in history; once to skip current song, once more to
+				 * jump to song before current one
+				 */
+				history->previous();
+				history->previous(); 
+				debug ("Not at end of history, selecting older song.\n");
+				stop_song(); //status => AC_NONE 
+			}
+			//mw_settxt("Not implemented (yet).");
+			break;
 		case AC_NONE:
 		{
 			short allow_repeat = 0;
@@ -2148,7 +2163,9 @@ play_list(void *arg)
 			{
 				bool mystatus = (playopts.player)->run(globalopts.fpl);
 				if (!mystatus && (playopts.player)->ready())
+				{
 					stop_song(); //status => AC_NONE
+				}
 				else
 					update_play_display();
 
@@ -2299,6 +2316,15 @@ set_one_mp3(const char *mp3)
 }
 
 /* POST: Delete[] returned char*-pointer when you don't use it anymore!! */
+/* Function   : get_one_mp3
+ * Description: Returns a char*-pointer with a filename of a single MP3,
+ *            : if the user chose to play a single mp3 outside the usual
+ *            : playlist (which happens when you hit enter over an mp3)
+ * Parameters : None.
+ * Returns    : A C++ allocated char*-pointer (delete[] after use), or NULL
+ *            : if no single mp3 was requested.
+ * SideEffects: None.
+ */
 char *
 get_one_mp3()
 {
@@ -2427,12 +2453,50 @@ start_song(short was_playing)
 	const char *sp = NULL;
 
 	debug("start_song()\n");
+	/* If there's no standalone mp3 to be played, and a previous standalone mp3
+	 * has just been played while there was no playlist playing, return without
+	 * choosing a new song.
+	 */
 	if (!(song = get_one_mp3()) && playopts.playing_one_mp3 == 2)
+	{
 		return (playopts.playing_one_mp3 = 0);
+	}
 
 	if (!song)
 	{
-		song = determine_song();
+		/* No request to play a standalone mp3 (A standalone mp3 is one that is
+		 * being started by hitting enter over a song in file- or playlist
+		 * manager; it can interrupt playlists)
+		 */
+
+		/* If we're in the playlist history, advance one position in the history */
+		/*
+		if (!history->atEnd())
+		{
+			debug("Advancing one entry in history\n");
+			history->next();
+		}
+		*/
+
+		/* If we're still in the playlist history, play a song from it. */
+		if (!history->atEnd())
+		{
+			debug("Going to play song from history\n");
+			const char *tmpsong = history->element();
+			if (tmpsong)
+			{
+				song = new char[strlen(tmpsong) + 1];
+				strcpy(song, tmpsong);
+				debug("Select song from history (%s)\n", song);
+			}
+			history->next();
+		}
+		else //regular playlist
+		{
+			if ((song = determine_song()))
+				history->add(song); //add to history.
+		}
+
 		if (!song)
 			debug("Could not determine song in start_song()\n");
 		playopts.playing_one_mp3 = 0;
@@ -2443,6 +2507,9 @@ start_song(short was_playing)
 	{
 		playopts.playing_one_mp3 = (was_playing ? 1 : 2);
 		one_mp3 = 1;
+		//let's not add standalone mp3's (those not in playlist) to the history.
+		//it would be too confusing.
+		//history->add(song);
 	}
 
 	set_one_mp3((const char*)NULL);
@@ -2459,12 +2526,43 @@ start_song(short was_playing)
 	else if (is_ogg(song))
 		playopts.player = new Oggplayer();
 #endif
-	else if (is_audiofile(song))
+	else if (is_audiofile(song)) //mp3 assumed
 	{
+#if 0
+		struct init_opts *opts = new init_opts, *orgopts = opts;
+		opts->value = opt->next = NULL;
+
+#ifdef PTHREADEDMPEG
+		int draadjes = globalopts.threads;
+		if (draadjes)
+		{
+			strcpy(opts->option, "threads");
+			opts->value=(void*)&draadjes;
+			opts->next = new init_opts;
+			opts = opts->next;
+			opts->value = opts->next = NULL;
+		}
+#endif
+
+		if (globalopts.dont_scan_mp3s)
+		{
+			strcpy(opts->option, "noscan");
+			opts->value=(void*)&(globalopts.dont_scan_mp3s);
+			opt->next = new init_opts;
+			opts = opts->next;
+			opts->value = opts->next = NULL;
+		}
+
+		if (opts != orgopts) //there are init_args
+			init_args = (void*)orgopts;
+		else
+			delete orgopts;
+#else
 #ifdef PTHREADEDMPEG
 		int draadjes = globalopts.threads;
 		if (draadjes)
 			init_args = (void*)&draadjes;
+#endif
 #endif
 		playopts.player = new Mpegfileplayer();
 	}
@@ -2848,8 +2946,7 @@ handle_input(short no_delay)
 	//wake up playlist
 		case CMD_PLAY_NEXT: set_action(AC_NEXT); break;
 		//case CMD_PLAY_PREVIOUS: set_action(AC_PREV); break;
-		case CMD_PLAY_PREVIOUS: 
-			mw_settxt("Not implemented (yet)."); break;
+		case CMD_PLAY_PREVIOUS: set_action(AC_PREV); break;
 		case CMD_PLAY_FORWARD: set_action(AC_FORWARD); break;
 		case CMD_PLAY_REWIND: set_action(AC_REWIND); break;
 		case CMD_PLAY_STOP: set_action(AC_STOP); break;
@@ -4061,6 +4158,13 @@ reset_playlist(int full)
 		mp3_groupwin = NULL;
 		mp3_rootwin->resetSongs();
 		mp3_rootwin->resetGroups();
+	}
+
+	//reset history as well
+	if (history)
+	{
+		delete history;
+		history = new History();
 	}
 }
 

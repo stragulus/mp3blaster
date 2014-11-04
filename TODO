@@ -1,16 +1,18 @@
 IMPORTANT
+-finish initargs passing mechanism
+-22Khz vorbis files play too fast?
 -disable default id3-scan in filemanager
--give audio-feeding thread max priority to prevent sound-hickups on sblive
- boxes
 -add patch from Dmity Sergienko to change charsets (it's in my mailbox.)
 -fix time display for songs > 99:99 mins to display hh:mm instead.
--working 'previous track'
 -implement ID3v2 tag parsing
 -'next group' keybinding
 -save shuffle mode for main group, and playback mode for entire group in
  playlist
 
 SMALL & SIMPLE
+-layout bug after switching from 'mono' to 'jointstereo' etc
+-make '<' and '>' mixer keys remappable
+-configfile keyword for items in mixer (shortens cycle)
 -file search with '/' optionally case-insensitive
 -mp3 search in normal mode with '/' too
 -jump to dir-entry one came from after going to '..'
@@ -34,6 +36,7 @@ INTERESTING
  member, but just a const char *..)
 -Total playlist time displayed somewhere
 -optionally replace all '\''s with '/''s in playlist (to read DOS playlists)
+-lower screenwidth/height requirement
 
 WHEN I'M BORED
 -move all selected files in filemanager to current dir (m) (!)

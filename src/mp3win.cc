@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 
-extern void debug(const char*);
+extern void debug(const char*,...);
 
 mp3Win::mp3Win(int lines, int ncols, int begin_y, int begin_x,
                char **arr, int narr, short color, short x_offset) :

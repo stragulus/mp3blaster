@@ -139,7 +139,7 @@ inline int MAX(int x, int y)
 
 /* interesting prototypes */
 #ifdef DEBUG
-void debug(const char*);
+void debug(const char*,...);
 #endif
 
 //void popupWindow(const char*, int, int, int);

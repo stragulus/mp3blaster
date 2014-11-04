@@ -9,8 +9,6 @@
 #include "config.h"
 #endif
 
-extern void debug(const char*);
-
 #include <string.h>
 #include <unistd.h>
 
@@ -21,6 +19,7 @@ Fileplayer::Fileplayer()
 {
   __errorcode=SOUND_ERROR_OK;
   player=NULL;
+	filename = NULL;
 	info.songname[0] = '\0';
 	info.artist[0] = '\0';
 	info.comment[0] = '\0';
@@ -42,7 +41,6 @@ Fileplayer::~Fileplayer()
 
 bool Fileplayer::opendevice(char *device, soundtype write2file)
 {
-	//char x[80]; sprintf(x, "device=%s\n", (device?device:"NULL"));debug(x);
 	if (player) delete player;
 	if (!write2file) {
 #ifdef HAVE_NASPLAYER
@@ -64,6 +62,7 @@ Wavefileplayer::Wavefileplayer()
 {
   loader=NULL;
   server=NULL;
+	filename = NULL;
 }
 
 Wavefileplayer::~Wavefileplayer()
@@ -90,9 +89,6 @@ bool Wavefileplayer::openfile(char *filename,char *device, soundtype write2file)
   	delete server;
   if((server=new Wavetoraw(loader,player))==NULL)
     return seterrorcode(SOUND_ERROR_MEMORYNOTENOUGH);
-  if (!server->initialize())
-		return seterrorcode(server->geterrorcode());
-	
 	return true;
 }
 
@@ -148,6 +144,9 @@ bool Wavefileplayer::initialize(void *init_args)
 {
 	if (init_args); //prevent warning
 
+  if (!server->initialize())
+		return seterrorcode(server->geterrorcode());
+	
 	if (!server->run())
 	{
 		seterrorcode(server->geterrorcode());
@@ -181,6 +180,7 @@ Mpegfileplayer::Mpegfileplayer()
   loader=NULL;
   server=NULL;
   player=NULL;
+	filename = NULL;
 	use_threads = 0;
 };
 
@@ -223,11 +223,9 @@ bool Mpegfileplayer::openfile(char *filename,char *device, soundtype write2file)
     return seterrorcode(SOUND_ERROR_MEMORYNOTENOUGH);
 	}
 
-// Initialize server
-  if (!server->initialize(filename)) {
-	return seterrorcode(server->geterrorcode());
-  }
-
+	if (this->filename)
+		delete[] this->filename;
+	this->filename = filename; //now needed for server->initialize()
   return true;
 }
 
@@ -261,9 +259,34 @@ bool Mpegfileplayer::playing()
 bool Mpegfileplayer::initialize(void *init_args)
 {
 	int threads = 0;
+#if 0
+	//struct init_opts *opts = NULL;
+	short noscan = 0;
 
 	if (init_args)
+		opts = (struct init_opts *)init_args;
+
+	//scan init_args
+	while (opts)
+	{
+		const char *on = opts->option;
+
+		if (!strcmp(on, "threads"))
+			threads = *((int*)(opts->value)); 
+		else if (!strcmp(on, "noscan"))
+			server->set_time_scan(0);
+
+		opts = opts->next;
+	}
+#else
+	if (init_args)
 		threads = *((int*)init_args);
+#endif
+
+// Initialize server
+  if (!server->initialize(filename)) {
+	return seterrorcode(server->geterrorcode());
+  }
 
 #ifndef NEWTHREAD
 #ifdef PTHREADEDMPEG

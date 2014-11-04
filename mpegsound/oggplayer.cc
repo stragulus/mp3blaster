@@ -2,6 +2,7 @@
  * For more information about OggVorbis, check http://www.xiph.org/ogg/vorbis/
  */
 #include <mpegsound.h>
+#include "mpegsound_locals.h"
 
 #ifdef INCLUDE_OGG
 
@@ -13,8 +14,6 @@
 #include <stdio.h>
 #include <string.h>
 #include SOUNDCARD_HEADERFILE
-
-extern void debug(const char *);
 
 Oggplayer::Oggplayer()
 {
@@ -28,6 +27,7 @@ Oggplayer::Oggplayer()
 	signeddata = 1;
 	mono = 0;
 	downfreq = 0;
+	resetsound = 1;
 }
 
 Oggplayer::~Oggplayer()
@@ -51,6 +51,7 @@ bool Oggplayer::openfile(char *filename, char *device, soundtype write2file)
 
 	of = new OggVorbis_File;
 
+	//initialize player object that writes to sound device/file
 	if (!opendevice(device, write2file))
 		return seterrorcode(SOUND_ERROR_DEVOPENFAIL);
 	
@@ -74,10 +75,9 @@ bool Oggplayer::openfile(char *filename, char *device, soundtype write2file)
 	}
 
 	vorbis_info *vi = ov_info(of, -1);
-	player->setsoundtype(vi->channels, (wordsize == 2 ? AFMT_S16_NE : AFMT_S8),
-		vi->rate);
 	channels = vi->channels;
 	srate = vi->rate;
+	resetsound = 1;
 	info.bitrate = (int)vi->bitrate_nominal;
 	if (info.bitrate > 1000)
 		info.bitrate /= 1000;
@@ -113,11 +113,7 @@ bool Oggplayer::openfile(char *filename, char *device, soundtype write2file)
 			}
 			else
 			{
-				debug("OggVorbis Unkown Fieldname: ");
-				debug(hdr);
-				debug(" with value: ");
-				debug(value);
-				debug("\n");
+				debug("OggVorbis Unkown Fieldname '%s' with value '%s'\n", hdr, value);
 			}
 		}
 		++ptr;
@@ -147,6 +143,7 @@ void Oggplayer::set8bitmode()
 void Oggplayer::setdownfrequency(int value)
 {
 	downfreq = (value ? 1 : 0);
+	//TODO: This doesn't do anything yet.
 }
 
 bool Oggplayer::playing()
@@ -169,18 +166,47 @@ bool Oggplayer::run(int sec)
 	short changed = 0;
 
 	if (channels != vi->channels)
-		channels = vi->channels, changed++;
+		channels = vi->channels, resetsound++;
 	if (srate != vi->rate)
-		srate = vi->rate, changed++;
+		srate = vi->rate, resetsound++;
 		
-	if (changed)
+	if (resetsound)
 	{
 		debug("OggVorbis channels/samplerate changed.\n");
 		player->setsoundtype(vi->channels, (wordsize == 2 ? AFMT_S16_NE : AFMT_S8),
-			vi->rate);
+			vi->rate >> downfreq);
+		char bla[100];
+		sprintf(bla, "channels/wordsize/rate=%d/%d/%d\n",vi->channels,wordsize,
+			vi->rate >> downfreq);
+		debug(bla);
+		resetsound = 0;
 	}
 
-	if (!player->putblock(soundbuf, (int)bytes_read))
+	//If downsampling, we only need every other frame. We do this by
+	//removing every other frame.
+	//TODO: optimize!
+	if (downfreq)
+	{
+		char *src, *dst, ssize = 1;
+		int c, i;
+
+		src=dst=(char*)soundbuf;
+		ssize *= vi->channels;
+		ssize *= wordsize;
+
+		//ssize is #bytes for each sample.
+		c = bytes_read / (ssize<<1); //nr. of samples to chop == half of total#
+		while (c--)
+		{
+			i = ssize;
+			while (--i > -1) //copy ssize bytes of each sample.
+				*(dst + i) = *(src + i);
+			dst += ssize;
+			src += (ssize<<1); //skip 50% of samples.
+		}
+	}
+
+	if (!player->putblock(soundbuf, (unsigned int)(bytes_read>>downfreq)))
 		return seterrorcode(SOUND_ERROR_UNKNOWN);
 
 	return true;

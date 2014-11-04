@@ -77,7 +77,7 @@ VERSION = @VERSION@
 
 bin_PROGRAMS = mp3blaster mp3tag splay
 #bin_PROGRAMS		= mp3blaster mp3tag
-mp3blaster_SOURCES = fileman.cc 			  main.cc 			  scrollwin.cc 			  getopt.c 			  getopt1.c 			  fileman.h 			  genretab.h 			  getopt.h 				id3parse.cc 			  id3parse.h 			  mp3blaster.h 			  global.cc 			  global.h 			  config.cc 			  scrollwin.h 			  winitem.cc 			  winitem.h 			  mp3win.cc 			  mp3win.h 			  mp3item.cc 			  mp3item.h 				keybindings.h 			  @MP3B_MODULES@
+mp3blaster_SOURCES = fileman.cc 			  main.cc 			  scrollwin.cc 			  getopt.c 			  getopt1.c 			  fileman.h 			  genretab.h 			  getopt.h 				id3parse.cc 			  id3parse.h 			  mp3blaster.h 			  global.cc 			  global.h 			  config.cc 			  scrollwin.h 			  winitem.cc 			  winitem.h 			  mp3win.cc 			  mp3win.h 			  mp3item.cc 			  mp3item.h 				keybindings.h 				history.cc 				history.h
 
 splay_SOURCES = splay.cc splay.h splay_common.cc
 splay_DEPENDENCIES = ../mpegsound/libmpegsound.a
@@ -105,7 +105,7 @@ X_LIBS = @X_LIBS@
 X_EXTRA_LIBS = @X_EXTRA_LIBS@
 X_PRE_LIBS = @X_PRE_LIBS@
 mp3blaster_OBJECTS =  fileman.o main.o scrollwin.o getopt.o getopt1.o \
-id3parse.o global.o config.o winitem.o mp3win.o mp3item.o
+id3parse.o global.o config.o winitem.o mp3win.o mp3item.o history.o
 mp3blaster_LDFLAGS = 
 mp3tag_OBJECTS =  id3parse.o mp3tag.o
 mp3tag_LDFLAGS = 
@@ -241,6 +241,29 @@ distdir: $(DISTFILES)
 	    || cp -p $$d/$$file $(distdir)/$$file || :; \
 	  fi; \
 	done
+config.o: config.cc mp3blaster.h ../config.h global.h
+fileman.o: fileman.cc ../config.h mp3blaster.h getopt.h fileman.h \
+	scrollwin.h winitem.h global.h
+getopt.o: getopt.c ../config.h
+getopt1.o: getopt1.c ../config.h getopt.h
+global.o: global.cc getopt.h mp3blaster.h ../config.h id3parse.h
+history.o: history.cc ../config.h history.h
+id3parse.o: id3parse.cc id3parse.h genretab.h
+main.o: main.cc ../config.h history.h mp3blaster.h getopt.h global.h \
+	scrollwin.h winitem.h mp3win.h fileman.h \
+	../mpegsound/mpegsound.h ../nmixer/nmixer.h keybindings.h
+mp3item.o: mp3item.cc mp3item.h winitem.h mp3blaster.h ../config.h \
+	mp3win.h scrollwin.h
+mp3tag.o: mp3tag.cc mp3blaster.h ../config.h getopt.h \
+	../mpegsound/mpegsound.h id3parse.h
+mp3win.o: mp3win.cc mp3win.h scrollwin.h mp3blaster.h ../config.h \
+	winitem.h mp3item.h
+scrollwin.o: scrollwin.cc mp3blaster.h ../config.h global.h scrollwin.h \
+	winitem.h
+splay.o: splay.cc ../config.h getopt.h ../mpegsound/mpegsound.h splay.h
+splay_common.o: splay_common.cc ../config.h ../mpegsound/mpegsound.h \
+	splay.h
+winitem.o: winitem.cc mp3blaster.h ../config.h scrollwin.h winitem.h
 
 info-am:
 info: info-am
@@ -312,6 +335,7 @@ all-redirect all-am all installdirs mostlyclean-generic \
 distclean-generic clean-generic maintainer-clean-generic clean \
 mostlyclean distclean maintainer-clean
 
+			  @MP3B_MODULES@
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

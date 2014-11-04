@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(src/main.cc)
-AM_INIT_AUTOMAKE(mp3blaster, 3.0p8)
+AM_INIT_AUTOMAKE(mp3blaster, 3.0)
 
 AM_CONFIG_HEADER(config.h)
 
@@ -13,7 +13,7 @@ AC_PROG_RANLIB
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
-dnl AC_C_BIGENDIAN
+AC_C_BIGENDIAN
 
 dnl Checks for library functions.
 AC_PROG_GCC_TRADITIONAL
@@ -59,16 +59,16 @@ AC_ARG_WITH(pthreads,
     else INCLUDEPTHREAD=0; fi ],
   [ INCLUDEPTHREAD=1 ])
 dnl silently auto-disable pthreads if pth is chosen.
+HAVE_PTH="no"
 AC_ARG_WITH(pth,
   [  --with-pth              Experimental support for pth lib [default=no]],
-  [ if test "$withval" = "yes" ; then HAVE_PTH="yes" ; INCLUDEPTHREAD=0
-    else HAVE_PTH="no" ; fi ],
-  [ HAVE_PTH="no" ])
+  [ if test "$withval" = "yes" ; then HAVE_PTH="yes" ; INCLUDEPTHREAD=0 ; fi ])
+
+HAVE_OGG="yes"
 AC_ARG_WITH(oggvorbis,
   [  --with-oggvorbis        Beta support for ogg vorbis format [default=yes]],
-  [ if test "$withval" = "yes" ; then HAVE_OGG="yes" ; 
-    else HAVE_OGG="no"; fi ],
-  [ HAVE_OGG="yes" ])
+  [ if test "$withval" = "no" ; then HAVE_OGG="no" ; fi ])
+
 AC_ARG_WITH(mysql,
   [  --with-mysql            Mp3tag with alpha MySQL support [default=no]],
   [ if test "$withval" = "yes" ; then HAVE_MYSQL="yes"
@@ -93,6 +93,18 @@ AC_ARG_ENABLE(static,
 AC_ARG_ENABLE(newthreads,
   [  --enable-newthreads     New (very experimental) buffering [default=no]],
   [ NEWTHREAD=1 ])
+
+dnl Does the user want to use the 'newthreads' buffering system?
+dnl Perform this check *before* any pth/pthreads check!
+if test "$NEWTHREAD" = "1" ; then
+  echo "***********"
+  echo "Enabling experimental 'newthreads' buffered playback support."
+	echo "This auto-enables pth (instead of pthreads)."
+  AC_DEFINE(NEWTHREAD)
+	HAVE_PTH="yes"
+	INCLUDEPTHREAD=0
+fi
+
 
 dnl Checks for libraries.
 AC_CHECK_LIB(m,main,,AC_MSG_ERROR("No libm or no cos"))
@@ -202,12 +214,6 @@ EOF
 #endif /* _MP3BLASTER_MODULES_ */
 EOF
 ])
-
-if ! test -z "$NEWTHREAD" ; then
-  echo "***********"
-  echo "Enabling experimental 'newthreads' buffered playback support."
-  AC_DEFINE(NEWTHREAD)
-fi
 
 dnl Check SID support
 HAVE_SID="no"

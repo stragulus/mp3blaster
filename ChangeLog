@@ -1,3 +1,11 @@
+V3.0 (final) 2001/09/19
+=======================
+-implemented 'previous track', and therefore switched to the first 3.0
+ stable version since albeit all functions from 2.* now work.
+-"--enable-newthreads" configure option auto-enables pth instead of pthreads
+-more patches from Martijn van Buul for better 'newthreads' playback - please
+ test! 'newthreads' is still beta.
+
 V3.0pre8 2001/06/17
 ===================
 -OggVorbis support! 99% of the player's functionality works with this format.

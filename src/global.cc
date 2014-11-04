@@ -33,9 +33,9 @@
 #include <sys/types.h>
 #include "mp3blaster.h"
 #include "id3parse.h"
-
+#include <stdarg.h>
 extern _globalopts globalopts;
-void debug(const char*);
+void debug(const char *fmt, ...);
 
 /* get homedir of user 'username' (username == NULL => user running this prog)
  * it returns a malloc'd string which you should free(), or NULL if user
@@ -169,8 +169,10 @@ expand_path(const char *org_path)
 }
 
 void 
-debug(const char *txt)
+debug(const char *fmt, ... )
 {
+	va_list ap;
+	char buf[1024];
 	static int debug_init = 1;
 	static FILE *debug_info = NULL;
 
@@ -189,9 +191,12 @@ debug(const char *txt)
 			return;
 		//debug("Debugging messages enabled. Hang on to yer helmet!\n");
 	}
+	va_start(ap, fmt);
+	vsnprintf(buf,1024,fmt,ap);
+	va_end(ap);
 	if (debug_info)
 	{
-		fwrite(txt, sizeof(char), strlen(txt), debug_info);
+		fwrite(buf, sizeof(char), strlen(buf), debug_info);
 		fflush(debug_info);
 	}
 }

@@ -3,6 +3,7 @@
 \*/
 
 #include <mpegsound.h>
+#include "mpegsound_locals.h"
 
 #ifdef HAVE_SIDPLAYER
 #ifdef __cplusplus

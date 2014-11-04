@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <mpegsound.h>
+#include <stdarg.h>
 #ifdef WANT_MYSQL
 #include MYSQL_H
 #endif
@@ -58,7 +59,7 @@ struct _mp3info
 
 void addfiletolist(const char*);
 int parse_mp3(const char*);
-void debug(const char *);
+void debug(const char *,...);
 
 void
 usage(const char *bla="mp3tag2")
@@ -512,8 +513,15 @@ add_mysql_record(const char *flnam, const struct id3header *id3)
 #endif
 
 //needed for libmpegsound; not pretty.
-void debug(const char*msg) { if(msg); }
 
+void 
+debug(const char *fmt, ... )
+{
+	va_list ap;
+	va_start(ap,fmt);
+	va_end(ap);
+	if(fmt);
+}
 void
 addfiletolist(const char *fn)
 {

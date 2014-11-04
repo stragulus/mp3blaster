@@ -15,6 +15,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
+#include <config.h>
+
+#ifdef LIBPTH
+#  include <pth.h>
+#endif
 #include "mp3blaster.h"
 #include <string.h>
 #include <stdlib.h>
@@ -199,6 +204,9 @@ fileManager::readDir()
 	
 	closedir(dir);
 	
+#ifdef LIBPTH
+	pth_yield(NULL);
+#endif
 	/* sort char **entries */
 	if (diritems > 1)
 	{
@@ -215,6 +223,10 @@ fileManager::readDir()
 	{
 		DIR
 			*dir2;
+
+#ifdef LIBPTH
+		pth_yield(NULL);
+#endif
 
 		if ( (dir2 = opendir(entries[i])) ) /* path is a dir */
 		{
@@ -259,6 +271,10 @@ fileManager::readDir()
 	
 	for (i = 0; i < diritems; i++)
 	{
+#ifdef LIBPTH
+		pth_yield(NULL);
+#endif
+
 		if (entries[i])
 		{
 			if (stat(entries[i], &buffy) == -1 ||

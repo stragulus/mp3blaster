@@ -21,7 +21,6 @@
 #include "mpegsound.h"
 #include "mpegsound_locals.h"
 
-extern void debug(const char*);
 
 inline void Mpegbitwindow::wrap(void)
 {

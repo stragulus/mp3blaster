@@ -1,48 +1,56 @@
 <UL>
 
-<LI>	<FONT CLASS="listitem">
-				How do you get the colours and borders right in an xterm?
-		 	</FONT><BR>
+<LI>  <FONT CLASS="listitem">
+        Sound 'hicks' (short interruptions) whenever another task uses I/O.
+      </FONT><BR>
 
-			Run xterm with -fg white -bg black, set your TERM environment variable
-			to color_xterm (FreeBSD: xterm-color) and there you go!
+      This notably occurs on linux boxen with Creative's Soundblaster
+      (what's in a name) Live's. A blunt, but well working, solution is to
+      run mp3blaster with high priority (nice level -5 or lower). Only root
+      may set a nice-level below 0, so you should either use 'renice' as
+      root to set the level, or run mp3blaster as root (at your own risk).
 
-<LI>	<FONT CLASS="listitem">
-				Mp3blaster compiles, but when I try to play an MP3, it gives a 
-				segmentation fault.
-		 	</FONT><BR>
+<LI>  <FONT CLASS="listitem">
+        How do you get the colours and borders right in an xterm?
+       </FONT><BR>
 
-			Try to recompile with compile flag -D__NO_MATH_INLINES
-			(CPPFLAGS="-D__NO_MATH_INLINES" ./configure).  If this doesn't work,
-			it's probably a glitch in mp3blaster, triggered by some bugged mp3's. If
-			this is a repeatable crash (or if it still crashes on all mp3's) please
-			email me.
+      Run xterm with -fg white -bg black, set your TERM environment variable
+      to color_xterm (FreeBSD: xterm-color) and there you go!
 
-<LI>	<FONT CLASS="listitem">
-				Mp3blaster compiles, but it gives a segmentation fault at startup or
-				shutdown.
-			</FONT><BR>
+<LI>  <FONT CLASS="listitem">
+        Mp3blaster compiles, but when I try to play an MP3, it gives a 
+        segmentation fault.
+       </FONT><BR>
 
-			Do not link the stdc++ libraries (CXX=gcc ./configure usually
-			accomplishes this; if it's a recompile don't forget to delete
-			config.cache!).
+      This happens on old linux systems with gcc-2.7.*.
+      Try to recompile with compile flag -D__NO_MATH_INLINES
+      (CPPFLAGS="-D__NO_MATH_INLINES" ./configure).
 
-<LI>	<FONT CLASS="listitem">
-				When I play mp3's, the blue playwindow's layout is messed
-				up.
-			</FONT><BR>
+<LI>  <FONT CLASS="listitem">
+        Mp3blaster compiles, but it gives a segmentation fault at startup or
+        shutdown.
+      </FONT><BR>
 
-			This occurs on ncurses-3.* versions (notably 3.4). Upgrading ncurses to
-			4.2 or better is the only solution here.
+      Do not link the stdc++ libraries (CXX=gcc ./configure usually
+      accomplishes this; if it's a recompile don't forget to delete
+      config.cache!).
 
-<LI> 	<FONT CLASS="listitem">
-				I don't want mp3blaster to take up a console or xterm while
-				playing.
-			</FONT><BR>
+<LI>  <FONT CLASS="listitem">
+        When I play mp3's, the blue playwindow's layout is messed
+        up.
+      </FONT><BR>
 
-			No sweat. First, install <a
-			href="http://www.gnu.org/software/screen/">``screen''</a>. Next, run
-			screen, run mp3blaster, start a playlist and detach the screen. Now
-			you'll have your console all to yourself again!
+      You probably have ncurses-3 installed on your system. Upgrade 
+      ncurses to a recent stable version.
+
+<LI>   <FONT CLASS="listitem">
+        I don't want mp3blaster to take up a console or xterm while
+        playing.
+      </FONT><BR>
+
+      Install <a
+      href="http://www.gnu.org/software/screen/"><i>screen</i></a>. Next, run
+      screen, run mp3blaster, start a playlist and detach the screen. Now
+      you'll have your console all to yourself again!
 
 </UL>

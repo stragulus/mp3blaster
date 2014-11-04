@@ -19,7 +19,7 @@
 #include "winitem.h"
 #include <stdio.h>
 #include <string.h>
-extern void debug(const char*);
+extern void debug(const char*,...);
 
 winItem::winItem()
 {
