@@ -1,658 +1,352 @@
+V3.2.5 2009/01/24
+=================
+
+ * minor compilation fixes from freebsd ports maintainer Roman Bogorodskiy
+
 V3.2.4 2009/01/18
 =================
--Fixed bug in buffering code when using SDL as audio output; this fixes
- possible hickups in such cases.
--When changing back directories in the file browser, jump to the 
- position in the file list the user came from. 
--Reduced number of warnings using newer g++ versions
+
+ * Fixed bug in buffering code when using SDL as audio output; this fixes
+   possible hickups in such cases.
+
+ * When changing back directories in the file browser, jump to the 
+   position in the file list the user came from. 
+
+ * Reduced number of warnings using newer g++ versions
 
 V3.2.3 2006/08/05
 =================
--Fixed parallel build bug, make -j now works
--Fixed typos in CharsetMap documentation
--Implemented screen resizing
--Fixed a race condition which caused 100% CPU consumption at the end of
- each played song
+
+ * Fixed parallel build bug, make -j now works
+
+ * Fixed typos in CharsetMap documentation
+
+ * Implemented screen resizing
+
+ * Fixed a race condition which caused 100% CPU consumption at the end of
+    each played song
 
 V3.2.2 2006/01/29
 =================
--Added support for audio playback using SDL (mixer is not supported (yet))
--Added Esound (Enlightened Sound Daemon) support
--Removed strict dependency on OSS support, now that there are alternatives
--Cleaned up code to allow compilation on MacOS X Tiger and Cygwin
--Fixed a couple of minor memory allocation bugs
--Fixed NAS playback (should work, but untested)
+
+ * Added support for audio playback using SDL (mixer is not supported (yet))
+
+ * Added Esound (Enlightened Sound Daemon) support
+
+ * Removed strict dependency on OSS support, now that there are alternatives
+
+ * Cleaned up code to allow compilation on MacOS X Tiger and Cygwin
+
+ * Fixed a couple of minor memory allocation bugs
+
+ * Fixed NAS playback (should work, but untested)
 
 V3.2.1 2005/12/06
 =================
--Made cursor follow the highlighted bar in playlist/filemanager, to aid
- blind people
--Fixed a bug in mpegsound library that could cause mp3blaster to crash. Thanks
- go to Serge van den Boom for reporting the problem.
+
+ * Made cursor follow the highlighted bar in playlist/filemanager, to aid
+   blind people
+
+ * Fixed a bug in mpegsound library that could cause mp3blaster to crash.
+   Thanks go to Serge van den Boom for reporting the problem.
 
 V3.2.0 2003/09/08
 =================
--Updated source to compile with recent gcc compilers
--Pausing mp3/wav/ogg playback releases the sound device
--Better mp3 integrity checks. Songs that didn't previously play (or only
- partly), should now play fine (as in, the bits that are valid)
--Fixed a bug that would hang mp3blaster if you'd be in a dir that was deleted
- meanwhile.
--bugfix that could crash mp3blaster after a request to quit (..)
--bugfix that failed to redraw screen correctly after operations that 
- required input (such as convert to wav, enter group name, ..)
--fixed a bug that could crash mp3blaster on opening oggs when sound device
- was busy.
--Check if the playlist directory actually exists before trying to write 
- a playlist
--Added '--repeat/-R' command line option
--Applied LIRC support patch from Olgierd Pieczul <wojrus@linux.slupsk.net>.
- Thanks a lot!
+
+ * Updated source to compile with recent gcc compilers
+
+ * Pausing mp3/wav/ogg playback releases the sound device
+
+ * Better mp3 integrity checks. Songs that didn't previously play (or only
+   partly), should now play fine (as in, the bits that are valid)
+
+ * Fixed a bug that would hang mp3blaster if you'd be in a dir that was deleted
+   meanwhile.
+
+ * bugfix that could crash mp3blaster after a request to quit (..)
+
+ * bugfix that failed to redraw screen correctly after operations that 
+   required input (such as convert to wav, enter group name, ..)
+
+ * fixed a bug that could crash mp3blaster on opening oggs when sound device
+   was busy.
+
+ * Check if the playlist directory actually exists before trying to write 
+   a playlist
+
+ * Added '--repeat/-R' command line option
+
+ * Applied LIRC support patch from Olgierd Pieczul <wojrus@linux.slupsk.net>.
+   Thanks a lot!
 
 V3.1.4 2003/03/24
 =================
--Fixed file size display for files that crossed the 10000 bytes/kbytes
- boundary by a bit.
--Applied patch from Serge v/d Boom for nmixer. F1..F10 switches directly
- to /dev/dsp[0..10], except that dsp0 is dsp.
+
+ * Fixed file size display for files that crossed the 10000 bytes/kbytes
+   boundary by a bit.
+
+ * Applied patch from Serge v/d Boom for nmixer. F1..F10 switches directly
+   to /dev/dsp[0..10], except that dsp0 is dsp.
 
 V3.1.3 2002/10/20
 =================
--Changed RPM .spec file such that all compression methods for man files will
- be honoured
--Fixed a bug that could cause the playlist repeat to stop (thanks to
- Alex Rasmussen for finding the bug)
--Command line options for nmixer changed, and it's now possible to select a
- different hardware mixer device.
--Fixed a bug that caused mp3blaster to quit when the user's homedir could
- not be determined.
+
+ * Changed RPM .spec file such that all compression methods for man files will
+   be honoured
+
+ * Fixed a bug that could cause the playlist repeat to stop (thanks to
+   Alex Rasmussen for finding the bug)
+
+ * Command line options for nmixer changed, and it's now possible to select a
+   different hardware mixer device.
+
+ * Fixed a bug that caused mp3blaster to quit when the user's homedir could
+   not be determined.
 
 V3.1.2 2002/09/03
 =================
--Compiles on gcc-3.* without errors
--Trailing slash in HTTP URLs is only appended after the hostname, not in 
- URLs that contain a path following the hostname. This means that mp3's can
- now be played straight from an URL again.
--For HTTP streams, HTTP/1.1 is used instead of HTTP/1.0 (this, and previous
- suggestion submitted by Markus Jerger. Thanks!)
+
+ * Compiles on gcc-3.* without errors
+
+ * Trailing slash in HTTP URLs is only appended after the hostname, not in 
+   URLs that contain a path following the hostname. This means that mp3's can
+   now be played straight from an URL again.
+
+ * For HTTP streams, HTTP/1.1 is used instead of HTTP/1.0 (this, and previous
+   suggestion submitted by Markus Jerger. Thanks!)
 
 V3.1.1 2002/03/16
 =================
--Applied a patch from Douglas Richard that introduces horizontal panning
- of the scrollable window using Key.Left and Key.Right, as well as
- configurable wraparound-behaviour (see config file directive 'WrapAround')
- and jump-to-top/bottom of the list using Key.Home and Key.End keybindings.
--When resetting sound device failed, playback of current song is stopped.
--config file directive 'SkipFrames' => 'SkipLength'
--Added RPM specfile, so you can build mp3blaster on RedHat 7.2 with
- rpm -ta <source tarball>
--applied patches from Martijn to fix compiling issues with NetBSD/curses.
--applied patch from Martijn that fixes endian issues in waveplayer
--applied patch from Ivan Prokudin that fixes a bug in the character
- set recoding code.
--Added patch from Serge v/d Boom that writes info about mp3's being played
- to a status file (see --status-file).
--Fixed bug that prevented showing next song
--Configfile directive 'File.ID3Names' enabled now implies that the default
- file display mode in the filemanager is show by ID3 name instead of 
- filename.
--When decoding mp3s as wavs, decoding will be aborted with a warning
- when samplerate/speed/stereo-mode changes.
--ID3tags in ID3 displaying mode are now charset-recoded as well.
+
+ * Applied a patch from Douglas Richard that introduces horizontal panning
+   of the scrollable window using Key.Left and Key.Right, as well as
+   configurable wraparound-behaviour (see config file directive 'WrapAround')
+   and jump-to-top/bottom of the list using Key.Home and Key.End keybindings.
+
+ * When resetting sound device failed, playback of current song is stopped.
+
+ * config file directive 'SkipFrames' => 'SkipLength'
+
+ * Added RPM specfile, so you can build mp3blaster on RedHat 7.2 with
+   rpm -ta <source tarball>
+
+ * applied patches from Martijn to fix compiling issues with NetBSD/curses.
+
+ * applied patch from Martijn that fixes endian issues in waveplayer
+
+ * applied patch from Ivan Prokudin that fixes a bug in the character
+   set recoding code.
+
+ * Added patch from Serge v/d Boom that writes info about mp3's being played
+   to a status file (see --status-file).
+
+ * Fixed bug that prevented showing next song
+
+ * Configfile directive 'File.ID3Names' enabled now implies that the default
+   file display mode in the filemanager is show by ID3 name instead of 
+   filename.
+
+ * When decoding mp3s as wavs, decoding will be aborted with a warning
+   when samplerate/speed/stereo-mode changes.
+
+ * ID3tags in ID3 displaying mode are now charset-recoded as well.
 
 V3.1.0 2002/03/08
 =================
--Implemented 'next group' feature; It's similar to changing to the next CD on
- a CD changer.
--Playlist doesn't stop on files that can't be opened anymore. 
--Added workaround for bug in RH7.2's ncurses version that would crash
- mp3blaster.
--Properly opens and resets sound devices according to the OSS programming
- manual. This will fix playback problems on machines that had problems with
- sound device handling, especially with bad mp3's.  Thanks go out to Markus
- Bresch for pointing this out.
--Added XING header parsing, which means the total time of most VBR mp3's will
- be guessed correctly, without having to scan the entire file. With configfile
- directive 'ScanMP3', scanning VBR files can still be enabled, but this is
- not encouraged, especially not for mp3's streamed over a slow connection or
- medium.
--Fixed sorting problems in recursive file select / dirs as groups.
--removed 'start/stop playlist': The cd-style keys for start and stop now handle
- this, because it's more logical (thanks Joachim for pointing that out). Note
- that if one presses stop, mp3blaster will no longer know which songs it has
- already played in the current playlist, contrary to previous versions!
--Playlist will now repeat if this option is set and 'next song' is performed
- on the last song in the list.
--Added configfile directive 'File.ID3Names', with which you can enable
- searching for ID3 songinfo in the file manager. Displaying ID3 tags has
- become a lot faster, because id3-names will only be read from the files
- when they're being displayed (thanks Martijn!)
--Added 'select some items' with which you can select specific items matching
- a pattern in a playlist or directory. Searchmethods can be global (default,
- see fnmatch(2)), or regex (configfile: SelectItems.Regex = 1).
--Added 'unselect all'
--Fixed bug that left files without id3tags open. Thanks to Randy Hron for
- noticing!
--Fixed a bug that will hopefully eliminate static noise while playing
- oggVorbis files (thanks Martijn).
--Fixed 8/16-bit handling, which will fix playing 8-bit .wav files as well.
--When adding dirs as groups, or recursively selecting files, they'll be
- sorted as specified.
--Fixed cosmetic bug in displaying stereo mode (JointStereo => Stereo)
--Fixed cosmetic bug when scrolling content in filebrowser
--Extended scrollbar to full width of window (thanks Marius Cienki)
--Wrote own routine to read input (e.g. when prompting for group name, changing
- to a custom dir, etc), with the ability to start with a filled input buffer
--Added file rename feature.
--splay will now honour compile-time set sounddevice.
--mixer device can be specified in config file / cmdline
--'[..]' can't be deleted anymore.
--fixed time display for mp3's > 99 minutes
--patch from Martijn for NetBSD
--applied patch from Dmitry Sergienko which will allow mapping ID3 info
- text to another character set (config file directive CharsetTable, see manual)
--applied documentation/small bugfixes patch from Zyrnix.
--applied a patch from Craig Gallagher which enables .m3u playlist loading 
+
+ * Implemented 'next group' feature; It's similar to changing to the next CD on
+   a CD changer.
+
+ * Playlist doesn't stop on files that can't be opened anymore. 
+
+ * Added workaround for bug in RH7.2's ncurses version that would crash
+   mp3blaster.
+
+ * Properly opens and resets sound devices according to the OSS programming
+   manual. This will fix playback problems on machines that had problems with
+   sound device handling, especially with bad mp3's.  Thanks go out to Markus
+   Bresch for pointing this out.
+
+ * Added XING header parsing, which means the total time of most VBR mp3's will
+   be guessed correctly, without having to scan the entire file. With
+   configfile directive 'ScanMP3', scanning VBR files can still be enabled,
+   but this is not encouraged, especially not for mp3's streamed over a slow
+   connection or medium.
+
+ * Fixed sorting problems in recursive file select / dirs as groups.
+
+ * removed 'start/stop playlist': The cd-style keys for start and stop
+   now handle this, because it's more logical (thanks Joachim for pointing
+   that out). Note that if one presses stop, mp3blaster will no longer know
+   which songs it has already played in the current playlist, contrary to
+   previous versions!
+
+ * Playlist will now repeat if this option is set and 'next song' is performed
+   on the last song in the list.
+
+ * Added configfile directive 'File.ID3Names', with which you can enable
+   searching for ID3 songinfo in the file manager. Displaying ID3 tags has
+   become a lot faster, because id3-names will only be read from the files
+   when they're being displayed (thanks Martijn!)
+
+ * Added 'select some items' with which you can select specific items matching
+   a pattern in a playlist or directory. Searchmethods can be global (default,
+   see fnmatch(2)), or regex (configfile: SelectItems.Regex = 1).
+
+ * Added 'unselect all'
+
+ * Fixed bug that left files without id3tags open. Thanks to Randy Hron for
+   noticing!
+
+ * Fixed a bug that will hopefully eliminate static noise while playing
+   oggVorbis files (thanks Martijn).
+
+ * Fixed 8/16-bit handling, which will fix playing 8-bit .wav files as well.
+
+ * When adding dirs as groups, or recursively selecting files, they'll be
+   sorted as specified.
+
+ * Fixed cosmetic bug in displaying stereo mode (JointStereo => Stereo)
+
+ * Fixed cosmetic bug when scrolling content in filebrowser
+
+ * Extended scrollbar to full width of window (thanks Marius Cienki)
+
+ * Wrote own routine to read input (e.g. when prompting for group name,
+   changing to a custom dir, etc), with the ability to start with a filled
+   input buffer
+
+ * Added file rename feature.
+
+ * splay will now honour compile-time set sounddevice.
+
+ * mixer device can be specified in config file / cmdline
+
+ * '[..]' can't be deleted anymore.
+
+ * fixed time display for mp3's > 99 minutes
+
+ * patch from Martijn for NetBSD
+
+ * applied patch from Dmitry Sergienko which will allow mapping ID3 info
+   text to another character set (config file directive CharsetTable,
+   see manual)
+
+ * applied documentation/small bugfixes patch from Zyrnix.
+
+ * applied a patch from Craig Gallagher which enables .m3u playlist loading 
 
 V3.0 (final) 2001/09/19
 =======================
--implemented 'previous track', and therefore switched to the first 3.0
- stable version since albeit all functions from 2.* now work.
--"--enable-newthreads" configure option auto-enables pth instead of pthreads
--more patches from Martijn van Buul for better 'newthreads' playback - please
- test! 'newthreads' is still beta.
+
+ * implemented 'previous track', and therefore switched to the first 3.0
+   stable version since albeit all functions from 2.* now work.
+
+ * "--enable-newthreads" configure option auto-enables pth instead of pthreads
+
+ * more patches from Martijn van Buul for better 'newthreads' playback - please
+   test! 'newthreads' is still beta.
 
 V3.0pre8 2001/06/17
 ===================
--OggVorbis support! 99% of the player's functionality works with this format.
- More info on this free codec: http://www.xiph.org/ogg/vorbis/
--Fixed wav playback
--sid files can be played back again - though no seeking/time display yet.
--SkipFrames keyword has changed; instead of skipping a number of frames,
- it now skips a number of seconds. Therefore, you have to lower your current
- setting a lot (divide by 100). The number of seconds it skips in an mp3 is
- not very accurate.
--Splay's '-d -' produces a WAV-file on stdout.
--missing trailing slashes in HTTP stream URL's are automagically added
--fixed colour highlighting of files in filemanager
--cleaned up autoconf/automake files to make better use of it; as a result,
- some configure options have been renamed.
+
+ * OggVorbis support! 99% of the player's functionality works with this format.
+   More info on this free codec: http://www.xiph.org/ogg/vorbis/
+
+ * Fixed wav playback
+
+ * sid files can be played back again - though no seeking/time display yet.
+
+ * SkipFrames keyword has changed; instead of skipping a number of frames,
+   it now skips a number of seconds. Therefore, you have to lower your current
+   setting a lot (divide by 100). The number of seconds it skips in an mp3 is
+   not very accurate.
+
+ * Splay's '-d -' produces a WAV-file on stdout.
+
+ * missing trailing slashes in HTTP stream URL's are automagically added
+
+ * fixed colour highlighting of files in filemanager
+
+ * cleaned up autoconf/automake files to make better use of it; as a result,
+   some configure options have been renamed.
 
 V3.0pre7 2001/04/11
 ===================
--Finally, the correct time is displayed for VBR mp3's (thanks to Thomas
- Dreibholz)
--Skips in sound should be severely reduced.
--Disabled the nonblocking audio write code for all OS's except FreeBSD. It
- uses more CPU-time but it stops the short sound interrupts which occurred
- too easily (even with large buffer).
--Added alpha buffer code from Martijn van Buul. You can try this code by
- configuring with --enable-newthreads. Please test if you dare! You need
- libpth though (http://www.gnu.org/software/pth/pth.html).
--File display toggle in filemanager. If 'File.ID3Names' in config file is
- enabled, mp3's can be shown by their id3-tag instead of their filename.
- The toggle can also be used to get rid of the file sizes in the file manager.
- The filemanager can be quite slow with ID3 names enabled in the config file!
--Another mpegsound library fix that prevents too slow playback on some
- damaged mp3's
--File-deletion added ('D') - doesn't warn! Change the keybinding if you're
- afraid of accidentally pressing it.
--Skip to end of song functionality added ('E')
--Unset pause when a new song is being played.
--updated splay.cc to compile with recent gcc-3.0 prerelease.
--updated sample.mp3blasterrc (PlaylistMatching line was bogus!)
--mp3tag has become very slow due to changes in mpegsound lib. Gotta fix this
- some day.
--Rewrote README file, added FAQ, updated TODO
+
+ * Finally, the correct time is displayed for VBR mp3's (thanks to Thomas
+   Dreibholz)
+
+ * Skips in sound should be severely reduced.
+
+ * Disabled the nonblocking audio write code for all OS's except FreeBSD. It
+   uses more CPU-time but it stops the short sound interrupts which occurred
+   too easily (even with large buffer).
+
+ * Added alpha buffer code from Martijn van Buul. You can try this code by
+   configuring with --enable-newthreads. Please test if you dare! You need
+   libpth though (http://www.gnu.org/software/pth/pth.html).
+
+ * File display toggle in filemanager. If 'File.ID3Names' in config file is
+   enabled, mp3's can be shown by their id3-tag instead of their filename.
+   The toggle can also be used to get rid of the file sizes in the file manager.
+   The filemanager can be quite slow with ID3 names enabled in the config file!
+
+ * Another mpegsound library fix that prevents too slow playback on some
+   damaged mp3's
+
+ * File-deletion added ('D') - doesn't warn! Change the keybinding if you're
+   afraid of accidentally pressing it.
+
+ * Skip to end of song functionality added ('E')
+
+ * Unset pause when a new song is being played.
+
+ * updated splay.cc to compile with recent gcc-3.0 prerelease.
+
+ * updated sample.mp3blasterrc (PlaylistMatching line was bogus!)
+
+ * mp3tag has become very slow due to changes in mpegsound lib. Gotta fix this
+   some day.
+
+ * Rewrote README file, added FAQ, updated TODO
 
 V3.0pre6 2001/01/27
 ===================
--Mp3blaster honours AudiofileMatching config parameter for command-line
- supplied mp3's now
--Fixed another bug in the mpegsound lib that could cause crashes. Playing
- 2.4 linux kernel images doesn't crash mp3blaster anymore ;=)
--New configfile option 'HideOtherFiles', which can hide non-audiofiles in the
- file manager.
--Sort order of files can be toggled within file manager. Default sort order
- can be set with config file keyword 'File.SortOrder'
+
+ * Mp3blaster honours AudiofileMatching config parameter for command-line
+   supplied mp3's now
+
+ * Fixed another bug in the mpegsound lib that could cause crashes. Playing
+   2.4 linux kernel images doesn't crash mp3blaster anymore ;=)
+
+ * New configfile option 'HideOtherFiles', which can hide non-audiofiles in the
+   file manager.
+
+ * Sort order of files can be toggled within file manager. Default sort order
+   can be set with config file keyword 'File.SortOrder'
 
 V3.0pre5 2001/01/25
 ===================
--Fixed a bug that caused recursive file selecting to loop forever.
--Rewrote manual for version 3.0*, including configuration file docs.
--HTTP streaming works again - no shoutcast *.pls parsing yet, you have to
- read the HTTP-address to the audiostream from the file yourself for now.
+
+ * Fixed a bug that caused recursive file selecting to loop forever.
+
+ * Rewrote manual for version 3.0*, including configuration file docs.
+
+ * HTTP streaming works again - no shoutcast *.pls parsing yet, you have to
+   read the HTTP-address to the audiostream from the file yourself for now.
 
 V3.0pre4 2001/01/24
 ===================
--Finally fixed bugs in the mpegsound lib that caused crashes (notably
- floating point exceptions, and segmentation faults to some extent). This
- also fixes problems with some VBR mp3's - you should be able to play them
- well now. If you still find an mp3 that crashes mp3blaster (and it's 
- repeatable), please mail bram@avontuur.org.
--The program 'nmixer' shows which devices can be recorded from, and you can
- set the recording device.
--Global playmodes have been renamed and their behaviour has changed to make
- more use of the new recursive group structure.
--Changed behaviour of start/stop buttons compared to start/stop playlist.
- Starting/stopping the playlist (F9) always resets the played songs status.
- The start&stop buttons don't.
--Quiting mp3blaster immediately during audio playback now works.
--added splay progam (it's mp3blaster's origine). splay is (c) Woo-jae Jung,
- it's added merely for testing purposes, use it as you see fit.
--Songs got cut off during threaded playback in a playlist. This has been
- fixed.
--Recursive selection of files omits dirs '.findinfo','.resources' and 
- '.AppleDouble' (HPFS filesystem-specific dirs). Thanks for hinting about this!
--8 bits & 22Khz playback supported again.
 
-V3.0pre3 2001/01/11
-===================
--Small bugfixes - thanks to all the people who reported them! It should 
- compile flawlessly in RedHat 7 now.
--On some FreeBSD boxes, mp3blaster consumed 100% cpu-time. This version fixes
- this by using non-blocking I/O to the soundcard.
--This version quits automatically after playing only mp3's from commandline.
- (as in the 2.0* versions)
--Playlists from other players named *.m3u will be accepted by default as well.
- Playlists will be saved with a default extension ".lst" if one's omitted.
- Each group's shuffle setting as well as the global playmode is also saved.
--First 3.* version with working buffered (threaded) playback. (FreeBSD version
- runs quite inefficient with threading playback, therefore the default is not
- to use threads)
+ * Finally fixed bugs in the mpegsound lib that caused crashes (notably
+   floating point exceptions, and segmentation faults to some extent). This
+   also fixes problems with some VBR mp3's - you should be able to play them
+   well now. If you still find an mp3 that crashes mp3blaster (and it's 
+   repeatable), please mail bram@avontuur.org.
 
-V3.0pre2 2000/11/14
-===================
--Repeat of playlist now works
--wav-playback fixed (did it ever work?)
--reading/writing playlists works. The structure of the playlists has changed 
- significantly though, it uses HTML-like tags. A script to convert old-style
- playlists is provided.
--Files can be marked bad from within mp3blaster (they'll be moved to a 'baddir'
- subdirectory)
--One-key clear playlist
--Added scrollable help screen.
--For configfile directives, see src/config.cc (man mp3blasterrc does not yet
- exist)
+ * The program 'nmixer' shows which devices can be recorded from, and you can
+   set the recording device.
 
-V3.0pre1 2000/08/28
-===================
--By popular demand, simultaneous playlist editing and sound playback.
- You can even play a playlist while occasionally listening to
- another mp3 you select during playback.
--Interface and lots of code have been completely redone.
--Configurable colour support
--mp3=>wav conversion glitch fixed, and it's more intuitive.
--mp3tag now accepts multiple mp3's on the commandline. Option '-f' is no
- longer needed / supported. ID3v1.1 tags are supported as well (tracknr
- in comment field).
--Much improved randomness in random playlist playback.
--Alternate configfiles can be used with commandline option '-c'.
--commandline option --quit is now --dont-quit (functionality is not changed)
--the keyword FramesPerLoop is no longer supported in the configfile since
- it's no longer needed.
--playlists (*.pls by default) can be loaded from within the file browser.
--Many more minor changes
-
-V2.0b18: 2001/01/21
-===================
--Several changes in the mpegsound libary that fix numerous SIGFPU/SIGSEGV's.
--Using non-blocking I/O to soundcard which reduces CPU-load (esp. on FreeBSD).
--Nmixer program can view/set recording devices now.
--Fixed compilation errors
--Should produce normal audio on big-endian machines - couldn't test though.
- (thanks go once again to Martijn van Buul)
-
-V2.0b17: 1900/01/18
-===================
--cosmetic fixes & code beautify updates
--Finding the true offset of an mp3 has been improved. Most mp3's that sounded
- like "trickling water" now sound okay.
--Added 1 line of code that solved the irritating delay in response to
- keypresses during playback (why I didn't think of this before is beyond me,
- I guess it didn't bother me that much)
--autoconf scripts updated. On FreeBSD you should now be able to compile
- mp3blaster with threads, thanks to Michael Vasilenko's tip.
--refresh (ctrl+l)
--improved mp3tag ID3 utility: It also displays mp3 info like bitrate. There's
- also optional MySQL support for it, but with the current implementation it's
- only useful for me. If people want configurable MySQL support (+docs on how
- to set up a nice mp3 db), including html interface, please let me know.
-
-V2.0b16: 1999/12/15
-===================
--I forgot to mention this in the previous version: 8bit soundcards are now
- supported too (with command-line option -8 it's forced)
--Squashed another sigsegv bug that tried to fclose() NULL.
--genre-bug that caused random genre to be displayed squashed.
--added patch from Jeff ?? to make mp3blaster compile on OpenBSD(2.5) again.
--WarnDelay,SkipForward configfile options added.
-
-V2.0b15: 1999/12/13
-===================
--Fixed a bug causing sigsegv for configfile lines with a list of values.
--Added AudiofileMatching keyword to configfile: You can specify a list of
- regular expressions here that match valid audio files if you're not happy
- with the default filename matching (this triggered a bug in the filemanager
- that would add dirs with '.*' regexps..fixed)
--The bugfix that prevented leaving files open introduced another feature.
- Fixed.
--#threads can be set with command-line option too.
-
-V2.0b14: 1999/12/12
-===================
--fixed bug preventing mp3blaster from running w/o a .mp3blasterrc in your 
- homedir. (thank you Tjerk Meesters for pointing this out!)
--during playing, all files accessed were left open. This is hopefully fixed
- now. (thanks go to Steven Otten for pointing this out!)
-
-V2.0b13: 1999/12/11
-===================
--winnt/ section updated (mp3tag.exe from 2.0b11 with genre support)
--all interesting global variables are now put in a struct, shared by some 
- classes
--downsampling possible with commandline options --downsample/-2 (might run
- on a 486/66 now, bother to try this for me if you an antique 22Khz/8bit
- soundcard!) NOTE: This is still broken (for 8bit cards); the next version
- will support 8bit cards too.
--besides just stereo/mono, the interface knows about joint stereo and dual
- channel too now.
--http streams in playlist are now considered to be valid audiofiles in the
- playlist:)
--Added "/ to search" in filemanager. 
--Added vi-style keys to interface (h=dir up, j=down,k=up), and therefore
- changed 'h' to '?' to get help
--More userfriendly path handling (~'s are expanded so you can enter ~/bla
- as path, f.e.)
--configuration file support. Just the basics yet, only 4 options can currently
- be set in this file. Read config.cc to know more. If you have suggestions
- what to put as a configurable option, please email! 
-
-V2.0b12: 1999/08/05
-===================
--Fixed a bug in the genre support (char=>unsigned char). Bedankt Tjerk
- Meesters for the hint!
--Got rid of some (harmless) compilation warnings.
--NAS Support en SID playback support, by Willem-Jan Monsuwe (willem@stack.nl)
- This is still rather alpha..playback with NAS crashes on my machine, but
- works on another one. Your Milage May Vary :)
--Fixed a bug that prevented mp3blaster to compile without errors with the
- latest gcc(2.95.1)
--Convert to WAV now asks for a filename to write to.
--Casted some (const char*) as (char *) to get it to  compile with ncurses5.0b2
- and gcc-2.95.1. Hope this won't break anything.
--improvements on autoconf files and some general code by willem@stack.nl.
--Applied a patch from Sverre Huseby (sverrehu@online.no) to hopefully get rid
- of mp3blaster stopping during playback because input blocks.
--If nmixer is called as 'nasmixer' (e.g. using a softlink called nasmixer) it
- will act as a soundmixer for NAS. You need to set $DISPLAY then.
-
-V2.0b11: 1999/07/21
-===================
--Fixed a bug that caused a layout error (or sigsegv).
--Added genre support to the ID3Tag code. Thank you Petr Cech!
- (I falsely put this in 2.0b10's ChangeLog, oops)
--Added very basic (and simple) conversion from mp3 to wav.
-
-V2.0b10: 1999/07/20
-===================
--Minor bugfixes (MYINT)
--Hopefully fixed the problem where mp3blaster interrupted playing mp3's while
- waiting for a key to be pressed on certain configurations. If you *still*
- suffer from this, edit src/playwin.cc, search for usleep(1) and try to
- put it somewhere else before the getch() function call until it works and
- mail me about your change. Thanks to Martijn van Buul for pointing it out
- and several other people for confirming that it actually works.
--Enhanced the check for a __math.h that crashes mp3blaster: It's due to 
- gcc 2.7.* or older. Setups with this compiler will compile with
- -D__NO_MATH_INLINES
--Fixed a 'major bug' in mpegtoraw.cc that caused mp3blaster to crash on
- certain mp3's: Some mp3's have garbage, produced by some encoders, prepended
- that contains 0xfff, the start of a synchronization header. The original
- author of mpegsound figured that the first occurence of 0xfff must be the
- first header, and therefore didn't check for the header's validity. I've
- added validity checking for each sync.header, so if this breaks some mp3
- that played before: tough luck, it's _really_ damaged then.
- Basically mp3blaster will assume the first header that can possibly be a
- valid sync.header is the start of an mp3. This might prove wrong in rare
- cases, but there's no better solution as long as I don't know the format of
- weird ID3-tags.
--Fixed a major memory leak. There's still some loss but it's heavily reduced.
- Also some minor ones; thanks to Steve Kemp for pointing those out.
-
-V2.0b9: 1999/04/XX
-==================
--Added command option for output device
--Changed mixer layout
--Added command-line options for nmixer: You can now set any mixer-device
- supported by the OSS-lib (and your soundcard, ofcourse) on the command-line.
- Together with the option -q you can use nmixer to initialise your mixer's
- volumes (it will quit nmixer immediately)
--Wrote a manual for nmixer.
--Changed command-line syntax. You don't need the -f option now to play just
- one (or now, more) mp3(s), you can just do mp3blaster [options] *.mp3 for
- example.
--The default behaviour when mp3blaster starts playing immediately
- at startup is to quit as soon as the playing is over. -q now prevents this
- (instead of causing it)
--Changed mp3tag so that it will recognise ID3tags that are not preceded with
- 28 or more 0xFF's (some programs obviously do this!)
--Fixed a few layout bugs.
--I changed the mpegsound lib such that mp3blaster now also plays mp3's with
- errors in them. This breaks the ability to play free bitrate mp3's though,
- but I haven't heard of anyone yet who actually uses those. If you have 
- free bitrate mp3's (or know how to make them) I'd love to hear about it so
- I might be able to allow free bitrate mp3's *and* playback of bad mp3's.
- This fix should (hopefully) STOP mp3blaster from SIGSEGV'ing on bad mp3s!!
--Added mp3tag.exe on the mp3blaster homepage. Thanks to Steve Kemp
- <skx@tardis.ed.ac.uk> for this! Also check the winnt/ dir for the sources.
-
-V2.0b8: 1999/04/18
-==================
--Added time to the playing interface. Playing time, total time *and* remaining
- time are displayed now. Note that the timing will not work with free bitrate
- mp3's since the total time's calculation is based on the info from the first
- frame in the mp3. Also, when threading is used, the time is not updated during
- the last seconds of the mp3(I need to fix this yet!). The code's inspired
- on patches from Martijn van Buul.
--updated some classes.
--Changed (Improved) the interface: '+' and '-' in the playlist editor now 
- select the previous/next group in the group-window (the small rightmost
- window). F3 in playlist mode will delete the current group (finally this
- feature made it, I simply didn't have space in the interface to add this 
- functionality before ;).
--Very cool new feature in the file manager ``add dirs as groups'': If you
- use this function, every subdir that has mp3's in it, will be added as a
- group with the name of the directory as groupname! Making a playlist never
- has been easier!
--The playlist saves the global and each group's playmode. A conversion script
- for playlist that are made with mp3blaster <2.0b8 is included:
- ./convlist /path/to/oldplaylist.lst > newplaylist.lst
--In file selection mode, you can now enter a path directly.
--Sound device is now guessed correctly for OpenBSD (/dev/audio i.o /dev/dsp)
-
-V2.0b7: 1999/04/06
-==================
--Wrote a manual. Sniff.
--One can select the number of mp3-frames to run in one loop as a command-line
- option. This is useful for either speeding up the interface or avoiding
- 'hickup's.
--added a check to configure for bad /usr/include/__math.h that crashes
- mp3blaster when an attempt to play an mp3 has been made.
--Selected files in the file browser now visually differ from non-selected
- files on a dumb (b/w) terminal.
--error-messages now should make more sense (the old ones were wrong ones
- because of an indexing error)
--Fixed a bug that occured if /dev/mixer couldn't be opened for some reason
- (non-existant, permission denied,..). It would close stdin..
--After chosing 'recursive select' from the file manager, the program returns
- to the playlist editor immediately (since this is less confusing IMHO).
--Added the mp3tag command. Right now it's a command line tool to change/add
- ID3 tags to mp3 files, but it will also be incorporated into mp3blaster
- itself. It's very easy to use. Really. Enjoy! PS: Check the id3scripts dir
- for a nice script to add id3tags to your mp3's based on their filename.
--It now accepts .mp2 and .mp3 as filename extensions for mpeg audio files.
--reduced the annoying ``ticks'' in between songs further. If you still
- suffer from them (and it's not the mp3 having a bad head or tail!) please
- give me a ring..
--fixed a bug with mixer initialisation at playlist starting time that was
- introduced in 2.0b6.
-
-V2.0b6: 1999/03/XX
-==================
--path to mp3 put in border of playwindow which leaves more room for the
- playlist (that's still got to be put in)
--Applied a patch from Jukka Honkela that should reduce the audible "snap"
- between numbers while playing. If you still here snaps between songs
- that are played in a playlist without user intervention, please tell me!
--Both DEL and d remove a song from the playlist now(in playlist editor)
--Added "'q' to return" msg in playlist window
--Added menu with key functions ('h')
--Changed minimum size to 80x24 to support more consoles.
-
-V2.0b5: 1999/03/XX
-==================
-
--chroot-function. This is about to change to something that (a) doesn't
- require root-privs and (b) only affects the file selection dialogs.
--Several new commandline options for setting default playingmode, 
- wether to have a mixer or not, wether to start playing / quiting 
- automagically or not, etc.
--Compiles on OpenBSD/alpha, FreeBSD(2.2.8), Linux/alpha too.
--Built-in mixer support! (also, nmixer is distributed as an integrated 
- package with mp3blaster. This is the very same mixer as used in mp3blaster,
- but then as a separate binary!)
--When a new group is added, it is now automatically selected too.
- (it used to select the new group but displayed the wrong one)
--The .lst extension is no longer automagically added when writing a playlist.
--It recognizes 48Khz sampled mp3's now! (instead of crashing om them)
- However, it doesn't synchronise yet (which is necessary if the mp3 is
- slightly corrupted at some point - then again: Get only good quality MP3's!)
- Hmm..this actually appears to be a feature, not a bug :) The mpegsoundlib
- supports variable bitrate mp3's.
--The command-line syntax is changed becuz I use getopt now to 
- process arguments. If you have getopt.h, it supports meaningful long
- arguments (--blabla instead of -b) too.
--No more reports about sigsegv's unrelated to weird mp3 formats.
--No mp3's discovered that could not be played by mp3blaster. (only some
- mp3's with glitches in them that causes mp3blaster to stop playing them)
-
-V2.0b4: 1999/01/21
-==================
-
--Option -l supported now
--Warnings will not wait for a key to be pressed, but stay onscreen for 2
- seconds instead.
--default playmode changed to playing all songs in given order instead of
- random order.
--Redesigned structure of this package so it uses autoconf & automake to
- the max. (if you code for some UNIX-flavour, use these programs! It's a bit
- tough getting used to, but when you get the hang of it, it makes life so much
- easier!!)
--Fixed bug that caused screen to be blank after a warning-message about illegal
- mp3 filenames.
--There seems to be some nasty bug somewhere causing sigsegv. It seems to be
- fixed, but I don't have a clue what has fixed it. If you run into segv's (and
- not because you play some weird-format mp3's!!) please mention it to me and
- what you did to get it. It could be that these segv's were caused because I
- had 10 different distributions of ncurses scattered on my system but I'm just
- not sure.
-
-V2.0b3: 1998/04/07
-==================
-
--Now accepts as first (and only) argument a filename that points to an mp3.
- This mp3 will then be played and afterwards the program exits. 
- /* TODO
- Also, -l <filename> can be given as the first 2 arguments, which will make
- mp3blaster load a playlist pointed to by filename. (TODO: start playing
- optional)
- */
-
-V2.0b2: 1997/12/12
-==================
-
--Instead of using function-keys in the selection menu, you can also use
- numeric keys (for [x-]terminals that either do not support function-keys
- or use them for other purposes)
--The progress bar is now updated so people with B/W terminals can see it as
- well.
-
-V2.0b1: 1997/12/06
-==================
-
-Large parts of code have been redone and written in C++ instead of plain C.
-The interface while playing has changed entirely and should be more user-
-friendly.
-
-V1.0.1: 1997/09/29
-==================
-
-The code for keyboard input handling has been changed. Effectively nothing
-has been changed concerning the interface though. Soon however this new code
-will allow the playlist that's currently being played to be shown on-screen
-and it can be scrolled.
-
-V1.0.0: 1997/09/07
-==================
-
-This is the very first version I considered worthy distributing. Most major
-features I planned have actually be implemented now though there's still a
-lot of room for improvement..but since I like to get opinions from other 
-people who use it I released it. Some changes since the previous version:
-
--Loading a playlist now is possible, though it can only load it's own generated
- playlists. If you already have playlists that are nothing more than a list
- of filenames(+paths!) of *.mp3-files (mp2 not yet supported) then you can try
- to insert 1 line at the top of the file reading: "GROUPNAME: Default" 
- (without the double quotes).
--Problems with file-selection fixed. File-selection should be pretty reliable
- now.
--cosmetic bug-fixes (mostly text that could be written past a boundary)
-
-V0.9.5.1: 1997/09/07
---------------------
-
-Fixed a bug that caused selected items following a deleted item to shift up one
-item.
-
-V0.9.5: 1997/09/07
-------------------
-
-Added pageup/pagedown support for sw_window selection windows.
-Some minor bugfixes.
-
-V0.9.4: 1997/09/04
-------------------
-
-Recursive file selection added.
-Some minor bugfixes.
-
-V0.9.3.1: 1997/09/01
---------------------
-
-Directories are now alphabetically sorted.
-
-V0.9.3: 1997/08/31
-------------------
-
-When you select files and change directory afterwards before adding the files
-to the current group they won't be lost (as before) but stored and added to 
-the group-window when you press F1(add files)
-
-V0.9.2: 1997/08/26
-------------------
-
-'Select all' feature changed into 'invert selection' feature.
-
-V0.9.1: 1997/08/25
-------------------
-
-'Select all' feature built in for the file selection window.
-
-V0.9.0: 1997/08/22
-------------------
-
-This is the first 'working' version that can play mp3's in group in any random
-order, etc. It's still not ready to be released because of lacking features that
-make the program so much better than all those others :)
+ * Global playmodes have been renamed and their behaviour has changed to make
+   more use of the new recursive group structure.

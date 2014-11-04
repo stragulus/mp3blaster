@@ -12,6 +12,7 @@
 #include "mpegsound.h"
 #include "mpegsound_locals.h"
 #include <unistd.h>
+#include <stdlib.h>
 
 NASplayer::NASplayer(AuServer *aud)
 {

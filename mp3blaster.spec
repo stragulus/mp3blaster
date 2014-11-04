@@ -1,6 +1,6 @@
 Name: mp3blaster
 Summary: Mp3blaster is a text console audio player with an interactive interface
-Version: 3.2.3
+Version: 3.2.5
 Release: 1
 Group: Applications/Multimedia
 Copyright: GPL
