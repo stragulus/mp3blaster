@@ -21,7 +21,7 @@ au_list_devices(AuServer *aud, int *ndev)
 	return d;
 }
 
-NASMixer::NASMixer(baseMixer *next) : baseMixer(next)
+NASMixer::NASMixer(const char *mixerDevice, baseMixer *next) : baseMixer(mixerDevice, next)
 {
 	aud = AuOpenServer(0, 0, 0, 0, 0, 0);
 	if (!aud) return;

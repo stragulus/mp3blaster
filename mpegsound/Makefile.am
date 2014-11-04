@@ -6,7 +6,8 @@ libmpegsound_a_SOURCES  = soundinputstream.cc fileinput.cc httpinput.cc \
 			  mpegtoraw.cc mpeglayer1.cc mpeglayer2.cc \
 			  mpeglayer3.cc bitwindow.cc huffmantable.cc \
 			  wavetoraw.cc sidplayer.cc \
-			  fileplayer.cc nasplayer.cc oggplayer.cc
+			  fileplayer.cc nasplayer.cc oggplayer.cc \
+				xingheader.cc xingheader.h
 
 noinst_HEADERS		= mpegsound.h mpegsound_locals.h
 

@@ -51,7 +51,7 @@ class baseMixer
 {
 public:
 	virtual ~baseMixer();
-	baseMixer(baseMixer *next);
+	baseMixer(const char *mixerDevice = NULL, baseMixer *next = NULL);
 	int *GetDevices(int *num);
 	bool SetMixer(int device, struct volume *vol);
 	bool GetMixer(int device, struct volume *vol);
@@ -67,13 +67,14 @@ protected:
 	int *devs, num_devs;
 private:
 	baseMixer *next;
+	char *mixerDevice;
 	int mixerID;
 };
 
 class OSSMixer : public baseMixer
 {
 public:
-	OSSMixer(baseMixer *next = 0);
+	OSSMixer(const char *mixerDevice = NULL, baseMixer *next = NULL);
 	~OSSMixer();
 	bool CanRecord(int device);
 	bool GetRecord(int device);
@@ -90,7 +91,7 @@ private:
 class NASMixer : public baseMixer
 {
 public:
-	NASMixer(baseMixer *next = 0);
+	NASMixer(const char *mixerDevice = NULL, baseMixer *next = 0);
 	~NASMixer();
 	bool CanRecord(int device) { return false; }
 	bool GetRecord(int device) { return false; }

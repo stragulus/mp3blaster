@@ -17,6 +17,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <sys/ioctl.h>
+#include <stdlib.h>
 
 #include "mpegsound.h"
 #include "mpegsound_locals.h"
@@ -72,20 +73,29 @@ int Rawplayer::setvolume(int volume)
 /* Rawplayer class */
 /*******************/
 // Rawplayer class
-Rawplayer::Rawplayer(int audiohandle, int audiobuffersize)
+/* filename is stored in case audiohandle needs to be reopened */
+Rawplayer::Rawplayer(char *filename, int audiohandle, int audiobuffersize)
 {
 	this->audiohandle = audiohandle;
 	this->audiobuffersize = audiobuffersize;
+	this->filename = strdup(filename);
+
 	//need to do this when object of this class is used for more than one
 	//mp3.
 	rawstereo = rawsamplesize = rawspeed = want8bit = 0;
 	rawbuffersize = 0;
 	quota = 0;
+	first_init = 1;
+	/* !! Only read audiobuffersize (using getblocksize()) after a call to
+	 * setsoundtype()!!!!!!!! (OSS manual says so)
+	 */
 }
 
 Rawplayer::~Rawplayer()
 {
 	close(audiohandle);
+	if (filename)
+		free(filename);
 }
 
 Rawplayer *Rawplayer::opendevice(char *filename)
@@ -108,9 +118,14 @@ Rawplayer *Rawplayer::opendevice(char *filename)
 	IOCTL(audiohandle,AIOSSIZE, blocksize);
 #endif
 
+	/* Bad, you have to setsoundtype prior to query audiobuffersize */
+#if 0
 	IOCTL(audiohandle,SNDCTL_DSP_GETBLKSIZE,audiobuffersize);
 	if(audiobuffersize<4 || audiobuffersize>65536)
 		return NULL;
+#else
+	audiobuffersize = 1024; //it's properly set at setsoundtype().
+#endif
 
 	//maybe this will prevent sound hickups on some cards..
 #if 0
@@ -121,7 +136,7 @@ Rawplayer *Rawplayer::opendevice(char *filename)
 	fragsize=2048;
 	ioctl(audiohandle, SNDCTL_DSP_SETFRAGMENT, &fragsize);
 #endif
-	return new Rawplayer(audiohandle, audiobuffersize);
+	return new Rawplayer(filename, audiohandle, audiobuffersize);
 }
 
 void Rawplayer::abort(void)
@@ -150,7 +165,7 @@ bool Rawplayer::setsoundtype(int stereo,int samplesize,int speed)
 	if (rawstereo != stereo) { rawstereo = stereo; changed++; }
 	if (rawsamplesize != samplesize) { rawsamplesize = samplesize; changed++; }
 	if (rawspeed != speed) { rawspeed = speed; changed++; }
-	forceto8 = (want8bit ? true : false);
+	forceto8 = (want8bit && samplesize == AFMT_S16_NE ? true : false);
 	forcetomono = 0;
 	if (changed)
 		return resetsoundtype();
@@ -161,9 +176,67 @@ bool Rawplayer::resetsoundtype(void)
 {
 	int tmp;
 
-	if(ioctl(audiohandle,SNDCTL_DSP_SYNC,NULL)<0)
+	if (!first_init)
+	{
+		debug("Resetting soundcard!");
+#if 0
+		/* flush all data in soundcard's buffer first. */
+		if(ioctl(audiohandle,SNDCTL_DSP_SYNC,NULL)<0)
+			return seterrorcode(SOUND_ERROR_DEVCTRLERROR);
+
+		/* reset the bastard */
+		if(ioctl(audiohandle,SNDCTL_DSP_RESET,NULL)<0)
+			return seterrorcode(SOUND_ERROR_DEVCTRLERROR);
+#endif	
+		/* OSS tells us to reopen the handle after a change in sample props */
+		if (close(audiohandle) == -1)
+			return seterrorcode(SOUND_ERROR_DEVCTRLERROR);
+	#if defined(AUDIO_NONBLOCKING) || defined(NEWTHREAD)
+		if((audiohandle=open(filename,O_WRONLY|O_NDELAY,0))==-1)
+	#else
+		if((audiohandle=open(filename,O_WRONLY,0))==-1)
+	#endif
+			return seterrorcode(SOUND_ERROR_DEVCTRLERROR);
+	}
+	else
+		first_init = 0;
+
+	if (want8bit && rawsamplesize != AFMT_U8)
+		forceto8 = true;
+
+	/* OSS manual says: first samplesize, then channels, then speed */
+	tmp = ( want8bit ? AFMT_U8 : rawsamplesize);
+
+	debug("Resetsound: samplesize = %d\n", tmp);
+	IOCTL(audiohandle,SNDCTL_DSP_SAMPLESIZE,tmp);
+	debug("Resetsound: samplesize = %d (2)\n", tmp);
+
+	/* maybe the soundcard doesn't do 16 bits sound */
+	if(!want8bit && tmp!=rawsamplesize)
+	{
+		if(rawsamplesize == AFMT_S16_NE)
+		{
+			rawsamplesize = AFMT_U8; //most boxen use unsigned for 8bits!
+			debug("Resetsound: samplesize_encore = %d\n", rawsamplesize);
+			IOCTL(audiohandle,SNDCTL_DSP_SAMPLESIZE,rawsamplesize);
+			debug("Resetsound: samplesize_encore(2) = %d\n", rawsamplesize);
+			if(rawsamplesize!=AFMT_U8)
+				return seterrorcode(SOUND_ERROR_DEVCTRLERROR);
+
+			forceto8=true;
+		}
+		else
+			return seterrorcode(SOUND_ERROR_DEVCTRLERROR);
+	}
+	else if (want8bit && tmp != AFMT_U8)
 		return seterrorcode(SOUND_ERROR_DEVCTRLERROR);
 
+	/*
+	if (want8bit)
+		forceto8 = true;
+	*/
+
+	debug("Resetsound: rawstereo=%d\n", rawstereo);
 #ifdef SOUND_VERSION
 	if(ioctl(audiohandle,SNDCTL_DSP_STEREO,&rawstereo)<0)
 #else
@@ -175,32 +248,18 @@ bool Rawplayer::resetsoundtype(void)
 		forcetomono=1;
 	}
 
-	tmp = ( want8bit ? 8 : rawsamplesize);
-
-	IOCTL(audiohandle,SNDCTL_DSP_SAMPLESIZE,tmp);
-	if(!want8bit && tmp!=rawsamplesize)
-	{
-		if(rawsamplesize==16)
-		{
-			//rawsamplesize=8; 
-			rawsamplesize=AFMT_S8; //most soundcards use SIGNED for 8bits!
-			IOCTL(audiohandle,SNDCTL_DSP_SAMPLESIZE,rawsamplesize);
-			if(rawsamplesize!=AFMT_S8)
-				return seterrorcode(SOUND_ERROR_DEVCTRLERROR);
-
-			forceto8=true;
-		}
-		else if (want8bit && tmp != 8)
-			return seterrorcode(SOUND_ERROR_DEVCTRLERROR);
-	}
-	if (want8bit)
-		forceto8 = true;
-
+	debug("Resetsound: rawspeed=%d\n", rawspeed);
 	if(IOCTL(audiohandle,SNDCTL_DSP_SPEED,rawspeed)<0)
+		return seterrorcode(SOUND_ERROR_DEVCTRLERROR);
+
+	/* NOW we can set audiobuffersize without breaking with OSS specs */
+	IOCTL(audiohandle,SNDCTL_DSP_GETBLKSIZE,audiobuffersize);
+	if(audiobuffersize<4 || audiobuffersize>65536)
 		return seterrorcode(SOUND_ERROR_DEVCTRLERROR);
 
 	return true;
 }
+
 int Rawplayer::fix_samplesize(void *buffer, int size)
 {
 	int modifiedsize=size;

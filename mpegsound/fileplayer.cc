@@ -259,9 +259,9 @@ bool Mpegfileplayer::playing()
 bool Mpegfileplayer::initialize(void *init_args)
 {
 	int threads = 0;
-#if 0
 	//struct init_opts *opts = NULL;
 	short noscan = 0;
+	init_opts *opts = NULL;
 
 	if (init_args)
 		opts = (struct init_opts *)init_args;
@@ -273,15 +273,11 @@ bool Mpegfileplayer::initialize(void *init_args)
 
 		if (!strcmp(on, "threads"))
 			threads = *((int*)(opts->value)); 
-		else if (!strcmp(on, "noscan"))
-			server->set_time_scan(0);
+		else if (!strcmp(on, "scanmp3s"))
+			server->set_time_scan(*((short*)(opts->value)));
 
 		opts = opts->next;
 	}
-#else
-	if (init_args)
-		threads = *((int*)init_args);
-#endif
 
 // Initialize server
   if (!server->initialize(filename)) {

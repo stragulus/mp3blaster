@@ -11,6 +11,21 @@
       root to set the level, or run mp3blaster as root (at your own risk).
 
 <LI>  <FONT CLASS="listitem">
+        Listing files over a network is very slow
+      </FONT><BR>
+
+      By default, mp3blaster scans each file to find ID3 tags. Disable this
+      by setting File.ID3Names to 0 in your config file.
+
+<LI>  <FONT CLASS="listitem">
+        When playing mp3's over a network, there's a delay before each file.
+      </FONT><BR>
+
+      By default, mp3blaster reads the entire mp3 file to scan the length in
+      seconds, otherwise VBR encoded mp3's will show up with the wrong song
+      length. To disable this, set ScanMP3 to 1 in your config file.
+
+<LI>  <FONT CLASS="listitem">
         How do you get the colours and borders right in an xterm?
        </FONT><BR>
 

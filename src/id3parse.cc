@@ -95,8 +95,13 @@ id3Parse::parseID3()
 	FILE *fp;
 	int success = 0;
 
-	if (!(fp = fopen(flnam, "r")) || !search_header(fp))
+	if (!(fp = fopen(flnam, "r")))
 		return NULL;
+	if (!search_header(fp))
+	{
+		fclose(fp);
+		return NULL;
+	}
 
 	char buf[40];
 

@@ -11,6 +11,8 @@
 #include "winitem.h"
 #include <stdio.h>
 
+enum sw_searchflags { SW_SEARCH_NONE, SW_SEARCH_CASE_INSENSITIVE };
+
 class scrollWin
 {
 public:
@@ -19,8 +21,12 @@ public:
 
 	void changeSelection(int);
 	void invertSelection();
-	void selectItem();
+	void selectItem(int which = -1);
 	void deselectItem(int);
+	void deselectItems(); //deselect *all* items
+	void selectItems(const char *pattern, const char *type = "regex",
+		sw_searchflags flags = SW_SEARCH_CASE_INSENSITIVE,
+		short display_index = 0);
 	void setTitle(const char*);
 	const char *getTitle();
 	void swRefresh(short);
@@ -29,6 +35,7 @@ public:
 	virtual short addItem(const char **, short *, short colour=0, int index=-1,
 	             short before=0, void *object=NULL, itemtype type=TEXT);
 	void changeItem(int, const char *, short nameindex=0);
+	void changeItem(int, char *(*)(void *), void *arg=NULL, short nameindex=0);
 	void replaceItem(int, winItem *newitem);
 	void setItem(int);
 	virtual void delItem(int, int del=1);
@@ -55,6 +62,8 @@ public:
 	void drawTitleInBorder(int);
 	int itemWidth() { return width - (xoffset ? 2 : 0); }
 	void hideScrollbar() { hide_bar = 1; }
+	void enableScreenUpdates() { enable_updates = 1; }
+	void disableScreenUpdates() { enable_updates = 0; }
 	int sw_selection;
 
 protected:
@@ -84,6 +93,15 @@ private:
 	int selectID; //increases after each select, used to sort selected items
 	              //in the order they were selected.
 	int draw_title; //1 if title should be drawn in border
+
+	/* enable_updates determines whether functions in this class will call
+	 * call swRefresh after altering this window's content. If zero, one
+	 * should always call swRefresh(1) after calling a function that messes
+	 * with content/layout. Default is to allow updates from within the class.
+	 * You might want to disable it temporarily when performing lots of 
+	 * addItems() in a loop, etc.
+	 */
+	short enable_updates; 
 };
 
 #endif /* _SCROLLWIN_CLASS_ */

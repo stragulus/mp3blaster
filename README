@@ -44,7 +44,7 @@ allows for very sophisticated playback orders.
 
     - Threads. Most Operating Systems have a pthreads implementation. If
       yours doesn't, you can use libpth instead (see section Links for
-      the URL) by conifuring with an extra flag '--enable-pth'.
+      the URL) by conifuring with an extra flag '--with-pth'.
 
 3.  Installation
 -------------------------
@@ -58,13 +58,13 @@ allows for very sophisticated playback orders.
     There are a few important options that can have an impact on the
     quality of audio-playback and CPU usage on your system. These are:
 
-    --enable-newthreads (to be used with --enable-pth)
+    --enable-newthreads (auto-enables --with-pth)
         This will use an alternative playback buffering system. It
         might work better than the conventional buffering system on many
         systems. Please give it a try if you're experiencing skips
         during sound playback. Mail problems / successes.
 
-    --enable-pth (without --enable-newthreads)
+    --with-pth (without --enable-newthreads)
         Uses libpth instead of the OS-specific pthreads implementation.
         This might reduce CPU-overhead and improve sound playback.
         Please try this and reports problems / successes.

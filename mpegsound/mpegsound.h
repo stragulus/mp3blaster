@@ -123,6 +123,21 @@
 /*******************************************/
 /* Define values for Microsoft WAVE format */
 /*******************************************/
+#ifdef WORDS_BIGENDIAN
+
+#define RIFF            0x52494646
+#define WAVE            0x57415645
+#define FMT             0x666D7420
+#define DATA            0x64617461
+#define PCM_CODE        (1 << 8)
+#define WAVE_MONO       (1 << 8)
+#define WAVE_STEREO     (2 << 8)
+
+#define MODE_MONO   0
+#define MODE_STEREO 1
+
+#else
+
 #define RIFF		0x46464952
 #define WAVE		0x45564157
 #define FMT		0x20746D66
@@ -133,6 +148,8 @@
 
 #define MODE_MONO   0
 #define MODE_STEREO 1
+
+#endif
 
 /********************/
 /* Type definitions */
@@ -394,10 +411,12 @@ public:
   static int  setvolume(int volume);
   int  fix_samplesize(void *buffer, int size);
 private:
-  Rawplayer(int audiohandle, int audiobuffersize);
+  Rawplayer(char *filename, int audiohandle, int audiobuffersize);
   short int rawbuffer[RAWDATASIZE];
   int  rawbuffersize;
   int  audiobuffersize;
+	short first_init;
+	char *filename;
   int  rawstereo,rawsamplesize,rawspeed,want8bit;
   short forcetomono,forceto8;
   int  quota;
@@ -605,7 +624,7 @@ public:
   void setframe(int framenumber);
 #ifdef NEWTHREAD
   int skip;
-
+  unsigned char *sound_buf;
   void continueplaying(void); 
   void createplayer(void);
   void abortplayer(void);
@@ -694,7 +713,7 @@ private:
   /* Loading MPEG-Audio stream */
   /*****************************/
 public:
-	//set_time_scan(short scan) { scan_mp3 = (scan ? 1 : 0); }
+	void set_time_scan(short scan) { scan_mp3 = (scan ? 1 : 0); }
 
 private:
   Soundinputstream *loader;   // Interface
@@ -705,7 +724,7 @@ private:
   }u;
   char buffer[4096];
   int  bitindex;
-	short scan_mp3; //default = 1 => scan entire mp3 to calculate length in sec.
+	short scan_mp3; //default = 1 => don't scan mp3 to calculate length in sec.
   bool fillbuffer(int size){bitindex=0;return loader->_readbuffer(buffer,size);};
   void sync(void)  {bitindex=(bitindex+7)&0xFFFFFFF8;};
   bool issync(void){return (bitindex&7);};
@@ -887,14 +906,12 @@ private:
   int __errorcode;
 };
 
-#if 0
 struct init_opts
 {
 	char option[30];
 	void *value;
-	struct init_opts_t *next;
+	struct init_opts *next;
 };
-#endif
 
 // Class for playing wave file
 class Wavefileplayer : public Fileplayer

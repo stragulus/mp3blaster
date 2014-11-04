@@ -20,7 +20,10 @@ Oggplayer::Oggplayer()
 	of = NULL;
 	wordsize = 2; //2 bytes
 	bigendian = 0;
-#ifdef WORDS_BIGENDIAN
+/* Martijn suggests that big endiannes is already taken care of in the rawplayer
+ * class.
+ */
+#if 0 && defined(WORDS_BIGENDIAN)
 	bigendian = 1;
 #endif
 	//TODO: On what hardware is data unsigned, and how do I know?
@@ -75,7 +78,7 @@ bool Oggplayer::openfile(char *filename, char *device, soundtype write2file)
 	}
 
 	vorbis_info *vi = ov_info(of, -1);
-	channels = vi->channels;
+	channels = vi->channels - 1;
 	srate = vi->rate;
 	resetsound = 1;
 	info.bitrate = (int)vi->bitrate_nominal;
@@ -130,7 +133,8 @@ void Oggplayer::closefile()
 
 void Oggplayer::setforcetomono(short flag)
 {
-	mono = 1;
+	if (flag)
+		mono = 1;
 	//TODO: make a function in soundplayer class to force mono.
 }
 
@@ -157,13 +161,14 @@ bool Oggplayer::run(int sec)
 	long bytes_read = ov_read(of, soundbuf, 4096, bigendian, wordsize, signeddata,
 		&bitstream);
 
+	if (sec); //prevent warning
+
 	if (bytes_read < 0)
 		return seterrorcode(SOUND_ERROR_BAD);
 	if (!bytes_read)
 		return seterrorcode(SOUND_ERROR_FINISH);
 	
 	vorbis_info *vi = ov_info(of, bitstream);
-	short changed = 0;
 
 	if (channels != vi->channels)
 		channels = vi->channels, resetsound++;
@@ -173,10 +178,10 @@ bool Oggplayer::run(int sec)
 	if (resetsound)
 	{
 		debug("OggVorbis channels/samplerate changed.\n");
-		player->setsoundtype(vi->channels, (wordsize == 2 ? AFMT_S16_NE : AFMT_S8),
+		player->setsoundtype(vi->channels - 1, (wordsize == 2 ? AFMT_S16_NE : AFMT_S8),
 			vi->rate >> downfreq);
 		char bla[100];
-		sprintf(bla, "channels/wordsize/rate=%d/%d/%d\n",vi->channels,wordsize,
+		sprintf(bla, "channels/wordsize/rate=%d/%d/%ld\n",vi->channels,wordsize,
 			vi->rate >> downfreq);
 		debug(bla);
 		resetsound = 0;

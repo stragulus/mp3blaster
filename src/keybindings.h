@@ -1,6 +1,11 @@
 /* The order in the help window in mp3blaster is determined by the order of
  * keys in this array
  */
+#define PM_NORMAL 1
+#define PM_FILESELECTION 2
+#define PM_HELP 4
+#define PM_ANY ((unsigned short)~0x0)
+
 keybind_t keys[] = 
 {
 	{ KEY_F(1), CMD_SELECT_FILES, PM_NORMAL, "Select Files" },
@@ -21,15 +26,20 @@ keybind_t keys[] =
 	{ KEY_F(7), CMD_FILE_ADD_URL, PM_FILESELECTION, "Add URL(shoutcast)" },
 	{ '/', CMD_FILE_START_SEARCH, PM_FILESELECTION, "Start File Search" },
 	{ 's', CMD_FILE_TOGGLE_SORT, PM_FILESELECTION, "Toggle File Sort" },
-	{ 'f', CMD_FILE_TOGGLE_DISPLAY, PM_FILESELECTION, "Toggle File Display" },
+	{ 'f', CMD_TOGGLE_DISPLAY, PM_NORMAL | PM_FILESELECTION, 
+		"Toggle File Display" },
 	{ KEY_BACKSPACE, CMD_FILE_UP_DIR, PM_FILESELECTION, "Go Up One Dir" },
 	{ ' ', CMD_FILE_SELECT, PM_FILESELECTION, "Select File" },
+	{ 'r', CMD_FILE_RENAME, PM_FILESELECTION, "Rename File" },
 	{ KEY_F(6), CMD_TOGGLE_REPEAT, PM_NORMAL, "Toggle Repeat" },
 	{ KEY_F(7), CMD_TOGGLE_SHUFFLE, PM_NORMAL, "Toggle GroupShuffle" },
 	{ KEY_F(8), CMD_TOGGLE_PLAYMODE, PM_NORMAL, "Toggle Play Mode" },
-	{ KEY_F(9), CMD_START_PLAYLIST, PM_ANY, "Start/Stop Playlist" },
+	{ '[', CMD_PLAY_PREVGROUP, PM_ANY, "Previous Group" },
+	{ ']', CMD_PLAY_NEXTGROUP, PM_ANY, "Next Group" },
 	{ KEY_F(10), CMD_CHANGE_THREAD, PM_ANY, "Change #Threads" },
 	{ ' ', CMD_SELECT, PM_NORMAL, "Select File" },
+	{ 'S', CMD_SELECT_ITEMS, PM_ANY, "Select Some Items" },
+	{ 'U', CMD_DESELECT_ITEMS, PM_ANY, "Unselect All" },
 	{ 'b', CMD_FILE_MARK_BAD, PM_FILESELECTION, "Mark file(s) as bad" },
 	{ 'D', CMD_FILE_DELETE, PM_FILESELECTION, "Delete file" },
 	{ 't', CMD_TOGGLE_MIXER, PM_ANY, "Toggle Mixer Device" },
@@ -46,12 +56,12 @@ keybind_t keys[] =
 	{ KEY_NPAGE, CMD_NEXT_PAGE, PM_ANY, "Next Page" },
 	{ KEY_UP, CMD_UP, PM_ANY, "Move Scrollbar Up" },
 	{ KEY_DOWN, CMD_DOWN, PM_ANY, "Move Scrolbar Down" },
-	{ '1', CMD_PLAY_PREVIOUS, PM_ANY, "Previous Song" },
-	{ '2', CMD_PLAY_PLAY, PM_ANY, "Play Song" },
-	{ '3', CMD_PLAY_NEXT, PM_ANY, "Next Song" },
-	{ '4', CMD_PLAY_REWIND, PM_ANY, "Rewind Song" },
-	{ '5', CMD_PLAY_STOP, PM_ANY, "Stop Song" },
-	{ '6', CMD_PLAY_FORWARD, PM_ANY, "Forward Song" },
+	{ '4', CMD_PLAY_PREVIOUS, PM_ANY, "Previous Song" },
+	{ '5', CMD_PLAY_PLAY, PM_ANY, "Play Song" },
+	{ '6', CMD_PLAY_NEXT, PM_ANY, "Next Song" },
+	{ '1', CMD_PLAY_REWIND, PM_ANY, "Rewind Song" },
+	{ '2', CMD_PLAY_STOP, PM_ANY, "Stop Song" },
+	{ '3', CMD_PLAY_FORWARD, PM_ANY, "Forward Song" },
 	{ '-', CMD_HELP_PREV, PM_ANY, "Scroll Up Helptext" },
 	{ '+', CMD_HELP_NEXT, PM_ANY, "Scroll Down Helptxt" },
 	{ 'E', CMD_PLAY_SKIPEND, PM_ANY, "Skip to End Song" },

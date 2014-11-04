@@ -26,6 +26,7 @@
 #include <ctype.h>
 #include <sys/types.h>
 #include <dirent.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <pwd.h>
 #include <fnmatch.h>
@@ -34,6 +35,8 @@
 #include "mp3blaster.h"
 #include "id3parse.h"
 #include <stdarg.h>
+
+#include NCURSES
 extern _globalopts globalopts;
 void debug(const char *fmt, ...);
 
@@ -420,7 +423,7 @@ is_audiofile(const char *filename)
 		return 0;
 	}
 	return (is_mp3(filename) || is_sid(filename) || is_httpstream(filename) ||
-		is_ogg(filename));
+		is_ogg(filename) || is_wav(filename));
 }
 
 int
@@ -559,4 +562,207 @@ id3_filename(const char *filename)
 	delete id3;
 
 	return id3name;
+}
+
+/* same as above, only this function always returns a non-NULL char* pointer,
+ * which must be delete[]'d instead of free()'d. Also, the argument is
+ * a void* pointer.
+ * The reason for this seamingly weird behaviour is because it is fed to
+ * changeItem() in the scrollWin class.
+ */
+char *
+id3_filename(void *filename)
+{
+	char *result =  id3_filename((char*)filename);
+
+	if (!result)
+	{
+		result = new char[strlen((char*)filename) + 1];
+		strcpy(result, (char*)filename);
+	}
+	else
+	{
+		//it must be allocated using new.
+		char * result2 = new char[strlen(result) + 1];
+		strcpy(result2, result);
+		free(result);
+		result = result2;
+	}
+	return result;
+}
+
+
+/* Function   : lowercase
+ * Description: Transforms uppercase characters in a string to lowercase.
+ * Parameters : str   : (char*)string to be lowercased
+ * Returns    : Nothing.
+ * SideEffects: If str is not 0-terminated, probably many.
+ */
+void
+lowercase(char *str)
+{
+	unsigned int i = 0;
+
+	if (!str)
+		return;
+
+	while (str[i])
+	{
+		if (isupper(str[i]))
+			str[i] = tolower(str[i]);
+		i++;
+	}
+}
+
+/* Function   : get_input
+ * Description: Gets input from a user. Predefined input value may be given,
+ *            : making it easy for the user to alter that.
+ * Parameters : win   : window to get input from
+ *            : defval: default input value (optional)
+ *            : maxlen: Maximum length of input.
+ *            : y     : initial cursor y position in window
+ *            : x     :    ""     ""   x   ""     ""   ""
+ * Returns    : Input given by user. Free with delete[] after use.
+ * SideEffects: Sets several curses input and output options. You will want
+ *            : to reset them back to the values they were before calling
+ *            : this function, as the current settings cannot be read by
+ *            : this function.
+ */
+#if 0
+char *
+get_input(WINDOW *win, const char*defval, int maxlen, int y, int x)
+{
+	char *input = new char[maxlen + 1];
+	int
+		curlen = 0,
+		cursor_pos = 0, //offset from beginning cursor pos. Also index in input.
+		i = 0, c = 0;
+	short
+		insert_mode = 1; //0 -> replace i/o insert
+
+	memset(input, 0, maxlen + 1);
+	if (defval)
+	{
+		strncpy(input, defval, maxlen);
+		curlen = strlen(defval);
+		mvwaddstr(win, y, x, input);
+		if (strlen(defval) > (unsigned int)maxlen)
+			curlen = maxlen;
+	}
+
+	noecho();
+	cbreak();
+	leaveok(win, FALSE);
+	nodelay(win, FALSE);
+	wmove(win, y,x);
+	wrefresh(win);
+
+	while ((c = getch()) != 13)
+	{
+		switch(c)
+		{
+		case KEY_LEFT:
+			if (cursor_pos > 0)
+			{
+				cursor_pos--;
+			}
+			break;
+		case KEY_RIGHT:
+			if (cursor_pos < curlen)
+				cursor_pos++;
+			break;
+		case KEY_BACKSPACE:
+			if (cursor_pos > 0)
+			{
+				for (i = cursor_pos - 1; i < curlen - 1; i++)
+				{
+					input[i] = input[i + 1];
+					mvwaddch(win, y, x + i, input[i]);
+				}
+				input[--curlen] = '\0';
+				mvwaddch(win, y, x + curlen, ' ');
+				cursor_pos--;
+			}
+			break;
+		default:
+			if (cursor_pos < maxlen && isprint(c))
+			{
+				mvwaddch(win, y, x + cursor_pos, c);
+				input[cursor_pos] = c;
+				if (cursor_pos == curlen)
+					curlen++;
+				if (cursor_pos < maxlen - 1)
+					cursor_pos++;
+			}
+		}
+		//debug("Cursor_pos: %d\n", cursor_pos);
+		wmove(win, y, x + cursor_pos);
+		wrefresh(win);
+	}
+	return input;
+};
+#endif
+
+int
+sort_files_fun(const void *a, const void *b)
+{
+	sortmodes_t smode = globalopts.fw_sortingmode;
+	const char
+		*fa = chop_path(*(char**)a), 
+		*fb = chop_path(*(char**)b);
+
+	if (smode == FW_SORT_ALPHA) //case-insenstive alphabetical sort
+		return (strcasecmp(fa, fb));
+	if (smode == FW_SORT_ALPHA_CASE) //case-sensitive "" ""
+		return (strcmp(fa, fb));
+	if (smode == FW_SORT_NONE) //don't sort
+		return 0;
+
+	struct stat sa, sb;
+
+	if (stat(fa, &sa) < 0 || stat(fb, &sb) < 0) //can't stat one o/t files
+		return 0;
+		
+	if (smode == FW_SORT_MODIFY_NEW || smode == FW_SORT_MODIFY_OLD)
+	{
+		time_t
+			time_a = sa.st_mtime,
+			time_b = sb.st_mtime;
+
+		if (time_a < time_b)
+			return (smode == FW_SORT_MODIFY_OLD ? -1 : 1);
+		else if (time_a > time_b)
+			return (smode == FW_SORT_MODIFY_OLD ? 1 : -1);
+		return 0;
+	}
+
+	if (smode == FW_SORT_SIZE_SMALL || smode == FW_SORT_SIZE_BIG)
+	{
+		off_t
+			size_a = sa.st_size,
+			size_b = sb.st_size;
+
+		if (size_a < size_b)
+			return (smode == FW_SORT_SIZE_SMALL ? -1 : 1);
+		else if (size_a > size_b)
+			return (smode == FW_SORT_SIZE_SMALL ? 1 : -1);
+		return 0;
+	}
+
+	return 0;
+}
+
+/* Function   : sort_files
+ * Description: Sorts files. Sort order is determined by globalopts.fw_sortmode
+ * Parameters : files: Array to sort. Its elements can be shuffled.
+ *            :        Paths in filenames are not taken into account when
+ *            :        sorting!
+ *            : nrfiles: Number of files in files array.
+ * Returns    : Nothing.
+ * SideEffects: Mangles 'files'.
+ */
+void
+sort_files(char **files, int nrfiles)
+{
+	qsort(files, nrfiles, sizeof(char*), sort_files_fun);
 }

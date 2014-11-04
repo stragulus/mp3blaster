@@ -16,8 +16,8 @@ $srcdir=.
 %license ${srcdir}/COPYING
 %readme ${srcdir}/README
 %description mp3blaster - An interactive text-console based mp3 player. 
-%version 3.0p8
-%packager Giuseppe "Cowo" Corbelli <cowo@lugbs.linux.it>
+%version 3.1
+%packager Bram Avontuur <bram@mp3blaster.avontuur.org>
 
 # Manpage extensions...
 $MAN1EXT=1

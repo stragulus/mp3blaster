@@ -38,6 +38,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/types.h>
+#include <regex.h>
+#include <fnmatch.h>
 #include "global.h"
 #include "scrollwin.h"
 
@@ -130,6 +133,7 @@ void scrollWin::init(int lines, int ncols, int begin_y, int begin_x,
 	xoffset = x_offset;
 	shown_range[0] = shown_range[1] = 0;
 	colour = color;
+	enable_updates = 1;
 	//wbkgd(sw_win, COLOR_PAIR(colour)|A_BOLD);
 
 	/* create empty line */
@@ -145,6 +149,12 @@ void scrollWin::init(int lines, int ncols, int begin_y, int begin_x,
 	selectID = 1;
 }
 
+/* Function   : invertSelection
+ * Description: Inverts the selection of items
+ * Parameters : None.
+ * Returns    : Nothing.
+ * SideEffects: Refreshes the screen if updates are enabled.
+ */
 void
 scrollWin::invertSelection()
 {
@@ -159,9 +169,16 @@ scrollWin::invertSelection()
 			tmp->select(selectID++);
 		tmp = tmp->next;
 	}
-	swRefresh(1);
+	if (enable_updates)
+		swRefresh(0);
 }
 
+/* Function   : setTitle
+ * Description: Sets this window's title. Doesn't refresh the screen though.
+ * Parameters : tmp: the title.
+ * Returns    : Nothing.
+ * SideEffects: None.
+ */
 void
 scrollWin::setTitle(const char *tmp)
 {
@@ -176,23 +193,32 @@ scrollWin::setTitle(const char *tmp)
 /* FunctionName : swRefresh
  * Description  : Redraws selection-window. Usually called after 
  *              : creating and initializing the window or when the highlighted
- *              : selection-bar is to be replaced.
- * Arguments    : scroll: Whether or not the contents of the window scroll 
- *              :       : up/down (non-zero if they do), or if the window 
- *              :       : needs to be redrawn. If scroll == 2 the window will
- *              :       : be erased completely before anything's added to it.
+ *              : selection-bar is to be replaced. If the global variable
+ *              : 'enable_updates' is zero, no functions in this class should
+ *              : ever call this function!
+ * Arguments    : scroll:
+ *              : \=>0  : Textual content of the window has not been altered. 
+ *              :       : Each on-screen line will be drawn over without 
+ *              :       : prior cleaning, so you may only use this when 
+ *              :       : colours or text-attributes have changed, or when the
+ *              :       : highlighted scrollbar has been moved without
+ *              :       : scrolling the onscreen content.
+ *              : \=>1  : Contents of window have scrolled, each line will
+ *              :       : be cleared and filled with the correct item.
+ *              : \=>2  : Same as 1, only now the border will be redrawn too
  */
 void scrollWin::swRefresh(short scroll)
 {
 	int i;
 	winItem *current = NULL;
 
-	if (scroll == 2)
-	{
+	if (scroll >= 1)
 		clearwin();
-		if (want_border)
-			drawBorder();
-	}
+
+	if (scroll == 2 && want_border)
+		drawBorder();
+
+	//walk through each line that contains an item in this window
 	for (i = (xoffset ? 1 : 0); i < MIN((height) - (xoffset ? 1 : 0), nitems -
 		shown_range[0] + 1); i++)
 	{
@@ -209,8 +235,10 @@ void scrollWin::swRefresh(short scroll)
 			continue;
 		}
 		
-		/* erase current line if needed */
-		if (scroll == 1 || item_index == sw_selection)
+		//whipe items first, when content highlighted bar is on
+		//this line (for scrolled/changed content, the window has been
+		//cleared already).
+		if (!scroll && item_index == sw_selection)
 		{
 			move(by + i,bx + xoffset);
 			addstr(sw_emptyline);
@@ -232,10 +260,14 @@ void scrollWin::swRefresh(short scroll)
 		int
 			maxdrawlen = width - (xoffset ? 2 : 0),
 			drawlen = MIN(strlen(item_name), maxdrawlen);
+		char str[maxdrawlen + 1];
+		memset(str , ' ', maxdrawlen);
+		str[maxdrawlen] = '\0';
+		strncpy(str, item_name, drawlen);
+
 		short kleur = current->getColour();	
 		attr_t drawmode = (item_index == sw_selection  && !hide_bar ?
 		                  A_REVERSE : A_NORMAL);
-
 		if (kleur == -1)
 			kleur = colour;
 		if (current->selected())
@@ -243,9 +275,8 @@ void scrollWin::swRefresh(short scroll)
 		
 		//mvwaddnstr(sw_win, i, xoffset, item_name, drawlen);
 		attrset(drawmode|COLOR_PAIR(kleur));
-		move(by + i, bx + xoffset); addnstr(item_name, drawlen);
+		move(by + i, bx + xoffset); addnstr(str, maxdrawlen);
 		attrset(COLOR_PAIR(CP_DEFAULT)|A_NORMAL);
-		//mvwchgat(sw_win, i, xoffset, drawlen, drawmode, kleur, NULL);
 	}
 	if (scroll)
 		touchwin(stdscr);
@@ -267,12 +298,13 @@ int scrollWin::isSelected(int which)
 	return 0;
 }
 
-/* Function Name: scrollWin::changeSelection
- * Description  : the currently selected item in sw is increased (or 
- *              : decreased if change < 0) with change. The window is 
- *              : redrawn and shows the highlighted bar over the new
- *              : selection.
- * Argument     : change: selection-modifier.
+/* Function   : scrollWin::changeSelection
+ * Description: the currently selected item in sw is increased (or 
+ *            : decreased if change < 0) with change. The window is 
+ *            : redrawn (unless enable_updates = 0) and shows the 
+ *            : highlighted bar over the new selection.
+ * Parameters : change: selection-modifier.
+ * SideEffects: None.
  */
 void scrollWin::changeSelection(int change)
 {
@@ -291,8 +323,6 @@ void scrollWin::changeSelection(int change)
 		tmp->getColour() : -1);
 	if (kleur == -1)
 		kleur = colour;
-	//mvwchgat(this->sw_win, (this->sw_selection - this->shown_range[0]) + 1,
-	//	this->xoffset, this->width - 1 - this->xoffset, A_NORMAL, kleur, NULL);
 
 	if (new_selection >= this->nitems)
 		new_selection = 0;
@@ -321,7 +351,8 @@ void scrollWin::changeSelection(int change)
 	}
 
 	this->sw_selection = new_selection;
-	swRefresh(need_to_scroll);
+	if (enable_updates)
+		swRefresh(need_to_scroll);
 }
 
 /* deselect an item in this object. Usually the item to
@@ -336,15 +367,44 @@ void scrollWin::deselectItem(int which)
 
 	//TODO: Add a parameter to swRefresh that will make it only redraw 1 item.
 	//And a function that determines if an item is onscreen..
-	swRefresh(1);
+	if (enable_updates)
+		swRefresh(0);
 }
 
-/* [de]select sw_selection
- * sw->sw_window will be updated.
+/* Function   : deselectItems
+ * Description: Deselects all items in this window
+ * Parameters : None.
+ * Returns    : Nothing.
+ * SideEffects: None (e.g. refresh the screen yourself afterwards with
+ *            : swRefresh(1))
  */
-void scrollWin::selectItem()
+void
+scrollWin::deselectItems()
 {
-	winItem *tmp = getWinItem(sw_selection);
+	winItem *tmp = first;
+	short old_enable_updates = enable_updates;
+
+	enable_updates = 0;
+	while(tmp)
+	{
+		if (tmp->selected())
+			tmp->deselect();
+		tmp = tmp->next;
+	}
+	enable_updates = old_enable_updates;
+}
+
+/* Function   : selectItem
+ * Description: Selects a given item if it was not selected. If it was 
+ *            : selected, it will be deselected.
+ * Parameters : which: (int)index of item
+ * Returns    : Nothing.
+ * SideEffects: Updates the screen (if enable_updates != 0)
+ */
+void scrollWin::selectItem(int which)
+{
+	winItem *tmp = (which == -1 ? getWinItem(sw_selection) :
+		getWinItem(which));
 
 	if (!nitems || !tmp) /* nothing to select */
 		return;
@@ -356,9 +416,24 @@ void scrollWin::selectItem()
 	else
 		tmp->select(selectID++);
 
-	swRefresh(0);
+	if (enable_updates)
+		swRefresh(0);
 }
 
+/* Function   : addItem
+ * Description: adds an item to the list of items in this window
+ * Parameters : item: (const char*)item description
+ *            : status: (short)display mode for this item (see setDisplayMode)
+ *            : colour: (short)colorpair for this item. Default = -1 (use
+ *            :       : this window's global colour)
+ *            : index : (int) Index after which to insert item
+ *            : before: (short)If non-zero, insert item *before* 'index'
+ *            : object: (void*)Pointer that will be linked to this item
+ *            : type  : (enum itemtype)TEXT or SUBWIN. If SUBWIN, 'object'
+ *            :         must be a pointer to a scrollWin class.
+ * Returns    : index on success, -1 on failure.
+ * SideEffects: It is advised to call swRefresh after [a series of] addItem[s].
+ */
 short
 scrollWin::addItem(const char *item, short status, short colour, int index,
                    short before, void *object, itemtype type)
@@ -367,11 +442,21 @@ scrollWin::addItem(const char *item, short status, short colour, int index,
 	return addItem(bla, &status, colour, index, before, object, type);
 }
 
-/* addItem adds an item to the selection-list of this object.
- * item is a list of descriptions for the item, status an array for
- * the indexes used for the descriptions. item must contain one more
- * element than status, the last element being NULL.
- * It is advised to call swRefresh after [a series of] addItem[s].
+/* Function   : addItem
+ * Description: adds an item to the list of items in this window
+ * Parameters : item  : (const char**)list of item descriptions, one for 
+ *            :       : each display mode given in 'status', plus an extra
+ *            :       : last NULL pointer (forget it and be very sorry)
+ *            : status: (short*)display modes for this item
+ *            : colour: (short)colorpair for this item. Default = -1 (use
+ *            :       : this window's global colour)
+ *            : index : (int) Index after which to insert item
+ *            : before: (short)If non-zero, insert item *before* 'index'
+ *            : object: (void*)Pointer that will be linked to this item
+ *            : type  : (enum itemtype)TEXT or SUBWIN. If SUBWIN, 'object'
+ *            :         must be a pointer to a scrollWin class.
+ * Returns    : index on success, -1 on failure.
+ * SideEffects: It is advised to call swRefresh after [a series of] addItem[s].
  */
 short
 scrollWin::addItem(const char **item, short *status, short colour, int index,
@@ -381,7 +466,7 @@ scrollWin::addItem(const char **item, short *status, short colour, int index,
 
 	winItem *tmp;
 	if (!item || !status)
-		return 0;
+		return -1;
 
 	tmp = new winItem;
 	while (item[i])	
@@ -395,6 +480,14 @@ scrollWin::addItem(const char **item, short *status, short colour, int index,
 	return addItem(tmp, index, before);
 }
 
+/* Function   : addItem
+ * Description: adds an item to the list of items in this window
+ * Parameters : newitem: (winItem *)item to insert
+ *            : index : (int) Index after which to insert item
+ *            : before: (short)If non-zero, insert item *before* 'index'
+ * Returns    : 1 on success, 0 on failure.
+ * SideEffects: It is advised to call swRefresh after [a series of] addItem[s].
+ */
 short
 scrollWin::addItem(winItem *newitem, int index, short before)
 {
@@ -404,15 +497,18 @@ scrollWin::addItem(winItem *newitem, int index, short before)
 		first->prev = NULL;
 		first->next = NULL;
 		last = first;
+		index=0; /* last/first/only item ;) */
 	}
 	else
 	{
 		winItem *tmp = (index == -1 ? last : getWinItem(index));
+		if(index==-1)
+		    index=nitems;
 
 		if (!tmp)
 		{
 			debug("Tried to add an item before/after non-existant item.\n");
-			return 0;
+			return -1;
 		}
 		if (before)
 		{
@@ -444,11 +540,49 @@ scrollWin::addItem(winItem *newitem, int index, short before)
 
 	if (this->nitems > 1 && this->shown_range[1] < height - (xoffset?3:1))
 		++(this->shown_range[1]);
-	return 1;
+	return index;
 }
 
-/* changeItem changes an item. It does not destroy the winItem object.
- * It is advised to call swRefresh after [a series of] changeItem[s].
+/* Function   : changeItem
+ * Descrption : changeItem changes an item's description for 1 display mode,
+ *            : without recreating the underlying winItem object.
+ * Parameters : item_index: (int)id of the item to be altered.
+ *            : func      : (char *(*)(void *)) function to call to obtain the 
+ *            :           : description to change to. The result of this
+ *            :           : function must be allocated with new, not malloc!
+ *            :           : It will be delete[]'d by this function.
+ *            : arg	      : argument to feed to the above function. This one
+ *            :           : must be allocated with malloc() & friends!
+ *            :           : It will be freed() by this class.
+ *            : nameindex : display mode to change description for.
+ * Returns    : Nothing.
+ * SideEffects: It is necessary to call swRefresh after changeItem[s] calls,
+ *            : to reflect the update on the screen (unless the item is
+ *            : offscreen, but you don't know that, muhahah).
+ */
+void scrollWin::changeItem(int item_index, char *(*func)(void *), void *arg, short nameindex)
+{
+	winItem *tmp;
+	if ( !first || (item_index + 1) > nitems || item_index < 0 ||
+		!func )
+		return;
+
+	tmp = getWinItem(item_index);
+	if (tmp)
+		tmp->setNameFun(func, arg, nameindex);
+	else
+		debug("changeItem on non-existant item. Duh..?\n");
+}
+/* Function   : changeItem
+ * Descrption : changeItem changes an item's description for 1 display mode,
+ *            : without recreating the underlying winItem object.
+ * Parameters : item_index: (int)id of the item to be altered.
+ *            : item      : (const char*)description to change to
+ *            : nameindex : display mode to change description for.
+ * Returns    : Nothing.
+ * SideEffects: It is necessary to call swRefresh after changeItem[s] calls,
+ *            : to reflect the update on the screen (unless the item is
+ *            : offscreen, but you don't know that, muhahah).
  */
 void scrollWin::changeItem(int item_index, const char *item, short nameindex)
 {
@@ -464,6 +598,13 @@ void scrollWin::changeItem(int item_index, const char *item, short nameindex)
 		debug("changeItem on non-existant item. Duh..?\n");
 }
 
+/* Function   : replaceItem
+ * Description: Replaces an item with another one.
+ * Parameters : item_index: (int)id of item
+ *            : newitem   : (winItem*)item to change to.
+ * Returns    : Nothing.
+ * SideEffects: Call swRefresh to reflect updates o n screen.
+ */
 void
 scrollWin::replaceItem(int item_index, winItem *newitem)
 {
@@ -484,11 +625,11 @@ scrollWin::replaceItem(int item_index, winItem *newitem)
  
 /* Function   : delItem
  * Description: Remove item at `item_index' from linked list. If del != 0,
- *            : delete the winItem. If del = 0, don't delete it; just set
+ *            : delete the winItem. If del == 0, don't delete it; just set
  *            : its next/prev to NULL and deselect it if it was selected.
  * Parameters : item_index, del: See Description.
  * Returns    : Nothing.
- * SideEffects: See Description.
+ * SideEffects: Screen will be updated, unless enable_updates = 0.
  */
 void scrollWin::delItem(int item_index, int del)
 {
@@ -557,7 +698,8 @@ void scrollWin::delItem(int item_index, int del)
 		//mvwaddstr(this->sw_win, 1, xoffset, sw_emptyline);
 		move(by + (xoffset?1:0), bx + xoffset);
 		addstr(sw_emptyline);
-		swRefresh(1);
+		if (enable_updates)
+			swRefresh(1);
 		return;
 	}
 
@@ -591,9 +733,17 @@ void scrollWin::delItem(int item_index, int del)
 	if (this->sw_selection < this->shown_range[0])
 		this->sw_selection = this->shown_range[0];
 
-	swRefresh(1);
+	if (enable_updates)
+		swRefresh(1);
 }
 
+/* Function   : pageDown
+ * Description: Scrolls content down by a page, or less if there are less items
+ *            : than lines.
+ * Parameters : None.
+ * Returns    : Nothing.
+ * SideEffects: updates the screen, unless enable_updates = 0
+ */
 void scrollWin::pageDown()
 {
 	int
@@ -642,7 +792,8 @@ void scrollWin::pageDown()
 
 	changeSelection(new_selection - old_selection);
 
-	swRefresh(2);
+	if (enable_updates)
+		swRefresh(1);
 }
 
 /* Once to be merged with scrollWin::pageDown...(find the 10 diffs! ;) */
@@ -689,7 +840,8 @@ void scrollWin::pageUp()
 
 	changeSelection(new_selection - old_selection);
 
-	swRefresh(2);
+	if (enable_updates)
+		swRefresh(1);
 }
 
 /* returns the item (string) that is currently highlighted by this window's
@@ -871,7 +1023,8 @@ scrollWin::setBorder(chtype ls, chtype rs, chtype ts, chtype bs,
 
 	drawBorder();
 	want_border = 1;
-	refresh();
+	if (enable_updates)
+		refresh();
 }
 
 void
@@ -916,7 +1069,8 @@ scrollWin::getTitle()
 	return (const char *)sw_title;
 }
 
-/* setItem selects this->sw_items[item_index] and redraws selection window
+/* setItem selects this->sw_items[item_index] and redraws selection window if
+ * enable_updates != 0
  */
 void
 scrollWin::setItem(int item_index)
@@ -925,6 +1079,12 @@ scrollWin::setItem(int item_index)
 	changeSelection(diff);
 }
 
+/* Function   : dump_contents
+ * Description: Dumps all items in this window to stdout.
+ * Parameters : None.
+ * Returns    : Nothing.
+ * SideEffects: Only useful for debugging purposes.
+ */
 void
 scrollWin::dump_contents()
 {
@@ -997,7 +1157,7 @@ scrollWin::moveItem(int index_from, int index_to, short before)
 		return 0;
 	
 	delItem(index_from, 0); //remove from list without deleting object.
-	if (!addItem(tmp, new_indexto, before))	
+	if (addItem(tmp, new_indexto, before)==-1)	
 	{
 		//This case should *NOT* happen. 
 		debug("moveItem(): Could not add item after removal.\n");
@@ -1074,12 +1234,19 @@ scrollWin::moveSelectedItems(int index_to, short before)
 	return retval;
 }
 
+/* Function   : clearwin
+ * Description: Overwrite each line in this window (excluding border) with
+ *            : spaces.
+ * Parameters : None.
+ * Returns    : Nothing.
+ * SideEffects: Cursor has been moved.
+ */
 void
 scrollWin::clearwin()
 {
 	int i;
 
-	for (i = xoffset; i < height; i++)
+	for (i = xoffset; i < height - xoffset; i++)
 	{
 		move(by + i, bx + xoffset);
 		addstr(sw_emptyline);
@@ -1093,4 +1260,70 @@ scrollWin::drawTitleInBorder(int should_i)
 		draw_title = 1;
 	else
 		draw_title = 0;
+}
+
+/* Function   : selectItems
+ * Description: Selects items that match a pattern according to type 'type'.
+ * Parameters : pattern: Pattern to match
+ *            : type   : One of "regex", "global"
+ * Returns    : Nothing.
+ * SideEffects: Items that matched will be selected (note that items that do
+ *            : not match, will not be unselected!). The window should be
+ *            : refreshed by the user.
+ */
+void
+scrollWin::selectItems(const char *pattern, const char *type, 
+	sw_searchflags flags, short display_index)
+{
+	if (display_index <0 || display_index >= NAMEDIM || !type || !pattern)	
+		return;
+
+	winItem *tmp;
+	int index = 0;
+	char *local_pattern = strdup(pattern);
+
+	//cache the regular expression's computation to save lots of cpu time.
+	regex_t dum;
+	int regflags = REG_EXTENDED;
+	int fnmatch_flags = 0;
+	if (flags | SW_SEARCH_CASE_INSENSITIVE)
+	{
+		regflags |= REG_ICASE;
+		if (!strcmp(type, "global"))
+		{
+			lowercase(local_pattern);
+		}
+	}
+	regcomp(&dum, local_pattern, REG_EXTENDED|REG_ICASE);
+	int doesmatch = 0;
+
+	tmp = first;
+	while (tmp)
+	{
+		const char *desc = tmp->getName(display_index);
+
+		if (desc)
+		{
+			if (!strcmp(type, "regex"))
+			{
+				doesmatch = !regexec(&dum, desc, 0, 0, 0);
+			}
+			else if (!strcmp(type, "global"))
+			{
+				char *mydesc = strdup(desc);
+
+				if (flags | SW_SEARCH_CASE_INSENSITIVE)
+					lowercase(mydesc);
+				doesmatch = !fnmatch(local_pattern, mydesc, fnmatch_flags);
+				free(mydesc);
+			}
+		}
+
+		if (doesmatch)
+			this->selectItem(index);
+		tmp = tmp->next;
+		index++;
+	}
+	free(local_pattern);
+	regfree(&dum);
 }

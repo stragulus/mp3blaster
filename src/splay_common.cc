@@ -19,7 +19,7 @@
 
 int  splay_verbose=0;
 char *splay_progname;
-char *splay_devicename="/dev/dsp";
+char *splay_devicename = SOUND_DEVICE;
 
 char *splay_list[MAXLISTSIZE];
 int  splay_listsize=0;

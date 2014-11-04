@@ -15,12 +15,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include <config.h>
+#include "mp3blaster.h"
 
 #ifdef LIBPTH
 #  include <pth.h>
 #endif
-#include "mp3blaster.h"
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -195,6 +194,7 @@ fileManager::readDir()
 
 	while ( (entry = readdir(dir)) )
 	{
+		PTH_YIELD;
 		entries = (char **)realloc (entries, (++diritems) * sizeof(char *));
 	
 		entries[diritems - 1] = (char *)malloc( ((entry->d_reclen) + 1) *
@@ -204,15 +204,14 @@ fileManager::readDir()
 	
 	closedir(dir);
 	
-#ifdef LIBPTH
-	pth_yield(NULL);
-#endif
 	/* sort char **entries */
 	if (diritems > 1)
 	{
 		tmpsort = globalopts.fw_sortingmode;
 		qsort(entries, diritems, sizeof(char*), sortme);
 	}
+
+	PTH_YIELD;
 
 	char *dirs[diritems];
 	unsigned int dircount = 0;
@@ -224,9 +223,7 @@ fileManager::readDir()
 		DIR
 			*dir2;
 
-#ifdef LIBPTH
-		pth_yield(NULL);
-#endif
+		PTH_YIELD;
 
 		if ( (dir2 = opendir(entries[i])) ) /* path is a dir */
 		{
@@ -243,6 +240,10 @@ fileManager::readDir()
 
 	tmpsort = FW_SORT_ALPHA;
 	qsort(dirs, dircount, sizeof(char*), sortme);
+
+	PTH_YIELD;
+
+	disableScreenUpdates();
 
 	//add subdirs first.
 	unsigned int j;
@@ -265,15 +266,15 @@ fileManager::readDir()
 	short
 		foo[3] = { 0, 1, 2 },
 		fsize,
+		indx,
 		clr = 0;
 	struct stat
 		buffy;
 	
+
 	for (i = 0; i < diritems; i++)
 	{
-#ifdef LIBPTH
-		pth_yield(NULL);
-#endif
+		PTH_YIELD;
 
 		if (entries[i])
 		{
@@ -312,6 +313,7 @@ fileManager::readDir()
 			id3name = NULL;
 			bla[0] = entries[i];
 			bla[1] = fdesc;
+#if 0
 			if (globalopts.want_id3names && is_audiofile(entries[i]))
 			{
 				id3name = id3_filename(entries[i]); //must be deleted later!
@@ -321,8 +323,10 @@ fileManager::readDir()
 					bla[2] = entries[i];
 			}
 			else
-				bla[2] = entries[i];
-
+				bla[2] = "[ID3] File.ID3Names not enabled in config file";
+#else
+			bla[2] = NULL;
+#endif
 			bla[3] = NULL;
 
 			if (is_audiofile(entries[i]))
@@ -331,8 +335,11 @@ fileManager::readDir()
 				clr = CP_FILE_LST;
 			else
 				clr = CP_DEFAULT;
-			addItem(bla, foo, clr);
-
+			indx=addItem(bla, foo, clr);
+			if(indx!=-1)
+			{
+				changeItem(indx,&id3_filename,strdup(bla[0]),2);
+			}
 			delete[] fdesc;
 			if (id3name)
 				free(id3name);
@@ -340,7 +347,8 @@ fileManager::readDir()
 	}
 
 	setTitle(path);
-	swRefresh(0);
+	enableScreenUpdates();
+	swRefresh(1);
 
 	for (i = 0; i < diritems; i++)
 		free(entries[i]);

@@ -21,9 +21,9 @@ extern "C" {
 }
 #endif
 
-OSSMixer::OSSMixer(baseMixer *next) : baseMixer(next)
+OSSMixer::OSSMixer(const char *mixerDevice, baseMixer *next) : baseMixer(mixerDevice, next)
 {
-	mixer = open(MIXER_DEVICE, O_RDWR);
+	mixer = open(mixerDevice, O_RDWR);
 	if (mixer < 0) return;
 	unsigned int setting;
 	ioctl(mixer, MIXER_READ(SOUND_MIXER_DEVMASK), &setting);

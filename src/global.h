@@ -1,5 +1,7 @@
 #ifndef _MP3B_GLOBAL_
 #define _MP3B_GLOBAL_
+#include "mp3blaster.h"
+#include NCURSES
 #include <stdio.h>
 
 enum cf_error { CF_NONE, TOOMANYVALS, BADVALTYPE, BADKEYWORD, BADVALUE,
@@ -22,6 +24,8 @@ int is_audiofile(const char *);
 int is_playlist(const char *);
 char *crunch_string(const char*, unsigned int);
 short read_file(const char *filename, char ***lines, int *linecount);
+char *id3_filename(void *filename);
 char *id3_filename(const char *filename);
-
+void lowercase(char*);
+void sort_files(char **files, int nrfiles);
 #endif /* _MP3B_GLOBAL_ */

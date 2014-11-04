@@ -18,6 +18,7 @@
 
 #include "mpegsound.h"
 #include "mpegsound_locals.h"
+#include "xingheader.h"
 
 #ifdef NEWTHREAD
 #include <sys/types.h>
@@ -203,7 +204,6 @@ void Mpegtoraw::threadplay(void *bla)
 	int remaining=RAWDATASIZE*THREAD_TIMES*sizeof(short int);
 	bla=bla;
 	int processed=0;
-	static	unsigned char sound_buf[RAWDATASIZE*THREAD_TIMES*sizeof(short int)];
 	/* This has to be a static array, otherwise it is allocated from the
 	 * stack. threadplay() is called within a pth|pthreads thread, so stack
 	 * is scarce.  Leads to very nasty (and very untrackable) segmentation
@@ -539,6 +539,7 @@ Mpegtoraw::Mpegtoraw(Soundinputstream *loader,Soundplayer *player)
 	skip=5;
 	//pre_amp=10;
 	this->buffers=NULL;
+	this->sound_buf=(unsigned char *)malloc(RAWDATASIZE*THREAD_TIMES*sizeof(short int));
 	this->settotalbuffers(1000);
 	this->queue=NULL;
 	this->spare=NULL;
@@ -557,6 +558,7 @@ Mpegtoraw::~Mpegtoraw()
 #ifdef NEWTHREAD
 	buffer_node *temp;
 	abortplayer(); 
+	free(sound_buf);
 	/*
 	if(pthread_mutex_destroy(&queue_mutex))
 	{
@@ -828,6 +830,7 @@ bool Mpegtoraw::initialize(char *filename)
 	is_vbr = 0;
 	int headcount = 0, first_offset = 0, loopcount = 0;
 	sync();
+
 	while (headcount < 1 && geterrorcode() != SOUND_ERROR_FINISH)
 	{
 		int fileseek = loader->getposition();
@@ -847,11 +850,37 @@ bool Mpegtoraw::initialize(char *filename)
 		loopcount++;
 	}
 
+	loader->setposition(first_offset);
+
+	bool found_xing = false;
+
 	if(headcount > 0)
 	{
-		totalframe = (loader->getsize() + framesize - 1) / framesize;
+		XHEADDATA xingheader;
+		xingheader.toc = NULL;
+		/* Try to find a XING header to determine total song length first*/
+		/* framesize is set by loadheader, and is the size of the first frame */
+		unsigned char *buffer = new unsigned char[framesize * sizeof(char)];
+		if ((loader->getblock((char *)buffer, framesize * sizeof(char)) ==
+			(int)(framesize * sizeof(char))) &&
+			GetXingHeader(&xingheader, buffer))
+		{
+			totalframe = xingheader.frames;	
+			found_xing = true;
+			debug("Found XING header, and set total frames to %d.\n", totalframe);
+		}
+		else
+		{
+			debug("No XING header found, assuming CBR mp3.\n");
+			totalframe = (loader->getsize() + framesize - 1) / framesize;
+		}
+		delete[] buffer;
+		buffer = NULL;
 	}
-	else totalframe=0;
+	else //no valid mpeg frame found
+		totalframe=0;
+
+	loader->setposition(first_offset);
 
 	if(frameoffsets)
 		delete[] frameoffsets;
@@ -894,12 +923,16 @@ bool Mpegtoraw::initialize(char *filename)
 
 	if (totalframe)
 	{
-		//Calculate length of [vbr] mp3.
-		if (1) 
+		/*Calculate length of [vbr] mp3. Neat if you don't have XING headers,
+		  bad if you stream mp3's over a slow network connection/disk (since
+		  it seeks through the entire file)
+			Note that it doesn't work well, since it uses a bogusly calculated
+			totalframe, which means it can never detect songs that actually have
+			*more* frames than that.
+		 */
+		if (scan_mp3 && !found_xing) 
 		{
 			// Get frame offsets, by calculating all offsets of the headers.
-			debug("Totalframe(0): %d\n", totalframe);
-
 			setframe(totalframe - 1);
 
 			// Cut off last frame until there is an offset change
@@ -914,13 +947,13 @@ bool Mpegtoraw::initialize(char *filename)
 			}
 			totalframe = i;
 
-			debug("Totalframe(1): %d\n", totalframe);
+			debug("Manually calculated total frames : %d\n", totalframe);
 
 			// Reset position
 			setframe(0);
 		}
-		else
-			loader->setposition(first_offset);
+
+		loader->setposition(first_offset);
 		seterrorcode(SOUND_ERROR_OK);
 	}
 

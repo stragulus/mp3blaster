@@ -121,8 +121,9 @@ CONVERT MP3 TO WAV
 
 ADD URL (SHOUTCAST)
   Add an URL to the playlist. This URL should be an url to a
-  shoutcast server. 
-  !!! Doesn't work in 3.0 prerelease..
+  shoutcast server. Currently, it must point to the mp3 stream
+	itself, *NOT* to a .pls file. Look inside the .pls file to 
+	find out what the stream is.
 
 START FILE SEARCH
   Starts search mode: In this mode, the scrollbar in the
@@ -149,10 +150,12 @@ LOAD/ADD PLAYLIST
   already), and change to the directory where your playlists
   are stored. Playlists (*.lst by default) can be loaded
   simply by highlighting and selecting one (using enter).
-  The location where your playlists are stoed is 
+  The location where your playlists are stored is 
   the homedir of the user running it. It can be
   overridden using the keyword 'PlaylistDir' in the config
-  file (man mp3blaster).
+  file (man mp3blaster). Playlists are *added* to the current
+	playlist, instead of replacing it. Clear the playlist first
+	if you do not want this.
 
 WRITE PLAYLIST
   This will save your current playlist to a file. You will
@@ -181,29 +184,35 @@ TOGGLE PLAY MODE
   This toggles the global playback mode, which is shown
   directly underneath the help window with the commands.
   Possible modes are:
-  -Play all songs from all groups without shuffle:
-   This will play all groups and songs in the playlist in
-   the order that they are shown.
-  -Play all subgroups in this group:
-   This will only play the groups that exist in the
-   currently selected group. The order in which they are
-   played is shuffled when shuffle mode is enabled for the
-   current group.
+  -Play current group, including subgroups
+   This will play all groups and songs contained in the
+	 group you are in when you start the playlist. They will
+	 be played in the order that they are shown, top to bottom.
+	 Each group's shuffle setting can be set independant 
+	 of the others!
+  -Play current group, but not its subgroups.
+	 Only play the songs that are in the group you are in
+	 when you start the playlist. All subgroups will be
+	 ignored. They will be played in the order in which they
+	 are shown (top-to-bottom), unless shuffling is enabled
+	 for this group.
   -Play all songs from all groups in random order:
    This mode ignores all shuffle settings for all groups,
-   and will randomly shuffle all the songs in all the
+   and will randomly shuffle all the songs from all the
    groups. Putting all songs in one group and enable shuffle
    mode for that group would have the same effect.
-  -Only play songs from the current group:
-   In this mode, only the songs (and not groups!) from the
-   current group will be played. The order depends on the
-   shuffle mode for this group.
 
-START/STOP PLAYLIST
-  This will start playing the playlist if it's not playing,
-  and vice versa. The playback order is determined by the
-  global playback mode and/or the individual shuffle
-  settings for each group.
+SELECT SOME ITEMS
+  Selects items in the current directory, based on an expression
+  given by the user. The type of expression and case-insensitiveness
+  can be set with "SelectItems.SearchRegex" and 
+  "SelectItems.SearchCaseInsensitive" in the config file. With
+  "SelectItems.UnselectFirst" enabled, previously selected items will be
+  unselected first. By default, case-insensitive global matching
+  (fnmatch-style, like shell patterns) will be used.
+
+UNSELECT ALL
+	Unselects all selected items in the current directory / group
 
 CHANGE #THREADS
   Increases the number of threads used for playback. Threads
@@ -245,6 +254,8 @@ DELETE AND MARK
   the associated file(s) as bad, by moving them into a
   subdirectory 'baditems', located in the same directory as
   the song. 
+	The rest of the description for this comment is not yet
+	finished in the code:
   **********=========== BEWARE =============*************
   In contrast to the DELETE command, this command
   *will* save your playlist using as playlist file the last
@@ -259,12 +270,10 @@ PREVIOUS SONG
   (CURRENTLY NOT IMPLEMENTED!)
 
 PLAY SONG
-  If playing a playlist, this will either:
-  -If a song is currently being played, it will be paused.
-  -continue playing a paused song
-  -If playback was stopped using the stop button, play will
-   restart playback.
-  If not playing a playlist, this will start the playlist.
+  If the playlist has not been started, it will start the
+	playlist.
+	If the playlist has been started, it will pause the current
+	song.
 
 NEXT SONG
   If playing in a playlist, this will stop the current song
@@ -273,19 +282,20 @@ NEXT SONG
 REWIND SONG
   If a song is being played, this command will jump back one
   step in the song. The size of this step can be configured
-  in the config file using the keyword 'SkipFrames' (the
-  larger this number is, the bigger the step).
+  in the config file using the keyword 'SkipFrames'.
 
 FORWARD SONG
   Same as for REWIND SONG, only now you will jump ahead in
   the song.
 
 STOP SONG
-  If a song is being played, it will be stopped. If a
-  playlist is being played, this will not reset the
-  playlist, it will only mark the current song as played. If
-  play is pressed after stop, the playlist will continue
-  with the next song.
+	This will stop the playlist, forgetting which songs have
+	already been played. If you wish to just pause playback,
+	press play instead.
+
+NEXT GROUP / PREVIOUS GROUP
+	Jump to next or previous group in the playlist, similar to
+	a cd changer that switches to the next or previous cd.
 
 SCROLL UP / DOWN HELPTEXT
   Scroll the help window in the top of the screen

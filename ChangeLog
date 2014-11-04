@@ -1,3 +1,57 @@
+V3.1.0 2002/03/08
+=================
+-Implemented 'next group' feature; It's similar to changing to the next CD on
+ a CD changer.
+-Playlist doesn't stop on files that can't be opened anymore. 
+-Added workaround for bug in RH7.2's ncurses version that would crash
+ mp3blaster.
+-Properly opens and resets sound devices according to the OSS programming
+ manual. This will fix playback problems on machines that had problems with
+ sound device handling, especially with bad mp3's.  Thanks go out to Markus
+ Bresch for pointing this out.
+-Added XING header parsing, which means the total time of most VBR mp3's will
+ be guessed correctly, without having to scan the entire file. With configfile
+ directive 'ScanMP3', scanning VBR files can still be enabled, but this is
+ not encouraged, especially not for mp3's streamed over a slow connection or
+ medium.
+-Fixed sorting problems in recursive file select / dirs as groups.
+-removed 'start/stop playlist': The cd-style keys for start and stop now handle
+ this, because it's more logical (thanks Joachim for pointing that out). Note
+ that if one presses stop, mp3blaster will no longer know which songs it has
+ already played in the current playlist, contrary to previous versions!
+-Playlist will now repeat if this option is set and 'next song' is performed
+ on the last song in the list.
+-Added configfile directive 'File.ID3Names', with which you can enable
+ searching for ID3 songinfo in the file manager. Displaying ID3 tags has
+ become a lot faster, because id3-names will only be read from the files
+ when they're being displayed (thanks Martijn!)
+-Added 'select some items' with which you can select specific items matching
+ a pattern in a playlist or directory. Searchmethods can be global (default,
+ see fnmatch(2)), or regex (configfile: SelectItems.Regex = 1).
+-Added 'unselect all'
+-Fixed bug that left files without id3tags open. Thanks to Randy Hron for
+ noticing!
+-Fixed a bug that will hopefully eliminate static noise while playing
+ oggVorbis files (thanks Martijn).
+-Fixed 8/16-bit handling, which will fix playing 8-bit .wav files as well.
+-When adding dirs as groups, or recursively selecting files, they'll be
+ sorted as specified.
+-Fixed cosmetic bug in displaying stereo mode (JointStereo => Stereo)
+-Fixed cosmetic bug when scrolling content in filebrowser
+-Extended scrollbar to full width of window (thanks Marius Cienki)
+-Wrote own routine to read input (e.g. when prompting for group name, changing
+ to a custom dir, etc), with the ability to start with a filled input buffer
+-Added file rename feature.
+-splay will now honour compile-time set sounddevice.
+-mixer device can be specified in config file / cmdline
+-'[..]' can't be deleted anymore.
+-fixed time display for mp3's > 99 minutes
+-patch from Martijn for NetBSD
+-applied patch from Dmitry Sergienko which will allow mapping ID3 info
+ text to another character set (config file directive CharsetTable, see manual)
+-applied documentation/small bugfixes patch from Zyrnix.
+-applied a patch from Craig Gallagher which enables .m3u playlist loading 
+
 V3.0 (final) 2001/09/19
 =======================
 -implemented 'previous track', and therefore switched to the first 3.0

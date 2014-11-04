@@ -46,25 +46,30 @@ bool Wavetoraw::initialize(void)
 {
 	int c;	
 
+	char tmpbuffer[1024];
+	if( !(c=loader->getblock(tmpbuffer,sizeof(WAVEHEADER))) )
+	{
+		return seterrorcode(SOUND_ERROR_FILEREADFAIL);
+	}
+
+	if (!testwave(tmpbuffer))
+		return false;
+	int ssize = (samplesize == 16 ? AFMT_S16_NE : AFMT_U8);
+	if (!(player->setsoundtype(stereo, ssize, speed)))
+		return false;
+
   if(!buffer)
   {
     buffersize=player->getblocksize();
-    if((buffer=(char *)malloc(buffersize))==NULL)
+		if (buffersize < sizeof(WAVEHEADER))
+			buffersize = sizeof(WAVEHEADER);
+    if((buffer=(char *)malloc(buffersize * sizeof(char)))==NULL)
     {
       return seterrorcode(SOUND_ERROR_MEMORYNOTENOUGH);
     }
   }
 
-	if( !(c=loader->getblock(buffer,sizeof(WAVEHEADER))) )
-	{
-		return seterrorcode(SOUND_ERROR_FILEREADFAIL);
-	}
 
-	if (!testwave(buffer))
-		return false;
-	int ssize = (samplesize == 16 ? AFMT_S16_NE : AFMT_S8);
-	if (!(player->setsoundtype(stereo, ssize, speed)))
-		return false;
 	currentpoint=0;
 	initialized=true;
   return true;

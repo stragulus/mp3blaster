@@ -56,7 +56,8 @@ bool NASplayer::setsoundtype(int stereo, int samplesize, int speed)
 	int changed = 0;
 	unsigned char newf = AuNone;
 	if (samplesize == 16) newf = AuFormatLinearSigned16LSB;
-	else newf = AuFormatLinearSigned8;
+	//else newf = AuFormatLinearSigned8;
+	else newf = AuFormatLinearUnsigned8;
 	stereo = stereo ? 2 : 1;
 	if (stereo != channels) { channels = stereo; changed++; }
 	if (samplerate != speed) { samplerate = speed; changed++; }

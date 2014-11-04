@@ -31,12 +31,14 @@ extern short set_warn_delay(unsigned int);
 extern short set_fpl(int);
 extern short set_audiofile_matching(const char**, int);
 extern void set_sound_device(const char*);
+extern void set_mixer_device(const char*);
 extern short set_skip_frames(unsigned int);
 extern short set_mini_mixer(short);
 extern short set_playlist_matching(const char**, int);
 extern short set_playlist_dir(const char*);
 extern short set_sort_mode(const char*);
 extern void bindkey(command_t,int);
+extern short set_charset_table(const char *);
 #ifdef PTHREADEDMPEG
 extern short set_threads(int);
 #endif
@@ -62,7 +64,7 @@ struct _confopts
 { "AudiofileMatching", 31 },
 { "WarnDelay", 0 },             
 { "SkipFrames", 0 },            //5
-{ "MiniMixer", 1 },
+{ "MiniMixer", 1 }, //obsolete
 { "PlaylistMatching", 31 },
 { "Color.Default.fg", 3 },
 { "Color.Default.bg", 3 },
@@ -95,7 +97,7 @@ struct _confopts
 { "Key.ToggleRepeat", 2 },
 { "Key.ToggleShuffle", 2 },
 { "Key.TogglePlaymode", 2 },
-{ "Key.StartPlaylist", 2 },
+{ "Key.StartPlaylist", 2 },			//no longer needed!
 { "Key.ChangeThread", 2 },      //40
 { "Key.ToggleMixer", 2 },
 { "Key.MixerVolDown", 2 },
@@ -138,12 +140,23 @@ struct _confopts
 { "Key.File.MarkBad", 2 },
 { "PlaylistDir", 15 },          //80
 { "Key.ClearPlaylist", 2 },
-{ "Key,DeleteMark", 2 },
+{ "Key.DeleteMark", 2 },
 { "HideOtherFiles", 1 },
 { "File.SortMode", 15 },
 { "File.ID3Names", 1 },         //85
 { "Key.File.Delete", 2 },
 { "Key.Play.SkipEnd", 2 },
+{ "Key.Play.NextGroup", 2 },
+{ "Key.Play.PrevGroup", 2 },
+{ "SelectItems.UnselectFirst", 1 }, //90
+{ "SelectItems.SearchRegex", 1 },
+{ "SelectItems.SearchCaseInsensitive", 1 },
+{ "ScanMP3", 1 },
+{ "Key.File.Rename", 2 },
+{ "MixerDevice", 15 },              //95
+{ "CharsetTable", 15 }, 
+{ "Key.ToggleSort", 2 },
+{ "Key.ToggleDisplay", 2 },
 { NULL, 0 }, /* last entry's keyword MUST be NULL */
 };
 
@@ -431,7 +444,7 @@ cf_add_keyword(int keyword, const char **values, int nrvals)
 	case 36: bindkey(CMD_TOGGLE_REPEAT, cf_type_key(v)); break;
 	case 37: bindkey(CMD_TOGGLE_SHUFFLE, cf_type_key(v)); break;
 	case 38: bindkey(CMD_TOGGLE_PLAYMODE, cf_type_key(v)); break;
-	case 39: bindkey(CMD_START_PLAYLIST, cf_type_key(v)); break;
+	case 39: error = BADKEYWORD; return 0;
 	case 40: bindkey(CMD_CHANGE_THREAD, cf_type_key(v)); break;
 	case 41: bindkey(CMD_TOGGLE_MIXER, cf_type_key(v)); break;
 	case 42: bindkey(CMD_MIXER_VOL_DOWN, cf_type_key(v)); break;
@@ -482,16 +495,33 @@ cf_add_keyword(int keyword, const char **values, int nrvals)
 			error = BADVALUE;
 			return 0;
 		}
-	break;
+		break;
 	case 81: bindkey(CMD_CLEAR_PLAYLIST, cf_type_key(v)); break;
 	case 82: bindkey(CMD_DEL_MARK, cf_type_key(v)); break;
 	case 83: globalopts.fw_hideothers = cf_type_yesno(values[0]); break;
 	case 84:
-		if (!set_sort_mode(values[0])) { error = BADVALUE; return 0; }
-	break;
+		if (set_sort_mode(values[0]) < 0) { error = BADVALUE; return 0; }
+		break;
 	case 85: globalopts.want_id3names = cf_type_yesno(values[0]); break;
 	case 86: bindkey(CMD_FILE_DELETE, cf_type_key(v)); break;
 	case 87: bindkey(CMD_PLAY_SKIPEND, cf_type_key(v)); break;
+	case 88: bindkey(CMD_PLAY_NEXTGROUP, cf_type_key(v)); break;
+	case 89: bindkey(CMD_PLAY_PREVGROUP, cf_type_key(v)); break;
+	case 90: globalopts.selectitems_unselectfirst = cf_type_yesno(values[0]);
+		break;
+	case 91: globalopts.selectitems_searchusingregexp = cf_type_yesno(values[0]);
+		break;
+	case 92: globalopts.selectitems_caseinsensitive = cf_type_yesno(values[0]);
+		break;
+	case 93: globalopts.scan_mp3s = cf_type_yesno(values[0]);
+		break;
+	case 94: bindkey(CMD_FILE_RENAME, cf_type_key(v)); break;
+	case 95: set_mixer_device(values[0]); break;
+	case 96: //CharsetTable
+		if (!set_charset_table(values[0])) { error = BADVALUE; return 0; }
+		break;
+	case 97: bindkey(CMD_FILE_TOGGLE_SORT, cf_type_key(v)); break;
+	case 98: bindkey(CMD_TOGGLE_DISPLAY, cf_type_key(v)); break;
 	}
 
 	return 1;
@@ -658,6 +688,10 @@ cf_set_error(unsigned int lineno=0)
 		break;
 	case NOSUCHFILE:
 		strcpy(dummy, "File not found");
+		break;
+	case BADVALUE:
+		strcpy(dummy, "Bad Value");
+		break;
 	default:
 		strcpy(dummy, "Unkown error");
 	}

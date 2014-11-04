@@ -21,8 +21,9 @@ public:
 	int writeToFile(FILE *); //c
 	void addGroup(mp3Win*, const char* groupname=NULL);
 	short isGroup(int);
+	short isPreviousGroup(int);
 	mp3Win* getGroup(int);
-	void resetSongs(int recursive=1);
+	void resetSongs(int recursive=1, short setplayed=0);
 	void resetGroups(int recursive=1);
 	short isPlayed() { return played; }
 	void setNotPlayed() { played = 0; }
@@ -35,6 +36,7 @@ public:
 	mp3Win *getUnplayedGroup(int, short set_played = 1, short recursive=1);
 	int getUnplayedSongs(short recursive=1); //#of unplayed songs, including those in groups.
 	int getUnplayedGroups(short recursive=1);
+	void setAllSongsPlayed(short recursive=0);
 
 private:
 	int getUnplayedItems(short type=0,short recursive=1);

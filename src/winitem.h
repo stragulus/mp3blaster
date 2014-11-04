@@ -10,6 +10,10 @@
 
 enum itemtype { TEXT, SUBWIN };
 
+typedef struct { char *value;
+		 char *(*fetch)(void *);
+		 void *arg;
+	       } item_t;
 class winItem
 {
 public:
@@ -18,6 +22,7 @@ public:
 	virtual ~winItem();
 
 	void setName(const char *, short index=0);
+	void setNameFun(char *(*func)(void *), void *arg, short index=0);
 	const char *getName(short index=0);
 	void setColour(short);
 	short getColour() { return colour; }
@@ -34,7 +39,7 @@ public:
 private:
 	//name to be displayed in window, indexed on status (f.e. full path,
 	//pathless, id3tag-name,...)
-	char *names[NAMEDIM];
+	item_t names[NAMEDIM];
 	void *object; /* a window inside this one. */
 	itemtype type; 
 	short colour; //which colourpair is used for displaying. (-1 for global)

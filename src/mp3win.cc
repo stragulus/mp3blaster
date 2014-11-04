@@ -159,6 +159,19 @@ mp3Win::isGroup(int index)
 	return 0;
 }
 
+/* Function   : isPreviousGroup
+ * Description: Is an entry in the list a link to a group one position 
+ *            : higher in the hierarchy?
+ * Parameters : None.
+ * Returns    : 1 if it is, otherwise 0.
+ * SideEffects: None.
+ */
+short
+mp3Win::isPreviousGroup(int index)
+{
+	return (isGroup(index) && !strcmp(getItem(index), "[..]"));
+}
+
 mp3Win*
 mp3Win::getGroup(int index)
 {
@@ -314,7 +327,7 @@ mp3Win::getUnplayedSong(int unplayed_index, short set_played, short recursive)
 
 /* set all songs in this group (and subgroups if recursive) to unplayed */
 void
-mp3Win::resetSongs(int recursive)
+mp3Win::resetSongs(int recursive, short setplayed)
 {
 	mp3Item *tmp = (mp3Item*)getWinItem(0);
 
@@ -323,10 +336,12 @@ mp3Win::resetSongs(int recursive)
 		if (tmp->getType() == SUBWIN)
 		{
 			if (recursive && strcmp(tmp->getName(), "[..]"))
-				((mp3Win*)(tmp->getObject()))->resetSongs();
+				((mp3Win*)(tmp->getObject()))->resetSongs(recursive, setplayed);
 		}
-		else if (tmp->isPlayed())
+		else if (!setplayed && tmp->isPlayed())
 			tmp->setNotPlayed();
+		else if (setplayed && !tmp->isPlayed())
+			tmp->setPlayed();
 
 		tmp = (mp3Item*)tmp->next;
 	}
@@ -371,4 +386,17 @@ mp3Win::isPlaying()
 		tmp = (mp3Item*)tmp->next;
 	}
 	return 0;
+}
+
+/* Function   : setAllSongsPlayed
+ * Description: Will set each song's status to played.
+ * Parameters : recursive: do the same to each subgroup in this group (except
+ *            : for [..])
+ * Returns    : Nothing.
+ * SideEffects: None.
+ */
+void
+mp3Win::setAllSongsPlayed(short recursive)
+{
+	resetSongs(recursive, 1);
 }

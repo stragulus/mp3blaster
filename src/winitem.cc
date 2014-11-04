@@ -19,13 +19,19 @@
 #include "winitem.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+
 extern void debug(const char*,...);
 
 winItem::winItem()
 {
 	int j;
 	for (j = 0; j < NAMEDIM; j++)
-		names[j] = NULL;
+	{
+		names[j].value=NULL;
+		names[j].fetch=NULL;
+		names[j].arg=NULL;
+	}
 	object = NULL;
 	type = TEXT;
 	colour = -1; //-1: let global status (from scrollWin) decide.
@@ -35,6 +41,14 @@ winItem::winItem()
 
 winItem::~winItem()
 {
+	int i;
+	for(i=0;i<NAMEDIM;i++)
+	{
+		if(names[i].value)
+			delete[] names[i].value;
+		if(names[i].arg)
+			free(names[i].arg);
+	}
 	//yes, if there's an object set, it's not deleted.
 }
 
@@ -44,11 +58,21 @@ winItem::setName(const char *name, short index)
 	if (index >= NAMEDIM || index < 0)
 		return;
 
-	if (names[index])
-		delete[] names[index];
+	if (names[index].value)
+		delete[] names[index].value;
 	
-	names[index] = new char[strlen(name)+1];
-	strcpy(names[index], name);
+	names[index].value = new char[strlen(name)+1];
+	strcpy(names[index].value, name);
+}
+
+void
+winItem::setNameFun(char *(*func)(void *), void *arg, short index)
+{
+	if(index >=NAMEDIM || index < 0)
+		return;
+	names[index].value=NULL;
+	names[index].fetch=func;
+	names[index].arg=arg;
 }
 
 const char *
@@ -56,8 +80,25 @@ winItem::getName(short index)
 {
 	if (index >= NAMEDIM || index < 0)
 		return (const char *)NULL;
-
-	return names[index];
+	if(!names[index].value && names[index].fetch)
+	{
+		char *descr=names[index].fetch(names[index].arg);
+		if(descr)
+		{
+			names[index].value = descr;
+			strcpy(names[index].value, descr);
+		}
+		else
+		{
+			names[index].value = new char[8];
+			strcpy(names[index].value, "no name");
+		}
+		names[index].fetch=NULL; /* Prevent from being run a second time */
+		if (names[index].arg)
+			free(names[index].arg);
+		names[index].arg = NULL;
+	}
+	return names[index].value;
 }
 
 void

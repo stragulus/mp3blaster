@@ -64,6 +64,10 @@ Log debug-info in $HOME/.mp3blaster (use this when sending bugreports!)
 .B --help,-h
 Gets you this nice list of command-line parameters.
 .TP
+.B --mixer-device/-m=<devicename>
+Set the mixer device to use (default = /dev/mixer). For NAS audio mixing,
+use 'NAS'.  (NOTE: NAS support doesn't work in version 3.0 or above yet)
+.TP
 .B --no-mixer, -n
 Don't start the built-in mixer.
 .TP
@@ -287,37 +291,23 @@ One of: black, red, green, yellow, blue, magenta, cyan, white
 .PP
 These keywords are currently supported:
 .TP
-\fBThreads\fR (number, range 50..500)
-Amount of threads to use for buffering. More threads means more buffering
-(thus better hickup prevention)
-.TP
-\fBDownFrequency\fR (boolean)
-If true, downsample audio output to 22Khz instead of 44Khz (necessary on some
-ancient soundcards, like genuine Soundblaster Pro's)
-.TP
-\fBSoundDevice\fB (string)
-Sound device to use for audio output (default /dev/dsp (/dev/audio on OpenBSD)).
-.TP
 \fBAudiofileMatching\fR (list of strings)
 List of file patterns (in regexp format) that determines which files will be
 considered audiofiles (default: all files ending on .mp3, .wav, and files
 starting with 'http://' for http streaming). Check sample.mp3blasterrc for
 a good example.
 .TP
-\fBWarnDelay\fR (number, obsolete)
-Time before a warning popup will disappear. Currently not in use.
+\fBCharsetTable\fR (string)
+Specify a character recoding table which maps ID3 songinfo to your local
+charset. For more info about how to create one, see the README in the
+installed mp3blaster documentation (usually /usr/local/share/mp3blaster)
+for more information. An example which recodes the Russian win1251 charset
+to the koi8-r charset is included.
+
 .TP
-\fBSkipFrames\fR (number)
-How many seconds to skip when forwarding or rewinding a song. Default is 10.
-Change to your liking.
-.TP
-\fBPlaylistMatching\fR (list of strings)
-List of file patterns (in regexp format) that determine which files are
-considered playlists (default: all files ending on .lst/.m3u). Syntax identical
-to that of \fBAudiofileMatching\fR.
-.TP
-\fBPlaylistDir\fR (string)
-Directory path where playlists are stored (default: ~/.mp3blaster_playlists)
+\fBDownFrequency\fR (boolean)
+If true, downsample audio output to 22Khz instead of 44Khz (necessary on some
+ancient soundcards, like genuine Soundblaster Pro's)
 .TP
 \fBFile.ID3Names\fR (boolean)
 If enabled, the display mode in the file manager can be toggled to show mp3's
@@ -333,6 +323,47 @@ are: \fBalpha\fR (default), \fBalpha-case\fR, \fBmodify-new\fB,
 .TP
 \fBHideOtherFiles\fR (boolean)
 If enabled, non-audio/playlist files will not be shown in the file manager.
+.TP
+\fBMixerDevice\fB (string)
+Mixer device to use for mixing (default: /dev/mixer).
+.TP
+\fBPlaylistDir\fR (string)
+Directory path where playlists are stored (default: ~/.mp3blaster_playlists)
+.TP
+\fBPlaylistMatching\fR (list of strings)
+List of file patterns (in regexp format) that determine which files are
+considered playlists (default: all files ending on .lst/.m3u). Syntax identical
+to that of \fBAudiofileMatching\fR.
+.TP
+\fBScanMP3\fR (boolean)
+If set, it will read each mp3 file before playing, to calculate VBR total
+time. This might be impractical if mp3's are streamed over a slow network
+connection, because the entire file will be read. (default: enabled)
+.TP
+\fBSelectItems.UnselectFirst\fR (boolean)
+When selecting files from the filemanager or playlist using 'Select some items',
+unselect previously selected items prior to selecting matching new ones if this option is set. (default: disabled)
+.TP
+\fBSelectItems.SearchRegex\fR (boolean)
+If set, use extended regular expression to match files instead of using the global (fnmatch-style) matching. This is for the 'Select some items' feature.
+(default: disabled)
+.TP
+\fBSelectItems.SearchCaseInsensitive\fR (boolean)
+If set, search case-insensitive when using 'Select some items' feature. (default: enabled)
+.TP
+\fBSkipFrames\fR (number)
+How many seconds to skip when forwarding or rewinding a song. Default is 10.
+Change to your liking.
+.TP
+\fBSoundDevice\fB (string)
+Sound device to use for audio output (default /dev/dsp (/dev/audio on OpenBSD)).
+.TP
+\fBThreads\fR (number, range 50..500)
+Amount of threads to use for buffering. More threads means more buffering
+(thus better hickup prevention)
+.TP
+\fBWarnDelay\fR (number, obsolete)
+Time before a warning popup will disappear. Currently not in use.
 .P
 Now a list of keywords that set colours. Not all keywords are well tested to
 do the right thing at the time of writing..
@@ -397,7 +428,7 @@ Foreground colour of playlist files in file manager
 \fBColor.FileWin.fg\fR (colour)
 Foreground colour of other files in file manager
 .PP
-Next, a list of all keybindings keywords. Their names should make obvious
+This is the list of all keybindings. It should be obvious from their names
 which function they're attached to.
 .TP
 \fBKey.SelectFiles\fR (keybinding)
@@ -415,6 +446,10 @@ which function they're attached to.
 \fBKey.ToggleShuffle\fR (keybinding)
 .TP
 \fBKey.TogglePlaymode\fR (keybinding)
+.TP
+\fBKey.ToggleDisplay\fR (keybinding)
+.TP
+\fBKey.ToggleSort\fR (keybinding)
 .TP
 \fBKey.StartPlaylist\fR (keybinding)
 .TP
@@ -449,14 +484,6 @@ which function they're attached to.
 \fBKey.Up\fR (keybinding)
 .TP
 \fBKey.Down\fR (keybinding)
-.TP
-\fBKey.File.Down\fR (keybinding)
-.TP
-\fBKey.File.Up\fR (keybinding)
-.TP
-\fBKey.File.PrevPage\fR (keybinding)
-.TP
-\fBKey.File.NextPage\fR (keybinding)
 .TP
 \fBKey.File.Enter\fR (keybinding)
 .TP
@@ -493,6 +520,10 @@ which function they're attached to.
 \fBKey.Play.Stop\fR (keybinding)
 .TP
 \fBKey.Play.Forward\fR (keybinding)
+.TP
+\fBKey.Play.NextGroup\fR (keybinding)
+.TP
+\fBKey.Play.PrevGroup\fR (keybinding)
 .TP
 \fBKey.HelpPrev\fR (keybinding)
 .TP

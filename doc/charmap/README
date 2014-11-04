@@ -1,0 +1,8 @@
+Instructions:
+
+./chargen > koi8-r.map
+cat koi8-r.map | koi2win > win1251.map
+./maketbl win1251.map koi8-r.map > win2koi.tbl
+
+In mp3blaster configfile:
+CharsetTable /path/to/win2koi.tbl

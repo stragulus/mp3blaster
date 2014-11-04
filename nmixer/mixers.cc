@@ -7,9 +7,12 @@
 #define MIXER_ID_SHIFT 12
 #define MIXER_ID_MASK (~((1 << MIXER_ID_SHIFT) - 1))
 
-baseMixer::baseMixer(baseMixer *next)
+baseMixer::baseMixer(const char *mixerDevice, baseMixer *next)
 {
 	this->next = next;
+	if (!mixerDevice)
+		mixerDevice = MIXER_DEVICE;
+	this->mixerDevice = strdup(mixerDevice);
 	mixerID = 0;
 	if (next) {
 		devs = next->GetDevices(&num_devs);
@@ -25,7 +28,10 @@ baseMixer::baseMixer(baseMixer *next)
  
 baseMixer::~baseMixer()
 {
-	if (devs) free(devs);
+	if (devs)
+		free(devs);
+	if (mixerDevice)
+		free(mixerDevice);
 }
 
 int *baseMixer::GetDevices(int *num)

@@ -23,12 +23,17 @@
 #error "?Ncurses include files not found  error"
 #endif 
 
+#ifdef LIBPTH
+#define PTH_YIELD pth_yield((pth_t)0)
+#else
+#define PTH_YIELD
+#endif
+
 /* --------------------------------------- */
 /* Do not change anything below this line! */
 /* --------------------------------------- */
 
 enum playstatus { PS_NORMAL, PS_PLAYING, PS_STOPPED, PS_PAUSED };
-enum program_mode { PM_NORMAL, PM_FILESELECTION, PM_HELP, PM_ANY };
 enum command_t { 
 	CMD_SELECT_FILES, CMD_ADD_GROUP, CMD_LOAD_PLAYLIST, CMD_WRITE_PLAYLIST,
 	CMD_SET_GROUP_TITLE, CMD_TOGGLE_REPEAT, CMD_TOGGLE_SHUFFLE, CMD_ENTER,
@@ -42,7 +47,8 @@ enum command_t {
 	CMD_PLAY_REWIND, CMD_PLAY_STOP, CMD_PLAY_FORWARD, CMD_NONE,
 	CMD_FILE_SELECT, CMD_HELP_PREV, CMD_HELP_NEXT, CMD_FILE_MARK_BAD,
 	CMD_CLEAR_PLAYLIST, CMD_DEL_MARK, CMD_FILE_TOGGLE_SORT,
-	CMD_FILE_TOGGLE_DISPLAY, CMD_FILE_DELETE, CMD_PLAY_SKIPEND
+	CMD_FILE_DELETE, CMD_PLAY_SKIPEND, CMD_PLAY_NEXTGROUP, CMD_PLAY_PREVGROUP,
+	CMD_SELECT_ITEMS, CMD_DESELECT_ITEMS, CMD_FILE_RENAME, CMD_TOGGLE_DISPLAY
 };
 
 /* how to sort files in dirs ? */
@@ -67,7 +73,7 @@ enum playmode {
 struct keybind_t {
 	int key;
 	command_t cmd;
-	program_mode pm;
+	unsigned short pm;
 	char desc[20]; //textlength is 19 max, 1 for terminating \0
 };
 
@@ -89,9 +95,9 @@ struct _globalopts /* global options, exported for other classes */
 	short downsample; /* non-zero => downsampling */
 	short eightbits;
 	char *sound_device;
+	char *mixer_device;
 	sortmodes_t fw_sortingmode;
 	short fw_hideothers; /* 0: show all files, 1: hide non-audiofiles */
-	short layout; /* different ncurses layouts are possible */
 	playmode play_mode;
 	unsigned int warndelay;
 	unsigned int skipframes;
@@ -110,10 +116,15 @@ struct _globalopts /* global options, exported for other classes */
 	char **extensions; /* list of regexps that match audiofilenames */
 	char **plist_exts; /* list of regexps that list playlistfilenames */
 	char *playlist_dir;
+	char *recode_table_name;
 #if defined(PTHREADEDMPEG)
 	int threads;
 #endif
 	short want_id3names; /* non-zero if user wants to be able to see id3names */
+	short selectitems_unselectfirst;
+	short selectitems_searchusingregexp;
+	short selectitems_caseinsensitive;
+	short scan_mp3s;
 };
 
 enum keydescs { Main_SelectFiles, Fileman_AddFiles, Playwin_Previous };
