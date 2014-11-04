@@ -1,4 +1,4 @@
-/* (C) 1997 Bram Avontuur (brama@mud.stack.nl)
+/* Mp3Play v0.9.3.1 (C) 1997 Bram Avontuur (brama@mud.stack.nl)
  * This is an MP3 (Mpeg layer 3 audio) player. Although there are many 
  * mp3-players around for almost any platform, none of the others have the
  * ability of dividing a playlist into groups. Having groups is very useful,
@@ -13,29 +13,32 @@
  * ment, money, etc, you can e-mail me at the following address:
  * brama@mud.stack.nl.
  * TODO:
- * -loading a playlist (snicker)
- * -fix a memory-leak. After each played song, 16kb is lost(!)
- * -Sorting of directory entries while selecting files
- * -Allowing user to change group-order
- * -Keeping selected files while changing dirs in file-selecting mode
- * -Split code in more logical chunks.
- * -Get/hack source that plays mp2's too. (22Khz 56kbit/s & some more modes)
- * -Get rid of the annoying blinking cursor!
+ * 02-loading a playlist (snicker)
+ * 11-Pageup/down support
+ * 12-fix ctrl+l
+ * 04-fix a memory-leak. After each played song, 16kb is lost(oops)
+ * 06-Allowing user to change group-order
+ * 08-Split code in more logical chunks.
+ * 09-Get/hack source that plays mp2's too. (22Khz 56kbit/s & some more modes)
+ * 10-Get rid of the annoying blinking cursor!
  * KNOWN BUGS:
  * -Might coredump when an attempt to play an mp2 is made/has been made.
  *  (can't fix that, the playing-bit is not my code ;-)
  */
 #include <curses.h>
+#include <unistd.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <dirent.h>
+#include <errno.h>
 #include <time.h>
 
 /* define this when the program's not finished (i.e. stay off :-) */
-#define UNFINISHED
+#undef UNFINISHED
 
 #define MAX_FILE_LEN 200
 #define MIN(x,y) ( (x) < (y) ? (x) : (y) )
@@ -96,6 +99,7 @@ void sw_newwin(struct sw_window*, int, int, int, int, char**, int, short,
 void sw_endwin(struct sw_window*);
 void sw_additem(struct sw_window*, const char *);
 void sw_delitem(struct sw_window*, int);
+void sw_pagedown(struct sw_window*);
 int sw_is_selected(struct sw_window *, int);
 int sw_write_to_file(struct sw_window *, FILE *);
 void fw_create(void);
@@ -103,10 +107,14 @@ void fw_end(void);
 int fw_isdir(int);
 void fw_destroy(void);
 void fw_changedir(const char*);
+void fw_select_all();
+void fw_set_default_fkeys();
 void refresh_screen(void);
 void Error(const char*);
+void Message(const char*);
 int is_mp3(const char*);
 void cw_set_fkey(short, const char*);
+void cw_set_default_fkeys();
 void cw_toggle_group_mode(short);
 void cw_toggle_play_mode(short);
 void add_group();
@@ -116,6 +124,10 @@ void mw_clear();
 void mw_settxt(const char*);
 void write_playlist();
 void play_list();
+void play_set_default_fkeys();
+void add_selected_file(const char *);
+void recsel_files(const char *);
+void change_threads();
 
 /* global vars */
 
@@ -131,12 +143,16 @@ int
 	*group_order = NULL, /* array of group-id's */
 	current_group, /* selected group (group_stack[current_group - 1]) */
 	ngroups, /* amount of groups currently available */
-	window,
+	window, /* unused ATM */
 	playmode = PLAY_SONGS,
-	*is_dir = NULL;
+	*is_dir = NULL, /* array with indices of what files in the itemlist of
+	                 * file_window are dirs */
+	nselfiles = 0, /* amount of entries in (char **)selected_files */
+	threads = 50; /* amount of threads for playing mp3's */
 
 char
-	*pwd = NULL; /* path to select files from */
+	*pwd = NULL, /* path to select files from */
+	**selected_files = NULL; /* contains selected files as a dir is changed */
 
 char *playmodes_desc[] = {
 	"Play current group",				/* PLAY_GROUP */
@@ -144,6 +160,9 @@ char *playmodes_desc[] = {
 	"Play all groups in random order",	/* PLAY_GROUPS_RANDOMLY */
 	"Play all songs in random order"	/* PLAY_SONGS */
 	};
+
+short
+	follow_symlinks = 0;
 
 int
 main(int argc, char *argv[])
@@ -181,14 +200,7 @@ main(int argc, char *argv[])
 	/* initialize command window */
 	command_window = newwin(LINES - 2, 24, 0, 0);
 	wborder(command_window, 0, ' ', 0, 0, 0, ACS_HLINE, ACS_LTEE, ACS_HLINE);
-	cw_set_fkey(1, "Select files");
-	cw_set_fkey(2, "Add group");
-	cw_set_fkey(3, "Select group");
-	cw_set_fkey(4, "Set group's title");
-	cw_set_fkey(5, "Write playlist");
-	cw_set_fkey(6, "Toggle group mode");
-	cw_set_fkey(7, "Toggle play mode");
-	cw_set_fkey(8, "Play");
+	cw_set_default_fkeys();
 
 	/* initialize header window */
 	header_window = newwin(2, COLS - 27, 0, 24);
@@ -241,6 +253,9 @@ main(int argc, char *argv[])
 
 	window = WINDOW_GROUP; /* window used is group window */
 	/* read input from keyboard */
+
+	change_threads(); /* display #threads in command_window */
+
 	while ( (key = wgetch(sw->sw_win)) != 'q')
 	{
 		switch(key)
@@ -264,6 +279,12 @@ main(int argc, char *argv[])
 						sw->sw_selection);
 				}
 				break;
+			case KEY_PPAGE:
+				if (file_window)
+					sw_pagedown(file_window);
+				else
+					sw_pagedown(group_stack[current_group - 1]);
+				break;
 			case ' ':
 				if (file_window)
 				{
@@ -275,6 +296,9 @@ main(int argc, char *argv[])
 					sw_select_item(group_stack[current_group - 1]);
 					sw_change_selection(group_stack[current_group - 1], 1);
 				}
+				break;
+			case 12: /* ^l - refresh screen */
+				refresh_screen();
 				break;
 			case 13: /* enter */
 				if (!file_window)
@@ -295,7 +319,9 @@ main(int argc, char *argv[])
 						strcat(message, filename);
 						mw_settxt(message);
 						free(message);
-						playmp3(filename, 100);
+						play_set_default_fkeys();
+						playmp3(filename, threads);
+						cw_set_default_fkeys();
 						mw_clear();
 					}
 				}
@@ -316,15 +342,31 @@ main(int argc, char *argv[])
 				if (file_window)
 					fw_end();
 				else	
+				{
+					if (selected_files)
+					{
+						free(selected_files);
+						selected_files = NULL;
+					}
 					fw_create();
+				}
 				break;
 			case KEY_F(2):/* F2 - add group */
 				if (!file_window)
 					add_group();
+				else /* F2 - Invert selection */
+					fw_select_all();
 				break;
 			case KEY_F(3): /* F3 - select group */
 				if (!file_window)
 					select_group();
+				else
+				{
+					mw_settxt("Recursively selecting files...");
+					recsel_files(pwd);
+					mw_settxt("Added all mp3's in this dir and all sub" \
+						"dirs to current group.");
+				}
 				break;
 			case KEY_F(4): /* F4 - set group's name */
 				if (!file_window)
@@ -345,6 +387,9 @@ main(int argc, char *argv[])
 			case KEY_F(8): /* F8 - play list */
 				playlist->update_list = 1;
 				play_list();
+				break;
+			case KEY_F(9): /* F9 - change #threads */
+				change_threads();
 				break;
 			case 'c': /* another test-key */
 				sw_additem(group_stack[current_group - 1], "Hoei.mp3");
@@ -762,6 +807,28 @@ sw_select_item(struct sw_window *sw)
 	sw_refresh(sw, 0);
 }
 
+void
+sw_pagedown(struct sw_window *sw)
+{
+	int
+		maxx, maxy, selected_item;
+
+	getmaxyx(sw->sw_win, maxy, maxx);
+
+	selected_item = sw->shown_range[0];
+	selected_item += (maxy - 2);
+	if (selected_item > sw->nitems - 1)
+		selected_item = sw->nitems - 1;
+	if (selected_item < 0)
+		selected_item = 0;
+
+	selected_item -= sw->sw_selection;
+
+	if (selected_item < 0)
+		selected_item = 0;
+
+	sw_change_selection(sw, selected_item - sw->sw_selection);
+}
 
 /* Function Name: set_header_title
  * Description  : sets the title of the current on-screen selection window
@@ -783,6 +850,12 @@ set_header_title(const char *title)
 		mvwaddch(header_window, 1, i, ' ');
 	mvwaddnstr(header_window, 1, middle, title, x - 2);
 	wrefresh(header_window);
+}
+
+int
+sortme(const void *a, const void *b)
+{
+	return (strcmp(*(char**)a, *(char**)b));
 }
 
 /* fw_create() reads a directory's contents and creates a file-
@@ -845,28 +918,16 @@ fw_create()
 	while ( (entry = readdir(dir)) )
 	{
 		char *path = (char *)malloc(strlen(pwd) + entry->d_reclen + 1);
-		int extra_len = 1;
 		DIR *dir2 = NULL;
 		
 		entries = (char **)realloc (entries, (++nitems) * sizeof(char *));
-		is_dir = (int *)realloc(is_dir, nitems * sizeof(int));
 		
 		strcpy(path, pwd);
 		strcat(path, entry->d_name);
-		if ( (dir2 = opendir(path)) ) /* path is a dir! */
-		{
-			++extra_len;
-			closedir(dir2);
-			is_dir[nitems - 1] = 1;
-		}
-		else
-			is_dir[nitems - 1] = 0;
 
-		entries[nitems - 1] = (char *)malloc( ((entry->d_reclen) + extra_len) *
+		entries[nitems - 1] = (char *)malloc( ((entry->d_reclen) + 1) *
 			sizeof(char));
 		strcpy(entries[nitems - 1], entry->d_name);
-		if (extra_len == 2) /* this entry is a directory */
-			strcat(entries[nitems - 1], "/");
 		free(path);
 	}
 	
@@ -877,6 +938,30 @@ fw_create()
 		sw_endwin(file_window);
 		free(file_window);
 		file_window = NULL;
+	}
+
+	/* sort char **entries */
+	if (nitems > 1)
+		qsort(entries, nitems, sizeof(char*), sortme);
+
+	/* determine which entries are directories */
+	is_dir = (int *)malloc(nitems * sizeof(int));
+
+	for (i = 0; i < nitems; i++)
+	{
+		DIR
+			*dir2;
+
+		if ( (dir2 = opendir(entries[i])) ) /* path is a dir! */
+		{
+			closedir(dir2);
+			is_dir[i] = 1;
+			entries[i] = (char *)realloc(entries[i], (strlen(entries[i]) + 2) *
+				sizeof(char));
+			strcat(entries[i], "/");
+		}
+		else
+			is_dir[i] = 0;
 	}
 
 	file_window = (struct sw_window *)malloc(sizeof(struct sw_window));
@@ -891,7 +976,7 @@ fw_create()
 	set_header_title(file_window->sw_title);
 	wrefresh(header_window);
 
-	cw_set_fkey(1, "Add files to group");
+	fw_set_default_fkeys();
 	for (i = 0; i < nitems; i++)
 		free(entries[i]);
 	if (entries)
@@ -901,12 +986,15 @@ fw_create()
 /* fw_end closes the file_window if it's on-screen, and moves all selected
  * files into the currently used group. Finally, the selection-window of the
  * current group is put back on the screen and the title in the header-window
- * is set to match that of the current group.
+ * is set to match that of the current group. If files were selected in another
+ * dir than the current dir, these will be added too (they're stored in 
+ * selected_files then). selected_files will be freed as well.
  */
 void
 fw_end()
 {
-	int i;
+	int
+		i;
 	char *dummy = NULL;
 
 	if (!file_window)
@@ -919,17 +1007,6 @@ fw_end()
 		int
 			item_index = file_window->sw_selected_items[i];
 
-	/* Depricated.
-	for ( i = 0; i < file_window->nitems; i++)
-	{
-		char *itemname = NULL;
-		
-		if ( !file_window->sw_selected_items[i])
-			continue;
-
-		if (is_dir[i])
-			continue;
-	*/
 		if (is_dir[item_index])
 			continue;
 
@@ -939,10 +1016,27 @@ fw_end()
 		itemname = (char *)malloc(strlen(file_window->items[item_index]) +
 			strlen(pwd) + 1);
 		sprintf(itemname, "%s%s", pwd, file_window->items[item_index]);
-		
-		sw_additem(group_stack[current_group - 1], itemname);
+	
+		add_selected_file(itemname);
+
+		/* 'old style'
+		 * sw_additem(group_stack[current_group - 1], itemname);
+		 */
 		free(itemname);
 	}
+
+	if (selected_files)
+	{
+		for (i = 0; i < nselfiles; i++)
+		{
+			sw_additem(group_stack[current_group - 1], selected_files[i]);
+			free(selected_files[i]);
+		}
+		free(selected_files);
+		selected_files = NULL;
+		nselfiles = 0;
+	}
+
 	fw_destroy();
 	sw_refresh(group_stack[current_group -1], 1);
 	dummy = (char *)malloc((strlen(group_stack[current_group - 1]->sw_title) +
@@ -952,7 +1046,7 @@ fw_end()
 	set_header_title(dummy);
 	free(dummy);
 
-	cw_set_fkey(1, "Select files");
+	cw_set_default_fkeys();
 }
 
 void
@@ -986,10 +1080,23 @@ fw_isdir(int selection)
 void
 fw_changedir(const char *path)
 {
-	char *newpath = (char *)malloc((strlen(path) + 1) * sizeof(char));
+	char
+		*newpath = (char *)malloc((strlen(path) + 1) * sizeof(char));
 
 	if (!file_window)
 		return;
+
+	/* if not changed to current dir and files have been selected add them to
+	 * the selection list 
+	 */
+	if (strcmp(path, ".") && file_window->nselected)
+	{
+		int i;
+
+		for (i = 0; i < file_window->nselected; i++)
+			add_selected_file(file_window->items[file_window->
+				sw_selected_items[i]]);
+	}
 
 	strcpy(newpath, path);	
 	fw_destroy();
@@ -1056,6 +1163,26 @@ Error(const char *txt)
 	wrefresh(message_window);
 }
 
+void
+Message(const char *txt)
+{
+	int
+		offset = (COLS - 2 - strlen(txt)) / 2,
+		i;
+
+	for (i = 1; i < COLS - 1; i++)
+	{
+		chtype tmp = '<';
+		
+		if (i < offset)
+			tmp = '>';
+		mvwaddch(message_window, 0, i, tmp);
+	}
+	mvwaddnstr(message_window, 0, offset, txt, COLS - offset - 1);
+	mvwchgat(message_window, 0, 1, COLS - 2, A_BOLD, 4, NULL);
+	wrefresh(message_window);
+}
+
 int
 is_mp3(const char *filename)
 {
@@ -1075,7 +1202,8 @@ cw_set_fkey(short fkey, const char *desc)
 {
 	int
 		maxy, maxx;
-	char *fkeydesc = NULL;
+	char
+		*fkeydesc = NULL;
 		
 	if (fkey < 1 || fkey > 12)
 		return;
@@ -1234,8 +1362,30 @@ write_playlist()
 {
 	int i;
 	FILE *f;
-	
-	if ( !(f = fopen("test.lst", "w")) )
+	WINDOW
+		*gname = newwin(5, 69, (LINES - 5) / 2, (COLS - 69) / 2);
+	char
+		name[53];
+
+	keypad(gname, TRUE);
+	wbkgd(gname, COLOR_PAIR(4)|A_BOLD);
+	wborder(gname, 0, 0, 0, 0, 0, 0, 0, 0);
+
+	mvwaddstr(gname, 2, 2, "Enter filename:");
+	mvwchgat(gname, 2, 19, 48, A_BOLD, 5, NULL);
+	touchwin(gname);
+	wrefresh(gname);
+	wmove(gname, 2, 19);
+	echo();
+	wattrset(gname, COLOR_PAIR(5)|A_BOLD);
+	wgetnstr(gname, name, 48);
+	noecho();
+	delwin(gname);
+	refresh_screen();
+
+	strcat(name, ".lst");
+
+	if ( !(f = fopen(name, "w")) )
 	{
 		Error("Error opening playlist for writing!");
 		return;
@@ -1372,7 +1522,7 @@ play_entire_list()
 		keypress = playmp3(filename, 100);
 		switch(keypress)
 		{
-			case KEY_F(8):
+			case KEY_F(1):
 				return;
 		}
 		mw_clear();
@@ -1426,14 +1576,12 @@ play_list()
 	time_t
 		t;
 
-	cw_set_fkey(8, "Stop playing");
-	cw_set_fkey(9, "Pause/Continue");
+	play_set_default_fkeys();
 
 	if (!playlist->update_list)
 	{
 		play_entire_list();
-		cw_set_fkey(8, "Play");
-		cw_set_fkey(9, "");
+		cw_set_default_fkeys();
 		return;
 	}
 
@@ -1534,7 +1682,238 @@ play_list()
 	}
 	
 	play_entire_list();
-	cw_set_fkey(8, "Play");
-	cw_set_fkey(9, "");
+	cw_set_default_fkeys();
 	return;
+}
+
+void
+cw_set_default_fkeys()
+{
+	cw_set_fkey(1, "Select files");
+	cw_set_fkey(2, "Add group");
+	cw_set_fkey(3, "Select group");
+	cw_set_fkey(4, "Set group's title");
+	cw_set_fkey(5, "Write playlist");
+	cw_set_fkey(6, "Toggle group mode");
+	cw_set_fkey(7, "Toggle play mode");
+	cw_set_fkey(8, "Play");
+	cw_set_fkey(9, "Change #threads");
+	cw_set_fkey(10, "");
+	cw_set_fkey(11, "");
+	cw_set_fkey(12, "");
+}
+
+void 
+fw_set_default_fkeys()
+{
+	cw_set_fkey(1, "Add files to group");
+	cw_set_fkey(2, "Invert selection");
+	cw_set_fkey(3, "Recurs. select all");
+	cw_set_fkey(4, "");
+	cw_set_fkey(5, "");
+	cw_set_fkey(6, "");
+	cw_set_fkey(7, "");
+	cw_set_fkey(8, "");
+	cw_set_fkey(9, "");
+	cw_set_fkey(10, "");
+	cw_set_fkey(11, "");
+	cw_set_fkey(12, "");
+}
+
+void
+play_set_default_fkeys()
+{
+	cw_set_fkey(1, "Stop playing");
+	cw_set_fkey(2, "Pause/Continue");
+	cw_set_fkey(3, "");
+	cw_set_fkey(4, "");
+	cw_set_fkey(5, "");
+	cw_set_fkey(6, "");
+	cw_set_fkey(7, "");
+	cw_set_fkey(8, "");
+	cw_set_fkey(9, "");
+	cw_set_fkey(10, "");
+	cw_set_fkey(11, "");
+	cw_set_fkey(12, "");
+}
+
+void
+fw_select_all()
+{
+	int
+		i, ni, ni2,
+		*items = NULL;
+		
+	if (!file_window)
+		return;
+	
+	if ( !(ni = file_window->nitems) )
+		return;
+	
+	items = (int *)malloc(ni * sizeof(int));
+
+	for (i = 0; i < ni; i++)
+		items[i] = 1;
+
+	ni2 = ni;
+
+	if ( file_window->sw_selected_items )	
+	{
+		ni2 = ni - file_window->nselected;
+
+		for (i = 0; i < file_window->nselected; i++)
+			items[file_window->sw_selected_items[i]] = 0;
+
+		free(file_window->sw_selected_items);
+		file_window->sw_selected_items = NULL;
+	}
+
+	file_window->nselected = ni2;
+	file_window->sw_selected_items = (int *)malloc(ni2 * sizeof(int));
+
+	ni2 = 0;
+
+	for (i = 0; i < ni; i++)
+	{
+		if ( items[i] )
+			file_window->sw_selected_items[ni2++] = i;
+	}
+
+	free(items);
+	sw_refresh(file_window, 1);
+}
+
+void
+add_selected_file(const char *file)
+{
+	int
+		offset;
+
+	if (!file)
+		return;
+
+	selected_files = (char **)realloc(selected_files, (nselfiles + 1) *
+		sizeof(char*) );
+	offset = nselfiles;
+	
+	selected_files[offset] = NULL;
+	selected_files[offset] = (char *)malloc((strlen(file) + 1) * sizeof(char));
+	strcpy(selected_files[offset], file);
+	++nselfiles;
+}
+
+int
+is_symlink(const char *path)
+{
+	struct stat
+		*buf = (struct stat*)malloc( 1 * sizeof(struct stat) );
+	
+	if (lstat(path, buf) < 0)
+		return 0;
+	
+	if ( ((buf->st_mode) & S_IFMT) != S_IFLNK) /* not a symlink. Yippee */
+		return 0;
+	
+	return 1;
+}
+	
+void
+recsel_files(const char *path)
+{
+	struct dirent
+		*entry = NULL;
+	DIR
+		*dir = NULL;
+	char
+		*txt = NULL,
+		header[] = "Recursively selecting in: ";
+	
+	if (!follow_symlinks && is_symlink(path) )
+		return;
+
+	if ( !(dir = opendir(path)) )
+	{
+		/* fprintf(stderr, "Error opening directory!\n");
+		 * exit(1);
+		 */
+		 return;
+	}
+
+	txt = (char *)malloc((strlen(path) + strlen(header) + 1) * sizeof(char));
+	strcpy(txt, header);
+	strcat(txt, path);
+	mw_settxt(txt);
+	free(txt);
+
+	while ( (entry = readdir(dir)) )
+	{
+		DIR *dir2 = NULL;
+		char *newpath = (char *)malloc((entry->d_reclen + 2 + strlen(path)) *
+			sizeof(char));
+
+		strcpy(newpath, path);
+		strcat(newpath, "/");
+		strcat(newpath, entry->d_name);
+
+		if ( (dir2 = opendir(newpath)) )
+		{
+			char *dummy = entry->d_name;
+
+			closedir(dir2);
+
+			if (!strcmp(dummy, ".") || !strcmp(dummy, ".."))
+				continue; /* next while-loop */
+		
+			recsel_files(newpath);
+		}
+		else if (is_mp3(newpath))
+		{
+			add_selected_file(newpath);
+		}
+
+		free(newpath);
+	}
+	
+	closedir(dir);
+}
+
+void
+read_playlist(const char *name)
+{
+	FILE
+		*f;
+
+	char *line = NULL;
+
+	if ( !(f = fopen(name, "r")) )
+	{
+		Error("Couldn't open playlist!");
+		return;
+	}
+	
+	while (f)
+	{
+		int
+			len;
+			
+		line = (char*)malloc(255 * sizeof(char));
+
+		if ( !(fgets(line, 255, f)) )
+		{
+			fclose(f);
+			f = NULL; /* just in case fclose fails */
+			continue;
+		}
+		
+		len = strlen(line);
+	}
+}
+
+void
+change_threads()
+{
+	if ( (threads += 50) > 500)
+		threads = 0;
+	mvwprintw(command_window, 21, 1, "Threads: %03d", threads);
+	wrefresh(command_window);
 }

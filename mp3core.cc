@@ -82,7 +82,7 @@ int Mp3player::playingwiththread(int threadstore)
 			switch(keypressed)
 			{
 				case 'p': /* pause */
-				case KEY_F(9):
+				case KEY_F(2):
 				{
 					server->pausethreadedplayer();
 					while (getch() == ERR)
@@ -102,11 +102,11 @@ int Mp3player::playingwiththread(int threadstore)
 					stopped = 1;
 				}
 				break;
-				case KEY_F(8):
+				case KEY_F(1):
 				{
 					server->stopthreadedplayer();
 					stopped = 1;
-					retval = KEY_F(8);
+					retval = KEY_F(1);
 				}
 				break;
 			}
