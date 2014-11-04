@@ -1,0 +1,129 @@
+.TH mp3blaster 1
+.SH NAME
+mp3blaster - An interactive text-console based mp3 player.
+.SH SYNOPSIS
+.TP
+\fBmp3blaster\fR [\fBoptions\fR]
+.TP
+\fBmp3blaster\fR [\fBoptions\fR] \fB--file\fI\fI|\fB-f filename.mp3
+Play one mp3 (auto-exit with --quit)
+.TP
+\fBmp3blaster\fR [\fBoptions\fR] \fB--list\fI|\fB-l playlist.lst
+Load a playlist at startup but don't start playing.
+.TP
+\fB mp3blaster\fR [\fBoptions\fR] \fB--autolist\fI|\fB-a playlist.lst
+Load a playlist at startup and start playing.
+.SH DESCRIPTION
+.I Mp3blaster 
+is an interactive text-based program that plays audio files (currently
+only mpeg audio streams, commonly known as MP3's). The major difference
+with all other text-based mp3 players is that this one has a fully
+interactive interface. Another major feature is the very flexible way in
+which you can design a playlist.
+.PP
+Its interface is based on ncurses, a popular text-screen handler, and
+consists of three main parts: A playlist editor, a file manager and a
+playing mode. By default, you start with the playlist editor (note that
+most common mp3 players start with the playing mode section instead). 
+
+.B Playlist Editor
+
+The playlist consists of one or more \fBgroups\fR. Each group can have
+its own \fBgroupname\fR and can contain supported audio files. You can
+set the play order for each group to \fBrandom\fR or \fBnormal\fR. Random
+means that all files in that group will be played in random (shuffled) 
+order, normal will play the files in the order you added them.
+.PP
+There is also a global play order that can be \fBcurrent (one) group\fR, 
+\fBall groups in normal order\fR, \fBall groups in normal order\fR or 
+\fBall songs in random order\fR. Only the ``all songs random'' order
+ignores the group's individual play order setting; all other global play
+orders will take it into account. 
+.PP
+By default, an empty playlist with one empty group is created at startup,
+to which you can start adding files. To find out what keys you can use,
+press \fBh\fR. 
+
+.B File Manager
+
+You can enter the file manager by pressing F1 or 1 from the \fBplaylist
+editor\fR. The interface is almost identical to that of the playlist
+editor except for the function keys, which might be confusing at first.
+In the file manager, you can add files to the group you had currently
+selected in the \fBplaylist editor\fR. You can also listen to a file by
+selecting it with the highlighted bar and pressing enter over it.
+Adding files can be done in 2 ways: Selecting a file by moving the bar over it
+and pressing the spacebar, or by recursively selecting all files in the
+current directory and all directories in it. If you select some files,
+change to another directory (by pressing enter over one) and then select
+some more files, the old selection will not be lost, even though you can't
+see it on your screen at the time. As soon as you return to the playlist
+editor by using F1 or 1, you will see they have been added to the group.
+However, you can't deselect selected files as soon as you change into 
+another directory: you'll have to remove them from the playlist editor.
+Also, the order in which you select files will be the order in which they
+are added to the group. A quick way of selecting *all* files in the current
+directory is by selection none and then press F2 or 2 (invert selection).
+
+.B Playing Mode
+
+This is a conventional cd-player style window where you can control the
+playlist being played, as well as the mixer, that is if you didn't disable
+it from the command-line.
+All cd-style controls (previous track, rewind, play, fast forward, next track,
+pause and stop) are available under the numerical keys 1 to 7. Their functions
+should be obvious and don't differ from your average cd/tape player.
+The mixer can be controlled using the arrow keys. Left/Right changes the
+highlighted device; up/down selects another mixer device. You can control
+any mixer device that has been detected by your sound driver, which may vary
+on different systems. 
+The path to the mp3-file that's currently being played is in the upper border
+of the screen. Directly below you see some information about the soundfile
+being played. For mp3 files with an ID3-tag extra information like the
+songname, artist, etc. will be shown as well. If an mp3 does not have an
+id3tag (or no songname in it), the songname will be the filename.
+There is also a progress bar onscreen that shows how long a file is being
+played and when it's finished playing. There will be a remaining/elapsed time
+counter in a very near future version.
+You can leave the playlist editor by pressing 'q'.
+.SH OPTIONS
+.TP
+.B --chroot=rootdir, -c=rootdir
+Set <rootdir> as mp3blaster's root dir. This affects 
+.B ALL
+file operations in mp3blaster!! (including reading and writing of playlists).
+Note that only users with uid 0 (i.e. root) can use this option (yet). This
+feeature will be changed radically soon.
+.TP
+.B --debug, -d
+Log debug-info in $HOME/.mp3blaster (only useful for debuggers)
+.TP
+.B --no-mixer, -n
+Don't start the built-in mixer.
+.TP
+.B --playmode/-p=(onegroup,allgroups,groupsrandom,allrandom}
+Default playing mode is resp. Play first group only, Play all groups in 
+given order (default), Play all groups in random order, Play all songs in
+random order.
+.TP
+.B --runframes/-r=number
+Number or frames to decode in one loop. Range: 1 to 10 (default=5). A low 
+value means that the interface (while playing) reacts faster but slow CPU's
+might hick. A higher number implies a slow interface but less hicks on slow
+CPU's.
+.TP
+.B --quit, -q
+Quit after playing mp3[s] (only makes sense in combination with --autolists
+or --file)
+.SH BUGS
+.PP
+If you find bugs, please send reports to brama@stack.nl.
+.PP
+.SH AUTHOR
+.I mp3blaster
+was written by 
+.B Bram Avontuur <brama@stack.nl> <http://www.stack.nl/~brama/>
+.PP
+Please send comments, suggestion, complaints, bug fixes, coffee and porting
+experiences to me, including the version number of mp3blaster in your mail. 
+.PP

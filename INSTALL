@@ -23,6 +23,12 @@ HOWEVER!!!
 !!! it in any other code), please tell me!!!!
 !!! Don't forget to recompile mp3blaster after this patch ;)
 
+ALSO, upgrade to libncurses-4.0 or better. Version 3.* of ncurses is 
+no good and will probably mess up the layout *and* some functionality (3.4 on
+my stock debian 2.0 setup does not understand the nodelay for keyboard
+input so the interface will always wait for a keypress, causing the playback
+to be halted when no key's pressed)
+
 Now on with the show..
 
 If your distribution is GLIBC2 (libc6)-based:
@@ -45,12 +51,13 @@ configure without pthread-lib (./configure --with-pthread=no), or install
 a pthread-lib for libc5 and link against that.
 
 Any comments, ideas, praises, bugreports and cheques => EMAIL brama@stack.nl.
-Check http://www.stack.nl/~brama/ for the latests updates, or visit
-ftp://sunsite.unc.edu/pub/Linux/some/vague/and/obscure/sound/dir where you
+Check http://www.stack.nl/~brama/mp3blaster.html for the latests updates, or
+visit ftp://sunsite.unc.edu/pub/Linux/apps/sound/players where you
 probably found this file anyway.
 
 Platforms that are known to compile mp3blaster out-of-the-box:
 Linux/ix86 (libc5 & libc6)
-FreeBSD (2.2.8)
+FreeBSD (2.2.8) (NOTE: You might need to install or upgrade ncurses since 
+ this appears not to be installed by many people using FreeBSD)
 OpenBSD/Alpha (compiled, didn't test playing cuz sounddevice wasn't working)
 Linux/Alpha

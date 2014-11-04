@@ -54,6 +54,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <fnmatch.h>
 #include <time.h>
 #ifdef HAVE_GETOPT_H
 #include <getopt.h>
@@ -134,6 +135,11 @@ int
 	nselfiles = 0;
 FILE
 	*debug_info = NULL; /* filedescriptor of debug-file. */
+int
+	fpl = 5; /* frames to be run in 1 loop: Higher -> less 'hicks' on slow
+	          * CPU's. Lower -> interface (while playing) reacts faster.
+			  * 1<=fpl<=10
+			  */
 
 char
 	*playmodes_desc[] = {
@@ -171,21 +177,23 @@ main(int argc, char *argv[])
 #ifdef HAVE_GETOPT_H
 		static struct option long_options[] = 
 		{
+			{ "autolist", 1, 0, 'a'},
+			{ "chroot", 1, 0, 'c'},
 			{ "debug", 0, 0, 'd'},
 			{ "file" , 1, 0, 'f'},
+			{ "help", 0, 0, 'h'},
 			{ "list", 1, 0, 'l'},
 			{ "no-mixer", 0, 0, 'n'},
-			{ "autolist", 1, 0, 'a'},
 			{ "playmode", 1, 0, 'p'},
 			{ "quit", 0, 0, 'q'},
-			{ "chroot", 1, 0, 'c'},
+			{ "runframes", 1, 0, 'r'},
 			{ 0, 0, 0, 0}
 		};
 		
-		c = getopt_long_only(argc, argv, "ql:a:df:p:nc:", long_options,
+		c = getopt_long_only(argc, argv, "a:c:df:hl:np:qr:", long_options,
 			&long_index);
 #else
-		c = getopt(argc, argv, "ql:a:df:p:nc:");
+		c = getopt(argc, argv, "a:c:df:hl:np:qr:");
 #endif
 
 		if (c == EOF)
@@ -239,12 +247,26 @@ main(int argc, char *argv[])
 		case 'q': /* quit after playing 1 mp3/playlist */
 			options |= OPT_QUIT;
 			break;
+		case 'r': /* numbers of frames to decode in 1 loop 1<=fpl<=10 */
+		{
+			int torun = atoi(optarg);
+			if (torun < 1)
+				fpl = 1;
+			if (torun > 10)
+				fpl = 10;
+			else
+				fpl = torun;
+		}
+			break;
 		case 'c': /* chroot */
 			options |= OPT_CHROOT;
 			if (chroot_dir)
 				delete[] chroot_dir;
 			chroot_dir = new char[strlen(optarg)+1];
 			strcpy(chroot_dir, optarg);
+			break;
+		case 'h': /* help */
+			usage();
 			break;
 		default:
 			usage();
@@ -416,6 +438,7 @@ usage()
 		"\tmp3blaster [options] --autolist/-a <playlist.lst>\n"\
 		"\t\tLoad a playlist and start playing.\n"\
 		"\nOptions:\n"\
+		"\t--help/-h: This help screen.\n"\
 		"\t--no-mixer/-n: Don't start the built-in mixer.\n"\
 		"\t--debug/-d: Log debug-info in $HOME/.mp3blaster.\n"\
 		"\t--chroot/-c=<rootdir>: Set <rootdir> as mp3blaster's root dir.\n"\
@@ -427,7 +450,13 @@ usage()
 		"\t--playmode/-p={onegroup,allgroups,groupsrandom,allrandom}\n"\
 		"\t\tDefault playing mode is resp. Play first group only, Play\n"\
 		"\t\tall groups in given order(default), Play all groups in random\n"\
-		"\t\torder, Play all songs in random order.\n");
+		"\t\torder, Play all songs in random order.\n"\
+		"\t--runframes/-r=<number>: Number of frames to decode in one loop.\n"\
+		"\t\tRange: 1 to 10 (default=5). A low value means that the\n"\
+		"\t\tinterface (while playing) reacts faster but slow CPU's might\n"\
+		"\t\thick. A higher number implies a slow interface but less\n"\
+		"\t\thicks on slow CPU's.\n"\
+		"");
 #else
 		"Usage:\n" \
 		"\tmp3blaster [options]\n"\
@@ -449,7 +478,13 @@ usage()
 		"\t-p {onegroup,allgroups,groupsrandom,allrandom}\n"\
 		"\t\tDefault playing mode is resp. Play first group only, Play\n"\
 		"\t\tall groups in given order(default), Play all groups in random\n"\
-		"\t\torder, Play all songs in random order.\n");
+		"\t\torder, Play all songs in random order.\n"\
+		"\t-r=<number>: Number of frames to decode in one loop.\n"\
+		"\t\tRange: 1 to 10 (default=5). A low value means that the\n"\
+		"\t\tinterface (while playing) reacts faster but slow CPU's might\n"\
+		"\t\thick. A higher number implies a slow interface but less\n"\
+		"\t\thicks on slow CPU's.\n"\
+		"");
 #endif
 
 	exit(1);
@@ -484,7 +519,6 @@ set_header_title(const char *title)
  * is set to match that of the current group. If files were selected in another
  * dir than the current dir, these will be added too (they're stored in 
  * selected_files then). selected_files will be freed as well.
- * STILL USED.
  */
 void
 fw_end()
@@ -600,7 +634,7 @@ fw_changedir()
 	wbkgdset(file_window->sw_win, ' '|COLOR_PAIR(1)|A_BOLD);
 	file_window->setBorder(0, 0, 0, 0, ACS_LTEE, ACS_RTEE,
 		ACS_BTEE, ACS_BTEE);
-	wbkgdset(file_window->sw_win, ' '|COLOR_PAIR(6)|A_BOLD);
+	wbkgdset(file_window->sw_win, ' '|COLOR_PAIR(6));
 	char *pruts = file_window->getPath();
 	set_header_title(pruts);
 	delete[] pruts;
@@ -684,8 +718,10 @@ is_mp3(const char *filename)
 	if (!filename || (len = strlen(filename)) < 5)
 		return 0;
 
-	if (strcasecmp(filename + (len - 4), ".mp3"))
+	if (fnmatch(".mp[23]", (filename + (len - 4)), 0))
 		return 0;
+	//if (strcasecmp(filename + (len - 4), ".mp3"))
+	//	return 0;
 	
 	return 1;
 }
@@ -1464,7 +1500,10 @@ handle_input(short no_delay)
 		nodelay(tmp, FALSE);
 	}
 	else
+	{
+		nodelay(tmp, FALSE);
 		key=wgetch(tmp);
+	}
 
 	switch(progmode)
 	{
@@ -1504,7 +1543,7 @@ handle_input(short no_delay)
 				wbkgdset(file_window->sw_win, ' '|COLOR_PAIR(1)|A_BOLD);
 				file_window->setBorder(0, 0, 0, 0, ACS_LTEE, ACS_RTEE,
 					ACS_BTEE, ACS_BTEE);
-				wbkgdset(file_window->sw_win, ' '|COLOR_PAIR(6)|A_BOLD);
+				wbkgdset(file_window->sw_win, ' '|COLOR_PAIR(6));
 				file_window->swRefresh(0);
 				char *pruts = file_window->getPath();
 				set_header_title(pruts);
@@ -1571,6 +1610,7 @@ handle_input(short no_delay)
 				char *tmppwd = get_current_working_path();
 				recsel_files(tmppwd);
 				free(tmppwd);
+				fw_end();
 				mw_settxt("Added all mp3's in this dir and all subdirs " \
 					"to current group.");
 				break;

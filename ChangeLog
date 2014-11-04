@@ -1,3 +1,30 @@
+V2.0b7: 1999/03/XX
+==================
+-Wrote a manual. Sniff.
+-One can select the number of mp3-frames to run in one loop as a command-line
+ option. This is useful for either speeding up the interface or avoiding
+ 'hickup's.
+-added a check to configure for bad /usr/include/__math.h that crashes
+ mp3blaster when an attempt to play an mp3 has been made.
+-Selected files in the file browser now visually differ from non-selected
+ files on a dumb (b/w) terminal.
+-error-messages now should make more sense (the old ones were wrong ones
+ because of an indexing error)
+-Fixed a bug that occured if /dev/mixer couldn't be opened for some reason
+ (non-existant, permission denied,..). It would close stdin..
+-After chosing 'recursive select' from the file manager, the program returns
+ to the playlist editor immediately (since this is less confusing IMHO).
+-Added the mp3tag command. Right now it's a command line tool to change/add
+ ID3 tags to mp3 files, but it will also be incorporated into mp3blaster
+ itself. It's very easy to use. Really. Enjoy! PS: Check the id3scripts dir
+ for a nice script to add id3tags to your mp3's based on their filename.
+-It now accepts .mp2 and .mp3 as filename extensions for mpeg audio files.
+-reduced the annoying ``ticks'' in between songs further. If you still
+ suffer from them (and it's not the mp3 having a bad head or tail!) please
+ give me a ring..
+-fixed a bug with mixer initialisation at playlist starting time that was
+ introduced in 2.0b6.
+
 V2.0b6: 1999/03/XX
 ==================
 -path to mp3 put in border of playwindow which leaves more room for the

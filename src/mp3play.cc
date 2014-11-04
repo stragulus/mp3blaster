@@ -39,8 +39,9 @@
 
 inline void mp3Play::error(int n)
 {
-	const char *sound_errors[19] =
+	const char *sound_errors[20] =
 	{
+		"Everything's OK (You shouldnt't see this!)",
 		"Failed to open sound device.",
 		"Sound device is busy.",
 		"Buffersize of sound device is wrong.",
@@ -136,20 +137,21 @@ int mp3Play::playMp3List()
 	interface = new playWindow();
 	interface->setStatus(PS_NORMAL);
 
-#define BOTTE_HACK 0
-#ifdef BOTTE_HACK
-		/* quick hack to avoid ``snap''s, turn down the volume */
+	/* quick hack to avoid ``snap''s, turn down the volume */
+	{
 		int volume, mixer = -1;
 		if ( (mixer = open(MIXER_DEVICE, O_RDWR)) >= 0)
 		{
 			ioctl(mixer, MIXER_READ(SOUND_MIXER_VOLUME), &volume);
 			ioctl(mixer, MIXER_WRITE(SOUND_MIXER_VOLUME), 0);
 		}
-#endif 
-
-	player = new mp3Player(this, interface, threads);
 	
-	//for (unsigned int i = 0; i < nmp3s; i++)
+		player = new mp3Player(this, interface, threads);
+	
+		if (mixer > -1)
+			ioctl(mixer, MIXER_WRITE(SOUND_MIXER_VOLUME), &volume);
+	}
+	
 	while (play)
 	{
 		unsigned int
@@ -162,17 +164,17 @@ int mp3Play::playMp3List()
 
 		if( !(player->openfile(filename, SOUND_DEVICE)) )
 		{
-			error(player->geterrorcode());
+			int vaut = player->geterrorcode();
+
+			error(vaut);
+			if (vaut == SOUND_ERROR_DEVOPENFAIL)
+				play = 0;
 		}
 		else
 		{
 			interface->setFileName(filename);
 			player->setdownfrequency(mp3play_downfrequency);
 
-#ifdef BOTTE_HACK
-		if (mixer > -1)
-			ioctl(mixer, MIXER_WRITE(SOUND_MIXER_VOLUME), &volume);
-#endif
 
 #ifdef PTHREADEDMPEG
 			if ( !(player->playingwiththread(1)) )
@@ -200,7 +202,6 @@ int mp3Play::playMp3List()
 		
 		if (next_to_play >= nmp3s)
 			play = 0;
-
 	}
 	
 	delete player;

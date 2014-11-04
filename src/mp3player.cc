@@ -21,10 +21,20 @@
 #include <unistd.h>
 #include <time.h>
 #include <stdio.h>
+#include <sys/ioctl.h>
 #include "playwindow.h"
 #include "mp3player.h"
 
+#ifdef HAVE_SYS_SOUNDCARD_H
+#include <sys/soundcard.h>
+#elif HAVE_MACHINE_SOUNDCARD_H
+#include <machine/soundcard.h>
+#elif HAVE_SOUNDCARD_H
+#include <soundcard.h>
+#endif
+
 extern void debug(const char *txt);
+extern int fpl; /* frames per loop to run */
 
 // mp3Player constructor
 mp3Player::mp3Player(mp3Play *calling, playWindow *interface, int threads)
@@ -62,18 +72,36 @@ bool mp3Player::playing(int verbose)
 #endif
 
 	short
-		should_play = 1;
+		should_play = 1,
+		init_count = 0;
 
 	interface->setProgressBar(0);
 
 	time_t
 		tyd, newtyd;
 	time(&tyd);
-	
+
+	/* To avoid ``snap''s, turn down the volume for the first 5 frames */
+	int volume, mixer = -1;
+	if ( (mixer = open(MIXER_DEVICE, O_RDWR)) >= 0)
+	{
+		ioctl(mixer, MIXER_READ(SOUND_MIXER_VOLUME), &volume);
+		ioctl(mixer, MIXER_WRITE(SOUND_MIXER_VOLUME), 0);
+	}
+
 	while(should_play)
 	{
 		if (status == PS_PLAYING)
-			should_play = (server->run(1));
+		{
+			should_play = (server->run(fpl));
+			init_count += fpl;
+			/* restore volume? */
+			if (mixer > -1 && (init_count > 4))
+			{
+				ioctl(mixer, MIXER_WRITE(SOUND_MIXER_VOLUME), &volume);
+				close(mixer); mixer = -1;
+			}
+		}
 		else 
 			usleep(100); //cause a little delay to reduce system overhead
 
@@ -165,6 +193,12 @@ bool mp3Player::playing(int verbose)
 		}
 	}
 
+	if (mixer > -1) /* less than 5 frames were decoded. */
+	{
+		ioctl(mixer, MIXER_WRITE(SOUND_MIXER_VOLUME), &volume);
+		close(mixer);
+	}
+
 	seterrorcode(server->geterrorcode());
 	interface->setStatus( (status = PS_NORMAL) );
   
@@ -202,7 +236,8 @@ bool mp3Player::playingwiththread(int verbose)
 #endif
 
 	short
-		should_play = 1;
+		should_play = 1,
+		init_count = 0;
 	time_t
 		tyd, newtyd;
 
@@ -214,10 +249,27 @@ bool mp3Player::playingwiththread(int verbose)
 		server->run(1);
 	server->unpausethreadedplayer();
 		
+	/* To avoid ``snap''s, turn down the volume for the first 5 frames */
+	int volume, mixer = -1;
+	if ( (mixer = open(MIXER_DEVICE, O_RDWR)) >= 0)
+	{
+		ioctl(mixer, MIXER_READ(SOUND_MIXER_VOLUME), &volume);
+		ioctl(mixer, MIXER_WRITE(SOUND_MIXER_VOLUME), 0);
+	}
+
 	while(should_play)
 	{
 		if (status == PS_PLAYING)
-			should_play = (server->run(1));
+		{
+			should_play = (server->run(fpl));
+			init_count += fpl;
+			/* restore volume? */
+			if (mixer > -1 && (init_count > 4))
+			{
+				ioctl(mixer, MIXER_WRITE(SOUND_MIXER_VOLUME), &volume);
+				close(mixer); mixer = -1;
+			}
+		}
 		else if (status == PS_PAUSED)
 		{
 			if (server->getframesaved() < nthreads - 1)
@@ -332,6 +384,12 @@ bool mp3Player::playingwiththread(int verbose)
 				if (interface->getMixerHandle())
 					(interface->getMixerHandle())->ProcessKey(ch);
 		}
+	}
+
+	if (mixer > -1) /* less than 5 frames were decoded. */
+	{
+		ioctl(mixer, MIXER_WRITE(SOUND_MIXER_VOLUME), &volume);
+		close(mixer);
 	}
 
 	seterrorcode(server->geterrorcode());

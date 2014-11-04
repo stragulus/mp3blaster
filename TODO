@@ -1,33 +1,33 @@
 -(Save group's playorder in playlist!)
+-playback device selectable from command-line/compile-time option (for OpenBSD)
+-entering absolute path in file manager would be nice
+-emulate popular commandline mp3 players (like mpg123/splay)
+-'/' to search in scrollwin
+-(downmix to 22Khz)
 -(compatible with WinAmp playlist)
--(play single group playmode)
 -(``cold start'' option)
 -(add elapsed/remaining time/position_indicator)
 -(add browsable playlist in playwindow)
 -(add wav/http support)
 -(include getopt.c/getopt.h from GNU site so all OS's support getopt_long)
--InfraRed support!
--path/filename in upper border playwindow
--plugin support
+-Allowing user to change group-order (and mp3-order afterwards)
+-when paused, show this on the interface.
+-InfraRed support! (lirc)
+-plugin support 
 -better chrooted environment
 -"multiple del"
--if no mixer-device is detected, don't try to do anything with the
- mixer in playwindow.cc..
 -NAS (Network Audio System) support!!
 -find out why many mp3's give 'Can't make thread' near the end of the song.
- (because of  id3tag perhaps?)
--improve writing/reading of playlist code.
+ Hah. That was because the error-message was wrong. :)
 -refresh_screen() that actually works at all times.
 -fix a memory-leak. After each played song, 4kb is lost(oops) (but 
  regained if you leave the playlist by F1 :) So far I can't find anything
  causing it in my program..
--Allowing user to change group-order (and mp3-order afterwards)
--when paused, show this on the interface.
 -update border in refresh_screen() too
 -Forward/Rewind while playing in relative amounts.
 -Save playing status when program is interrupted, so the playlist can be 
  resumed when mp3blaster is restarted (useful for *big* playlists)
 -On my cleanly-installed debian-2.0 linux box the blue play-window's layout
- is f*cked up bad. Probably due to the ncurses-lib on it (and perhaps because
+ is messed up. Probably due to the ncurses-lib on it (and perhaps because
  I do some unsupported tricks with ncurses, to work around `features' *cough*)
  Gotta look into that.. (appears to be an ncurses ``feature'')

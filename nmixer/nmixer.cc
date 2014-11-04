@@ -35,7 +35,8 @@ NMixer::~NMixer()
 		delete[] supported;
 	if (cpairs)
 		delete[] cpairs;
-	close(mixer);
+	if (mixer >= 0)
+		close(mixer);
 }
 
 short
@@ -52,8 +53,8 @@ NMixer::NMixerInit()
 	
 	if ( (mixer = open(MIXER_DEVICE, O_RDWR)) < 0)
 	{
-		perror("Can't open /dev/mixer");
-		mixer = 0;
+		//perror("Can't open /dev/mixer");
+		mixer = -1;
 		return 0;
 	}
 

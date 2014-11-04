@@ -22,6 +22,8 @@
 
 extern int no_mixer; /* from main.cc */
 
+extern void debug(const char*);
+
 playWindow::playWindow()
 {
 	short
@@ -147,6 +149,7 @@ playWindow::getInput()
 	}
 	else
 	{
+		fprintf(stderr,"Wahey\n");fflush(stderr);
 		nodelay(interface, FALSE);
 		ch = wgetch(interface);
 	}
