@@ -1,9 +1,27 @@
+V2.0b17: 1900/01/18
+===================
+-cosmetic fixes & code beautify updates
+-Finding the true offset of an mp3 has been improved. Most mp3's that sounded
+ like "trickling water" now sound okay.
+-Added 1 line of code that solved the irritating delay in response to
+ keypresses during playback (why I didn't think of this before is beyond me,
+ I guess it didn't bother me that much)
+-autoconf scripts updated. On FreeBSD you should now be able to compile
+ mp3blaster with threads, thanks to Michael Vasilenko's tip.
+-refresh (ctrl+l)
+-improved mp3tag ID3 utility: It also displays mp3 info like bitrate. There's
+ also optional MySQL support for it, but with the current implementation it's
+ only useful for me. If people want configurable MySQL support (+docs on how
+ to set up a nice mp3 db), including html interface, please let me know.
+
 V2.0b16: 1999/12/15
 ===================
 -I forgot to mention this in the previous version: 8bit soundcards are now
  supported too (with command-line option -8 it's forced)
 -Squashed another sigsegv bug that tried to fclose() NULL.
 -genre-bug that caused random genre to be displayed squashed.
+-added patch from Jeff ?? to make mp3blaster compile on OpenBSD(2.5) again.
+-WarnDelay,SkipForward configfile options added.
 
 V2.0b15: 1999/12/13
 ===================

@@ -25,14 +25,14 @@ mp3blaster_SOURCES	= fileman.cc \
 			  global.cc \
 			  global.h \
 			  config.cc \
-			  scrollwin.h
+			  scrollwin.h \
+			  @MP3B_MODULES@
 mp3tag_SOURCES = id3parse.cc mp3tag.cc
-mp3blaster_DEPENDENCIES = @LIBMPEGSOUND@ @LIBNMIXER@
-INCLUDES		= -I../mpegsound -I/usr/include/ncurses -I../nmixer
-LDADD			= @LIBMPEGSOUND@ @LIBNMIXER@
-LIBS			= -L../mpegsound -L../nmixer @LIBS@
+mp3tag_DEPENDENCIES = ../mpegsound/libmpegsound.a ../nmixer/libnmixer.a
+mp3tag_LDADD = @LIBMPEGSOUND@ @LIBMYSQL@
+mp3blaster_DEPENDENCIES = ../mpegsound/libmpegsound.a ../nmixer/libnmixer.a
 INCLUDES		= -I$(top_srcdir)/mpegsound -I/usr/include/ncurses -I$(top_srcdir)/nmixer -I$(includedir)
 mp3blaster_LDADD	= @LIBMPEGSOUND@ @LIBNMIXER@ @NAS_LIBS@ @SID_LIBS@
-mp3blaster_LIBS		= -L$(top_srcdir)/mpegsound -L$(top_srcdir)/nmixer @LIBS@ @NAS_LIBS@ @SID_LIBS@
+mp3blaster_LIBS		= @LIBS@ @NAS_LIBS@ @SID_LIBS@
 EXTRA_DIST = FILES
 CXXFLAGS	= @CXXFLAGS@ @NAS_CFLAGS@

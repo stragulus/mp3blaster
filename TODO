@@ -1,3 +1,5 @@
+-libmpegsound dynamic lib
+-check why some mp3's crash mp3blaster.
 -fix sigsegv which occurs after a few attempts to play non-audio files.
 -Save playing status when program is interrupted, so the playlist can be 
  resumed when mp3blaster is restarted (useful for *big* playlists)

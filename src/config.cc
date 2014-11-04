@@ -31,6 +31,7 @@ extern short set_warn_delay(unsigned int);
 extern short set_fpl(int);
 extern short set_audiofile_matching(const char**, int);
 extern void set_sound_device(const char*);
+extern short set_skip_frames(unsigned int);
 #ifdef PTHREADEDMPEG
 extern short set_threads(int);
 #endif
@@ -43,18 +44,21 @@ extern short set_threads(int);
  * on global variables (in globalopts), other then its syntactical type,
  * are put in main.cc and not here!
  */
-enum _kwdlabel { Threads, DownFrequency, FramesPerLoop, SoundDevice,
-                 AudiofileMatching, WarnDelay };
 
-const char *keywords[] = {
-	"Threads",
-	"DownFrequency",
-	"FramesPerLoop",
-	"SoundDevice",
-	"AudiofileMatching",
-	"WarnDelay",
-	NULL
-	};
+struct _confopts
+{
+	char *keyword;
+	unsigned short keyword_opts;
+} confopts[] = {
+{ "Threads", 0 },
+{ "DownFrequency", 1 },
+{ "FramesPerLoop", 0 },
+{ "SoundDevice", 15 },
+{ "AudiofileMatching", 31 },
+{ "WarnDelay", 0 },
+{ "SkipFrames", 0 },
+{ NULL, 0 }, /* last entry's keyword MUST be NULL */
+};
 
 /* This array is used to check if the value[s] for a keyword are syntactically
  * correct.
@@ -216,11 +220,11 @@ cf_checktype(const char *value, _kwdtype kwdtype)
  * mp3blaster.
  */
 short
-cf_add_keyword(_kwdlabel keyword, const char **values, int nrvals)
+cf_add_keyword(int keyword, const char **values, int nrvals)
 {
 	switch(keyword)
 	{
-	case Threads:
+	case 0: /* threads */
 #ifdef PTHREADEDMPEG
 		if (!set_threads(cf_type_number(values[0])))
 		{
@@ -229,28 +233,35 @@ cf_add_keyword(_kwdlabel keyword, const char **values, int nrvals)
 		}
 #endif
 		break;
-	case DownFrequency:
+	case 1: /* DownFrequency */
 		globalopts.downsample = cf_type_yesno(values[0]);
 		break;
-	case FramesPerLoop:
+	case 2: /* FramesPerLoop */
 		if (!set_fpl(cf_type_number(values[0])))
 		{
 			error = BADVALUE;
 			return 0;
 		}
 		break;
-	case SoundDevice:
+	case 3: /* SoundDevice */
 		set_sound_device(values[0]);
 		break;
-	case AudiofileMatching:
+	case 4: /* AudiofileMatching */
 		if (!set_audiofile_matching(values, nrvals))
 		{
 			error = BADVALUE;
 			return 0;
 		}
 		break;
-	case WarnDelay:
+	case 5: //WarnDelay
 		if (!set_warn_delay((unsigned int)cf_type_number(values[0])))
+		{
+			error = BADVALUE;
+			return 0;
+		}
+		break;
+	case 6: //SkipFrames
+		if (!set_skip_frames((unsigned int)cf_type_number(values[0])))
 		{
 			error = BADVALUE;
 			return 0;
@@ -267,27 +278,17 @@ short
 cf_process_keyword(const char *keyword, const char **values, int nrvals)
 {
 	int i = 0;
-	char bla[4096];
 	short found = 0;
-	sprintf(bla, "Keyword %s: ", keyword);
-	for (int i =0; i < nrvals; i++)
-	{
-		strcat(bla, "[");
-		strcat(bla, values[i]);
-		strcat(bla, "], ");
-	}
-	strcat(bla, "\n");
-	debug(bla);
 
-	while (!found && keywords[i] != NULL)
+	while (!found && confopts[i].keyword != NULL)
 	{
 		//Check if keyword & its values are valid. If true, process it.
-		if (!strcmp(keyword, keywords[i]))
+		if (!strcmp(keyword, confopts[i].keyword))
 		{
 			short
-				multkwd = (keyword_opts[i]>>4)&1;
+				multkwd = (confopts[i].keyword_opts>>4)&1;
 			_kwdtype
-				kwdtype = (_kwdtype)(keyword_opts[i]&15);
+				kwdtype = (_kwdtype)(confopts[i].keyword_opts&15);
 
 			found = 1;
 			//check for appropriate #values
@@ -308,7 +309,7 @@ cf_process_keyword(const char *keyword, const char **values, int nrvals)
 			}
 			//everything's syntactically correct. Now actually do something
 			//with the keyword.
-			if (!cf_add_keyword((_kwdlabel)i, values, nrvals))
+			if (!cf_add_keyword(i, values, nrvals))
 				return 0;
 		}
 		i++;

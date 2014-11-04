@@ -1,2 +1,3 @@
--48Khz mp3's play too slow (reported by apacheco@altavista.net, untested)
--genre from mpegsound lib is bogus (I know, gonna fix it Real Soon Now)
+-Commandline options threads/playbackmode don't show in interface
+ <G. Gautam>
+-FreeBSD w/threads needs to link with libc_r i/o libc. (Michael Vasilen)

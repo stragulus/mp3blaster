@@ -27,7 +27,7 @@
 #include "playwindow.h"
 #include "sidplayer.h"
 
-extern struct _globalopts globalopts /* from main.cc */
+extern struct _globalopts globalopts; /* from main.cc */
 
 // SIDPlayer constructor
 SIDPlayer::SIDPlayer(mp3Play *calling, playWindow *interface, int threads)
@@ -38,12 +38,8 @@ SIDPlayer::SIDPlayer(mp3Play *calling, playWindow *interface, int threads)
 	status = PS_NORMAL;
 }
 
-bool SIDPlayer::playing(int verbose)
+bool SIDPlayer::playing()
 {
-	/* dummy code to get rid of warning of curr. unused var :) */
-	if (verbose)
-		verbose = 1;
-
 	interface->setStatus( (status = PS_PLAYING) );
 
 	if (sidInfo.nameString)

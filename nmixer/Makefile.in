@@ -60,9 +60,11 @@ POST_UNINSTALL = :
 CC = @CC@
 CXX = @CXX@
 LIBMPEGSOUND = @LIBMPEGSOUND@
+LIBMYSQL = @LIBMYSQL@
 LIBNMIXER = @LIBNMIXER@
 LN_S = @LN_S@
 MAKEINFO = @MAKEINFO@
+MP3B_MODULES = @MP3B_MODULES@
 NAS_CFLAGS = @NAS_CFLAGS@
 NAS_LIBS = @NAS_LIBS@
 PACKAGE = @PACKAGE@
@@ -108,7 +110,7 @@ COMPILE = $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CF
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(LDFLAGS) -o $@
 DIST_COMMON =  README AUTHORS COPYING ChangeLog INSTALL Makefile.am \
-Makefile.in NEWS TODO
+Makefile.in
 
 
 DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
@@ -239,7 +241,7 @@ distdir: $(DISTFILES)
 	done
 main.o: main.cc nmixer.h
 mixers.o: mixers.cc nmixer.h
-nasmixer.o: nasmixer.cc
+nasmixer.o: nasmixer.cc nmixer.h
 nmixer.o: nmixer.cc nmixer.h
 ossmixer.o: ossmixer.cc nmixer.h
 

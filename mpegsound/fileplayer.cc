@@ -72,6 +72,8 @@ bool Wavefileplayer::openfile(char *filename,char *device, soundtype write2file)
   }
 
 // Server
+  if (server)
+  	delete server;
   if((server=new Wavetoraw(loader,player))==NULL)
     return seterrorcode(SOUND_ERROR_MEMORYNOTENOUGH);
   return server->initialize();
@@ -88,20 +90,9 @@ void Wavefileplayer::setforcetomono(short flag)
   server->setforcetomono(flag);
 };
 
-bool Wavefileplayer::playing(int verbose)
+bool Wavefileplayer::playing()
 {
   if(!server->run())return false; // Read first time
-
-  if(verbose>0)
-  {
-    fprintf(stderr,
-	    "Verbose : %dbits, "
-	    "%dHz, "
-	    "%s\n",
-	    server->getsamplesize(),
-	    server->getfrequency(),
-	    server->isstereo()?"Stereo":"Mono");
-  }
 
   while(server->run());           // Playing
 
@@ -138,6 +129,8 @@ bool Mpegfileplayer::openfile(char *filename,char *device, soundtype write2file)
 // Loader
   {
     int err;
+	if (loader)
+		delete loader;
     if((loader=Soundinputstream::hopen(filename,&err))==NULL)
       return seterrorcode(err);
   }
@@ -151,8 +144,7 @@ bool Mpegfileplayer::openfile(char *filename,char *device, soundtype write2file)
 
 // Initialize server
   if (!server->initialize(filename)) {
-    debug("Bad file format: fileplayer.cc line 146\n");
-    return seterrorcode(SOUND_ERROR_BAD);
+	return seterrorcode(server->geterrorcode());
   }
 
   return true;
@@ -175,10 +167,9 @@ void Mpegfileplayer::setdownfrequency(int value)
   server->setdownfrequency(value);
 };
 
-bool Mpegfileplayer::playing(int verbose)
+bool Mpegfileplayer::playing()
 {
   if(!server->run(-1))return false;       // Initialize MPEG Layer 3
-  if(verbose>0)showverbose(verbose);
   while(server->run(100));                // Playing
 
   seterrorcode(server->geterrorcode());
@@ -187,14 +178,13 @@ bool Mpegfileplayer::playing(int verbose)
 }
 
 #ifdef PTHREADEDMPEG
-bool Mpegfileplayer::playingwiththread(int verbose,int framenumbers)
+bool Mpegfileplayer::playingwiththread(int framenumbers)
 {
-  if(framenumbers<20)return playing(verbose);
+  if(framenumbers<20)return playing();
 
   server->makethreadedplayer(framenumbers);
 
   if(!server->run(-1))return false;       // Initialize MPEG Layer 3
-  if(verbose>0)showverbose(verbose);
   while(server->run(100));                // Playing
   server->freethreadedplayer();
   
@@ -203,31 +193,3 @@ bool Mpegfileplayer::playingwiththread(int verbose,int framenumbers)
   return false;
 }
 #endif
-
-void Mpegfileplayer::showverbose(int verbose)
-{
-  static char *modestring[4]={"stereo","joint stereo","dual channel","mono"};
-
-  fprintf(stderr,"Verbose: MPEG-%d Layer %d, %s,\n\t%dHz%s, %dkbit/s, ",
-	  server->getversion()+1,
-	  server->getlayer(),modestring[server->getmode()],
-	  server->getfrequency(),server->getdownfrequency()?"//2":"",
-	  server->getbitrate());
-  fprintf(stderr,server->getcrccheck() 
-	  ? "with crc check\n" 
-	  : "without crc check\n");
-  if(verbose>1)
-  {
-    fprintf(stderr,
-	    "Songname : %s\n"
-	    "Artist   : %s\n"
-	    "Album    : %s\n"
-	    "Year     : %s\n"
-	    "Comment  : %s\n",
-	    server->getname(),
-	    server->getartist(),
-	    server->getalbum(),
-	    server->getyear(),
-	    server->getcomment());
-  }
-}

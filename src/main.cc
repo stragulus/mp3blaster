@@ -82,7 +82,8 @@ int is_audiofile(const char *);
 int handle_input(short);
 void cw_set_fkey(short, const char*);
 void set_default_fkeys(program_mode pm);
-void cw_toggle_group_mode(short notoggle);
+void cw_toggle_group_mode();
+void cw_draw_group_mode();
 void cw_draw_play_mode();
 short set_play_mode(const char*);
 void cw_toggle_play_mode();
@@ -92,7 +93,8 @@ void read_playlist(const char *);
 void write_playlist();
 void play_list();
 #ifdef PTHREADEDMPEG
-void change_threads(int dont=0);
+void change_threads();
+void cw_draw_threads();
 short set_threads(int);
 #endif
 void add_selected_file(const char*);
@@ -140,8 +142,6 @@ fileManager
 int
 	nselfiles = 0,
 	fw_searchmode = 0; /* non-zero if searchmode during file selection is on */
-FILE
-	*debug_info = NULL; /* filedescriptor of debug-file. */
 struct _globalopts
 	globalopts;
 
@@ -196,6 +196,8 @@ main(int argc, char *argv[])
 	globalopts.fw_sortingmode = 0; /* case insensitive dirlist */
 	globalopts.play_mode = PLAY_GROUPS;
 	globalopts.warndelay = 2; /* wait 2 seconds for a warning to disappear */
+	globalopts.skipframes=100; /* skip 100 frames during music search */
+	globalopts.debug = 0; /* no debugging info per default */
 #ifdef PTHREADEDMPEG
 	globalopts.threads = 100;
 #endif
@@ -330,27 +332,8 @@ main(int argc, char *argv[])
 
 	if (options & OPT_DEBUG) 
 	{
-		char *homedir = get_homedir(NULL);
-		if (!homedir)
-		{
-			fprintf(stderr, "What, you don't have a homedir!? No debugging " \
-				"info for you!\n");
-			fflush(stderr);
-		}
-		else
-		{
-			const char flnam[] = ".mp3blaster";
-			char *to_open = (char*)malloc((strlen(homedir) + strlen(flnam) +
-				2) * sizeof(char));
-			sprintf(to_open, "%s/%s", homedir, flnam);
-			if (!(debug_info = fopen(to_open, "a")))
-			{
-				fprintf(stderr, "Couldn't open debuginfo-file!\n");
-				fflush(stderr);
-			}
-			free(to_open);
-			debug("Debugging messages enabled. Hang on to yer helmet!\n");
-		}
+		globalopts.debug = 1;
+		debug("Debugging of mp3blaster started.\n");
 	}
 
 	//read .mp3blasterrc
@@ -435,7 +418,6 @@ main(int argc, char *argv[])
 	wrefresh(message_window);
 
 	progmode = PM_NORMAL;
-	draw_settings();
 
 	if (options & OPT_NOMIXER)
 	{
@@ -496,6 +478,8 @@ main(int argc, char *argv[])
 	if (options & OPT_8BITS)
 		globalopts.eightbits = 1;
 
+	/* All options from configfile and commandline have been read. */
+	draw_settings();
 /*\
 |*|  very rude hack caused by nasplayer lib that outputs rubbish to stderr
 \*/
@@ -825,6 +809,7 @@ refresh_screen()
 {
 	wclear(stdscr);
 	touchwin(stdscr);
+	wnoutrefresh(stdscr);
 	touchwin(command_window);
 	wnoutrefresh(command_window);
 	touchwin(header_window);
@@ -1023,7 +1008,7 @@ select_group(int groupnr)
 	set_header_title(dummy);
 	delete[] dummy;
 	delete[] title;
-	cw_toggle_group_mode(1); /* display this group's playmode */
+	cw_draw_group_mode(); /* display this group's playmode */
 }
 
 /* Adds a new group to the end of the list, and returns the group's nr
@@ -1375,7 +1360,7 @@ read_playlist(const char *filename)
 	{
 		while (read_group_from_file(f))
 			;
-		cw_toggle_group_mode(1);
+		cw_draw_group_mode();
 	}
 	else
 	{
@@ -1450,7 +1435,16 @@ write_playlist()
 }
 
 void
-cw_toggle_group_mode(short notoggle)
+cw_toggle_group_mode()
+{
+	scrollWin
+		*sw = group_stack->entry(globalopts.current_group - 1);
+	sw->sw_playmode = 1 - sw->sw_playmode; /* toggle between 0 and 1 */
+	cw_draw_group_mode();
+}
+
+void
+cw_draw_group_mode()
 {
 	char
 		*modes[] = {
@@ -1461,9 +1455,6 @@ cw_toggle_group_mode(short notoggle)
 		*sw = group_stack->entry(globalopts.current_group - 1);
 	int
 		i, maxy, maxx;
-
-	if (!notoggle)
-		sw->sw_playmode = 1 - sw->sw_playmode; /* toggle between 0 and 1 */
 
 	getmaxyx(command_window, maxy, maxx);
 	
@@ -1564,15 +1555,15 @@ play_list()
 		**mp3s = group_stack->getShuffledList(globalopts.play_mode, &nmp3s);
 	program_mode
 		oldprogmode = progmode;
+	mp3Play
+		*player;
 
 	if (!nmp3s)
 		return;
 
 	progmode = PM_MP3PLAYING;
 	set_default_fkeys(progmode);
-	//mw_settxt("Use 'q' to return to the playlist-editor.");
-	mp3Play
-		*player = new mp3Play((const char**)mp3s, nmp3s);
+	player = new mp3Play((const char**)mp3s, nmp3s);
 #ifdef PTHREADEDMPEG
 	player->setThreads(globalopts.threads);
 #endif
@@ -1818,11 +1809,16 @@ recsel_files(const char *path, short d2g=0, int d2g_init=0)
 
 #ifdef PTHREADEDMPEG
 void
-change_threads(int dont)
+change_threads()
 {
-	if (!dont)
-		if ( (globalopts.threads += 50) > 500)
-			globalopts.threads = 0;
+	if ( (globalopts.threads += 50) > 500)
+		globalopts.threads = 0;
+	cw_draw_threads();
+}
+
+void
+cw_draw_threads()
+{
 	mvwprintw(command_window, 20, 1, "Threads: %03d", globalopts.threads);
 	wrefresh(command_window);
 }
@@ -1906,7 +1902,7 @@ handle_input(short no_delay)
 			case '-':
 				select_group(globalopts.current_group - 1);
 				break; //select prev. group
-			case 'l': refresh_screen(); break; // C-l
+			case 12: refresh_screen(); break; // C-l
 			case 13: // play 1 mp3
 				if (sw->getNitems() > 0)
 				{
@@ -1948,7 +1944,7 @@ handle_input(short no_delay)
 			case KEY_F(6): case '6':
 				write_playlist(); break; // write playlist
 			case KEY_F(7): case '7':
-				cw_toggle_group_mode(0); break; 
+				cw_toggle_group_mode(); break; 
 			case KEY_F(8): case '8':
 				cw_toggle_play_mode(); break;
 			case KEY_F(9): case '9':
@@ -2118,10 +2114,10 @@ draw_settings(int cleanit)
 	{
 		mvwaddstr(command_window, 13, 1, "Current group's mode:");
 		mvwaddstr(command_window, 16, 1, "Current play-mode: ");
-		cw_toggle_group_mode(1);
+		cw_draw_group_mode();
 		cw_draw_play_mode();
 #ifdef PTHREADEDMPEG
-		change_threads(1); /* display #threads in command_window */
+		cw_draw_threads(); /* display #threads in command_window */
 #endif
 	}
 	else
@@ -2190,7 +2186,7 @@ fw_convmp3()
 			{
 				sprintf(bla, "Converting to wavefile, please wait.");
 				mw_settxt(bla);
-				decoder->playing(0);
+				decoder->playing();
 				delete decoder;
 				free(file2write);
 			}
@@ -2390,3 +2386,13 @@ set_warn_delay(unsigned int seconds)
 	globalopts.warndelay = seconds;
 	return 1;
 }
+
+short
+set_skip_frames(unsigned int frames)
+{
+	if (frames > 1000 || frames < 100) /* get real */
+		return 0;
+	
+	globalopts.skipframes = frames;
+	return 1;
+}	

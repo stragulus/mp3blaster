@@ -48,10 +48,10 @@ class genPlayer
 {
 public:
 	virtual ~genPlayer();
-	virtual bool playing(int verbose) = 0;
+	virtual bool playing() = 0;
 
 #ifdef PTHREADEDMPEG
-	virtual bool playingwiththread(int verbose) { return playing(verbose); }
+	virtual bool playingwiththread() { return playing(); }
 #endif
 	virtual int geterrorcode(void) = 0;
 	virtual bool openfile(char *, char *, soundtype write2file=NONE) = 0;

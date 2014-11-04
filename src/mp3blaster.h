@@ -69,6 +69,8 @@ struct _globalopts /* global options, exported for other classes */
 	short fw_sortingmode; /* 0: case-insensitive (default), 1: case sensitive */
 	playmode play_mode;
 	unsigned int warndelay;
+	unsigned int skipframes;
+	short debug;
 
 #ifdef PTHREADEDMPEG
 	int threads;
@@ -77,9 +79,12 @@ struct _globalopts /* global options, exported for other classes */
 
 enum keydescs { Main_SelectFiles, Fileman_AddFiles, Playwin_Previous };
 //a key is a struct with a keycode(int) and a description-string.
+enum input_type { keyboard, plugin };
 struct key
 {
-	int code;
+	int code; /* scancode/value */
+	input_type type;
+	char plugname[20];
 	char desc[4]; //maxlen of desc = 3
 };
 

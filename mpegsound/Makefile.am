@@ -12,5 +12,3 @@ noinst_HEADERS		= mpegsound.h mpegsound_locals.h
 
 INCLUDES                = -I$(srcdir) -I$(includedir)
 CXXFLAGS                = @CXXFLAGS@ @NAS_CFLAGS@
-
-dnl libmpegsound_a_LIBADD	= @NAS_LIBS@ @SID_LIBS@

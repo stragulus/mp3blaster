@@ -2,7 +2,8 @@
 DownFrequency = No
 
 #The #threads determine the amount of buffering i/o to prevent hickups.
-#On my system, I don't want buffering 
+#On my system, I don't want buffering. 0 <= threads <= 500, only multiples 
+#of 50 are accepted.
 Threads=0
 
 #FramesPerLoop Range: 1 to 10 (default=5). A low value means that the
@@ -12,7 +13,7 @@ Threads=0
 FramesPerLoop = 1
 
 #SoundDevice is the digital sound device in your system. Usually /dev/dsp
-SoundDevice = /dev/dsp1
+SoundDevice = /dev/dsp
 
 #AudiofileMatching is a list of regular expressions that determine which file
 #is considered a valid audiofile. matching is done using default settings and
@@ -22,3 +23,13 @@ SoundDevice = /dev/dsp1
 #AudiofileMatching = \\.*
 #And this is default:
 AudiofileMatching = \\.[mM][pP][23]$, \\.[sS][iI][dD]$, \\.[wW][aA][vV]$, ^[hH][tT][tT][pP]://
+
+#WarnDelay sets the time it takes for a warning to disappear. Valid range is
+#0..60. Value 0 does make the warning show up, but it will disappear 
+#immediately. 2 Seconds is default.
+WarnDelay = 1
+
+#SkipFrames sets the number of frames that should be skipped when fast
+#forwarding or rewinding during mp3 playback. Range = 100..1000 (100=default).
+#More frames means larger skips.
+SkipFrames = 500

@@ -35,6 +35,11 @@
 #endif
 
 extern struct _globalopts globalopts; /* from main.cc */
+int volume, mixer = -1;
+
+//prototypes
+void mixer_mute();
+void mixer_unmute();
 
 // mp3Player constructor
 mp3Player::mp3Player(mp3Play *calling, playWindow *interface, int threads)
@@ -45,214 +50,41 @@ mp3Player::mp3Player(mp3Play *calling, playWindow *interface, int threads)
 	status = PS_NORMAL;
 }
 
-bool mp3Player::playing(int verbose)
+bool
+mp3Player::playing()
 {
-	/* To avoid ``snap''s, turn down the volume for the first 5 frames */
-	int volume, mixer = -1;
-	if ( (mixer = open(MIXER_DEVICE, O_RDWR)) >= 0)
-	{
-		ioctl(mixer, MIXER_READ(SOUND_MIXER_VOLUME), &volume);
-		ioctl(mixer, MIXER_WRITE(SOUND_MIXER_VOLUME), 0);
-	}
-
-	if ( !server->run(-1) )
-	{
-		if (mixer > -1)
-		{
-			ioctl(mixer, MIXER_WRITE(SOUND_MIXER_VOLUME), &volume);
-			close(mixer); mixer = -1;
-		}
-		return false; // Initialize MPEG Layer 3
-	}
-
-	/* dummy code to get rid of warning of curr. unused var :) */
-	if (verbose)
-		verbose = 1;
-
-	interface->setStatus( (status = PS_PLAYING) );
-	interface->setProperties( server->getversion()+1, server->getlayer(),
-		server->getfrequency(), server->getbitrate(), server->getmodestring() );
-	if (server->getname())
-		interface->setSongName(server->getname());
-	if (server->getartist())
-		interface->setArtist(server->getartist());
-	if (server->getalbum())
-		interface->setAlbum(server->getalbum());
-	if (server->getyear())
-		interface->setSongYear(server->getyear());
-	if (server->getcomment())
-		interface->setSongInfo(server->getcomment());
-//	if (server->getgenre())
-		interface->setSongGenre(server->getgenre());
-#ifdef DEBUG
-	interface->setFrames(server->gettotalframe());
-#endif
-
-	short
-		should_play = 1,
-		init_count = 0;
-
-	interface->setProgressBar(0);
-	interface->setTotalTime(server->gettotaltime());
-
-	time_t
-		tyd, newtyd;
-	time(&tyd);
-
-	while(should_play)
-	{
-		if (status == PS_PLAYING)
-		{
-			should_play = (server->run(globalopts.fpl));
-			init_count += globalopts.fpl;
-			/* restore volume? */
-			if (mixer > -1 && (init_count > 4))
-			{
-				ioctl(mixer, MIXER_WRITE(SOUND_MIXER_VOLUME), &volume);
-				close(mixer); mixer = -1;
-			}
-		}
-		else
-			usleep(100); //cause a little delay to reduce system overhead
-
-		if (!should_play)
-			continue;
-
-		time(&newtyd);
-		if (difftime(newtyd, tyd) >= 1)
-		{
-			int
-				curr = server->getcurrentframe(),
-				total = server->gettotalframe(),
-				progress = ((curr * 100) / total),
-				playtime = ((int)(curr * server->gettotaltime()) / total);
-
-			tyd = newtyd;
-			interface->setProgressBar(progress);
-			interface->updateTime(playtime);
-		}
-
-		chtype ch = interface->getInput();
-		/* put your interactive goodies here */
-
-		switch(ch)
-		{
-			case ERR: continue;
-			case '1': /* stop and play prev. mp3 */
-				caller->setAction(AC_PREV);
-				should_play = 0;
-				break;
-			case '2':
-			{
-				if (status != PS_PLAYING)
-					break;
-				int
-					curframe = server->getcurrentframe();
-				curframe -= 100;
-				if (curframe < 0)
-					curframe = 0;
-					
-				server->setframe(curframe);
-			}
-				break;
-			case '3': /* play/resume */
-				if (status == PS_PAUSED)
-					interface->setStatus( (status = PS_PLAYING) );
-				else if (status == PS_STOPPED)
-				{
-					caller->setAction(AC_SAMESONG);
-					should_play = 0;
-				}
-				break;
-			case 'e': /* quick undoc'd hack */
-			{
-				if (status != PS_PLAYING)
-					break;
-				int end_of_song = server->gettotalframe()-100;
-				if (end_of_song < 0)
-					end_of_song = 0;
-				server->setframe(end_of_song);
-			}
-				break;
-			case '4':
-			{
-				if (status != PS_PLAYING)
-					break;
-				int
-					maxframe = server->gettotalframe(),
-					curframe = server->getcurrentframe();
-				curframe += 100;
-				if (curframe > maxframe)
-					curframe = maxframe - 1;
-
-				server->setframe(curframe);
-			}
-				break;
-			case '5': /* next mp3 */
-			case ' ':
-				/* the program automagically choses the next MP3 in the play-
-				 * list when nothing else is done */
-				should_play = 0;
-				break;
-			case '6': /* pause/resume */
-				if (status == PS_PLAYING) //put player in paused mode!
-					interface->setStatus( (status = PS_PAUSED) ); 
-				else if (status == PS_PAUSED) //resume player
-					interface->setStatus( (status = PS_PLAYING) );
-				break;
-			case '7': // stop playing this particular mp2/3
-				if (status == PS_PLAYING || status == PS_PAUSED)
-				{
-					interface->setStatus( (status = PS_STOPPED) );
-					interface->setProgressBar(0);
-				}
-				break;
-			case 'q': //leave playing interface.
-				should_play = 0;
-				caller->setAction(AC_QUIT);
-				break;
-			default: 
-				if (interface->getMixerHandle())
-					(interface->getMixerHandle())->ProcessKey(ch);
-		}
-	}
-
-	if (mixer > -1) /* less than 5 frames were decoded. */
-	{
-		ioctl(mixer, MIXER_WRITE(SOUND_MIXER_VOLUME), &volume);
-		close(mixer);
-	}
-
-	seterrorcode(server->geterrorcode());
-	interface->setStatus( (status = PS_NORMAL) );
-
-	return ( (geterrorcode() == SOUND_ERROR_FINISH) || (geterrorcode() ==
-		SOUND_ERROR_OK));
+	return play(0);
 }
 
 #ifdef PTHREADEDMPEG
-bool mp3Player::playingwiththread(int verbose)
+bool mp3Player::playingwiththread()
 {
 	if ( nthreads < 20 )
-		return playing(verbose);
+		return play(0);
+
+	return play(1);
+}
+#endif
+
+bool mp3Player::play(short threaded)
+{
+	short
+		should_play = 1,
+		init_count = 0;
+	time_t
+		tyd, newtyd;
 
 	/* To avoid ``snap''s, turn down the volume for the first 5 frames */
-	int volume, mixer = -1;
-	if ( (mixer = open(MIXER_DEVICE, O_RDWR)) >= 0)
-	{
-		ioctl(mixer, MIXER_READ(SOUND_MIXER_VOLUME), &volume);
-		ioctl(mixer, MIXER_WRITE(SOUND_MIXER_VOLUME), 0);
-	}
+	mixer_mute();
 
-	server->makethreadedplayer(nthreads);
+#ifdef PTHREADEDMPEG
+	if (threaded)
+		server->makethreadedplayer(nthreads);
+#endif
 
 	if ( !server->run(-1) )
 	{
-		if (mixer > -1)
-		{
-			ioctl(mixer, MIXER_WRITE(SOUND_MIXER_VOLUME), &volume);
-			close(mixer); mixer = -1;
-		}
+		mixer_unmute();
 		return false; // Initialize MPEG Layer 3
 	}
 
@@ -278,48 +110,40 @@ bool mp3Player::playingwiththread(int verbose)
 	interface->setFrames(server->gettotalframe());
 #endif
 
-	short
-		should_play = 1,
-		init_count = 0;
-	time_t
-		tyd, newtyd;
-
 	time(&tyd);
 
-	/* build up buffer */
-	server->pausethreadedplayer();
-	while (server->getframesaved() < nthreads - 1)
-		server->run(1);
-	server->unpausethreadedplayer();
-
-int	framesaveloop = 99;
+#ifdef PTHREADEDMPEG
+	if (threaded)
+	{
+		/* build up buffer */
+		server->pausethreadedplayer();
+		while (server->getframesaved() < nthreads - 1)
+			server->run(1);
+		server->unpausethreadedplayer();
+	}
+#endif
 
 	while(should_play)
 	{
 		if (status == PS_PLAYING)
 		{
-if (++framesaveloop>99)
-{
-framesaveloop=0;
-char blub[100];sprintf(blub, "Framesaved: %d\n", server->getframesaved());
-debug(blub);
-}
 			should_play = (server->run(globalopts.fpl));
 			init_count += globalopts.fpl;
 			/* restore volume? */
 			if (mixer > -1 && (init_count > 4))
-			{
-				ioctl(mixer, MIXER_WRITE(SOUND_MIXER_VOLUME), &volume);
-				close(mixer); mixer = -1;
-			}
+				mixer_unmute();
 		}
-		else if (status == PS_PAUSED)
+#ifdef PTHREADEDMPEG
+		else if (threaded && status == PS_PAUSED)
 		{
 			if (server->getframesaved() < nthreads - 1)
 				server->run(1);
 			else
 				usleep(100);
 		}
+#endif
+		else
+			usleep(100);
 
 		if (!should_play)
 			continue;
@@ -344,8 +168,12 @@ debug(blub);
 		switch(ch)
 		{
 			case ERR: continue;
+			case 12: interface->redraw(); break;
 			case '1': /* stop and play prev. mp3 */
-				server->stopthreadedplayer();
+#ifdef PTHREADEDMPEG
+				if (threaded)
+					server->stopthreadedplayer();
+#endif
 				caller->setAction(AC_PREV);
 				should_play = 0;
 				break;
@@ -355,7 +183,7 @@ debug(blub);
 					break;
 				int
 					curframe = server->getcurrentframe();
-				curframe -= 100;
+				curframe -= globalopts.skipframes;
 				if (curframe < 0)
 					curframe = 0;
 					
@@ -366,7 +194,10 @@ debug(blub);
 				if (status == PS_PAUSED)
 				{
 					interface->setStatus( (status = PS_PLAYING) );
-					server->unpausethreadedplayer();
+#ifdef PTHREADEDMPEG
+					if (threaded)
+						server->unpausethreadedplayer();
+#endif
 				}
 				else if (status == PS_STOPPED)
 				{
@@ -378,7 +209,7 @@ debug(blub);
 			{
 				if (status != PS_PLAYING)
 					break;
-				int end_of_song = server->gettotalframe()-100;
+				int end_of_song = server->gettotalframe()-300;
 				if (end_of_song < 0)
 					end_of_song = 0;
 				server->setframe(end_of_song);
@@ -392,46 +223,60 @@ debug(blub);
 				int
 					maxframe = server->gettotalframe(),
 					curframe = server->getcurrentframe();
-				curframe += 100;
+				curframe += globalopts.skipframes;
 				if (curframe > maxframe)
 					curframe = maxframe - 1;
 					
 				server->setframe(curframe);
 			}
-			break;
+				break;
 			case '5': /* next mp3 */
 			case ' ':
 				/* the program automagically choses the next MP3 in the play-
 				 * list when nothing else is done */
-				server->stopthreadedplayer();
+#ifdef PTHREADEDMPEG
+				if (threaded)
+					server->stopthreadedplayer();
+#endif
 				should_play = 0;
 				break;
 			case '6': /* pause/resume */
 				if (status == PS_PLAYING) //put player in paused mode!
 				{
 					interface->setStatus( (status = PS_PAUSED) ); 
-					server->pausethreadedplayer();
+#ifdef PTHREADEDMPEG
+					if (threaded)
+						server->pausethreadedplayer();
+#endif
 				}
 				else if (status == PS_PAUSED) //resume player
 				{
 					interface->setStatus( (status = PS_PLAYING) );
-					server->unpausethreadedplayer();
+#ifdef PTHREADEDMPEG
+					if (threaded)
+						server->unpausethreadedplayer();
+#endif
 				}
 				break;
 			case '7': // stop playing this particular mp2/3
 				if (status == PS_PLAYING || status == PS_PAUSED)
 				{
-					//if (status == PS_PAUSED)
-					//	server->unpausethreadedplayer();
-
 					interface->setStatus( (status = PS_STOPPED) );
-					server->stopthreadedplayer();
-					server->freethreadedplayer();
+#ifdef PTHREADEDMPEG
+					if (threaded)
+					{
+						server->stopthreadedplayer();
+						server->freethreadedplayer();
+					}
+#endif
 					interface->setProgressBar(0);
 				}
 				break;
 			case 'q': //leave playing interface.
-				server->stopthreadedplayer();
+#ifdef PTHREADEDMPEG
+				if (threaded)
+					server->stopthreadedplayer();
+#endif
 				should_play = 0;
 				caller->setAction(AC_QUIT);
 				break;
@@ -442,17 +287,37 @@ debug(blub);
 	}
 
 	if (mixer > -1) /* less than 5 frames were decoded. */
-	{
-		ioctl(mixer, MIXER_WRITE(SOUND_MIXER_VOLUME), &volume);
-		close(mixer);
-	}
+		mixer_unmute();
 	
 	seterrorcode(server->geterrorcode());
-
-	if (status != PS_STOPPED)
-		server->freethreadedplayer();
 	interface->setStatus( (status = PS_NORMAL) );
+
+#ifdef PTHREADEDMPEG
+	if (threaded && status != PS_STOPPED)
+		server->freethreadedplayer();
+#endif
 	return ( (geterrorcode() == SOUND_ERROR_FINISH) || (geterrorcode() ==
 		SOUND_ERROR_OK));
 }
-#endif
+
+void
+mixer_mute()
+{
+	int dum = 0;
+	if ( (mixer = open(MIXER_DEVICE, O_RDWR)) >= 0)
+	{
+		ioctl(mixer, MIXER_READ(SOUND_MIXER_VOLUME), &volume);
+		ioctl(mixer, MIXER_WRITE(SOUND_MIXER_VOLUME), &dum);
+	}
+}
+
+void
+mixer_unmute()
+{
+	if (mixer > -1)
+	{
+		ioctl(mixer, MIXER_WRITE(SOUND_MIXER_VOLUME), &volume);
+		close(mixer); mixer = -1;
+	}
+}
+

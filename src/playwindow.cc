@@ -148,13 +148,14 @@ playWindow::getInput()
 
 	if (status == PS_PLAYING || status == PS_PAUSED)
 	{
+		fflush(stdin);
 		FD_ZERO(&fdsr);
 		FD_SET(0, &fdsr);  /* stdin file descriptor */
 		tv.tv_sec = tv.tv_usec = 0;
 		if (select(FD_SETSIZE, &fdsr, NULL, NULL, &tv) == 1)
-		ch = wgetch(interface);
+			ch = wgetch(interface);
 		else
-		ch = (chtype) ERR;
+			ch = (chtype) ERR;
 	}
 	else
 	{
@@ -169,6 +170,10 @@ void
 playWindow::setProperties(int mpeg_version, int layer, int freq, int bitrate,
 	const char *stereo)
 {
+	char yadda[nrcols-2];
+	memset(yadda, ' ', (nrcols - 3) * sizeof(char));
+	yadda[nrcols-3] = '\0';
+	mvwprintw(interface, 1, 2, yadda);
 	mvwprintw(interface, 1, 2, "Mpeg-%d layer %d at %dhz, %d kb/s (%s)%s",
 		//mpeg_version, layer, freq, bitrate, (stereo ? "stereo" : "mono"),
 		mpeg_version, layer, freq, bitrate, stereo,
@@ -179,8 +184,14 @@ playWindow::setProperties(int mpeg_version, int layer, int freq, int bitrate,
 void
 playWindow::redraw()
 {
+	/* this works, but I don't know why. Probably because I use overlapping
+	 * windows (interface overlaps stdscr) which is not guaranteed 2 work */
 	wclear(stdscr);
-	wrefresh(interface);
+	touchwin(stdscr);
+	wnoutrefresh(stdscr);
+	touchwin(interface);
+	wnoutrefresh(interface);
+	doupdate();
 }
 
 void

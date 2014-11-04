@@ -753,7 +753,7 @@ public:
   virtual void closefile(void)                       =0;
   virtual void setforcetomono(short flag)            =0;
   virtual void set8bitmode()                         =0;
-  virtual bool playing(int verbose)                  =0;
+  virtual bool playing()                             =0;
 
 protected:
   bool opendevice(char *device, soundtype write2file=NONE);
@@ -776,7 +776,7 @@ public:
   void closefile(void); 
   void setforcetomono(short flag);
   void set8bitmode() { if(player) player->set8bitmode(); }
-  bool playing(int verbose);
+  bool playing();
   
 private:
   Soundinputstream *loader;
@@ -798,9 +798,9 @@ public:
   void setforcetomono(short flag);
   void set8bitmode() { if (server) server->set8bitmode(); }
   void setdownfrequency(int value);
-  bool playing(int verbose);
+  bool playing();
 #if PTHREADEDMPEG
-  bool playingwiththread(int verbose,int framenumbers);
+  bool playingwiththread(int framenumbers);
 #endif
 
 private:
@@ -808,8 +808,6 @@ private:
 
 protected:
   Mpegtoraw *server;
-
-  void showverbose(int verbose);
 };
 
 #ifdef HAVE_SIDPLAYER
@@ -830,7 +828,7 @@ public:
 	void setdownfrequency(int value);
 	void set8bitmode() {}
 	bool run(int frames);
-	bool playing(int verbose);
+	bool playing();
 protected:
 	emuEngine emu;
 	struct emuConfig emuConf;

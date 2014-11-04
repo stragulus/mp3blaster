@@ -74,7 +74,10 @@ inline void mp3Play::error(int n)
 		"Unknown error."
 	};
 
-	warning(sound_errors[n]);
+	if (n < 0)
+		warning("Sudden EndOfFile");
+	else
+		warning(sound_errors[n]);
 	if (interface)
 		interface->redraw();
 	else
@@ -156,11 +159,11 @@ int mp3Play::playMp3List()
 	interface->setStatus(PS_NORMAL);
 
 	/* quick hack to avoid ``snap''s, turn down the volume */
-	int volume, mixer = -1;
+	int volume, dum = 0, mixer = -1;
 	if ( (mixer = open(MIXER_DEVICE, O_RDWR)) >= 0)
 	{
 		ioctl(mixer, MIXER_READ(SOUND_MIXER_VOLUME), &volume);
-		ioctl(mixer, MIXER_WRITE(SOUND_MIXER_VOLUME), 0);
+		ioctl(mixer, MIXER_WRITE(SOUND_MIXER_VOLUME), &dum);
 	}
 
 	mp3Player mp3p(this, interface, threads);
@@ -205,10 +208,10 @@ int mp3Play::playMp3List()
 
 
 #ifdef PTHREADEDMPEG
-			if ( !(player->playingwiththread(1)) )
+			if ( !(player->playingwiththread()) )
 				error(player->geterrorcode());
 #else
-			if ( !(player->playing(1)) )
+			if ( !(player->playing()) )
 				error(player->geterrorcode());
 #endif
 			interface->setStatus(PS_NORMAL);

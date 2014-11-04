@@ -88,7 +88,7 @@ bool SIDfileplayer::run(int frames)
 	return true;
 }
 
-bool SIDfileplayer::playing(int verbose)
+bool SIDfileplayer::playing()
 {
 	while (run(1));
 	return false;

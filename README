@@ -1,21 +1,16 @@
 MP3Blaster is (C) Bram Avontuur (brama@stack.nl)
 This program can be redistributed under the terms of GPL (see 'COPYING')
-If you have any suggestions about it, please drop me a mail.
 ------------------------------------------------------------------------
 
 Information about compiling and installing MP3Blaster on your system is listed
 in the file 'INSTALL'.
 
-MP3Blaster is tested on:
+MP3Blaster has been tested on:
 Linux/i386 (libc6)
 Linux/i386 (libc5)
 Linux/alpha 
 OpenBSD/alpha
 FreeBSD/i386
-
-If you have an old SGI Indy w/ sound onboard lingering around, and you
-don't have much use for it, please lemme know! I can use it for some
-porting.
 
 You can press 'h' in mp3blaster at startup to get an overview of the most 
 common keyboard shortcuts. There's also a fine manual which you should read.

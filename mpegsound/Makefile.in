@@ -60,9 +60,11 @@ POST_UNINSTALL = :
 CC = @CC@
 CXX = @CXX@
 LIBMPEGSOUND = @LIBMPEGSOUND@
+LIBMYSQL = @LIBMYSQL@
 LIBNMIXER = @LIBNMIXER@
 LN_S = @LN_S@
 MAKEINFO = @MAKEINFO@
+MP3B_MODULES = @MP3B_MODULES@
 NAS_CFLAGS = @NAS_CFLAGS@
 NAS_LIBS = @NAS_LIBS@
 PACKAGE = @PACKAGE@
@@ -216,7 +218,7 @@ mpeglayer2.o: mpeglayer2.cc mpegsound.h
 mpeglayer3.o: mpeglayer3.cc mpegsound.h mpegsound_locals.h
 mpegtable.o: mpegtable.cc mpegsound.h
 mpegtoraw.o: mpegtoraw.cc mpegsound.h mpegsound_locals.h
-nasplayer.o: nasplayer.cc
+nasplayer.o: nasplayer.cc mpegsound.h
 rawplayer.o: rawplayer.cc mpegsound.h
 rawtofile.o: rawtofile.cc mpegsound.h
 sidplayer.o: sidplayer.cc mpegsound.h
@@ -293,8 +295,6 @@ all-redirect all-am all installdirs mostlyclean-generic \
 distclean-generic clean-generic maintainer-clean-generic clean \
 mostlyclean distclean maintainer-clean
 
-
-dnl libmpegsound_a_LIBADD	= @NAS_LIBS@ @SID_LIBS@
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

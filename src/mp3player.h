@@ -14,11 +14,12 @@ class mp3Player : public Mpegfileplayer, public genPlayer
 public:
 	mp3Player(mp3Play *calling, playWindow *interface, int threads);
 	~mp3Player(){};
-	bool playing(int verbose);
+	bool playing();
 
 #ifdef PTHREADEDMPEG
-	bool playingwiththread(int verbose);
+	bool playingwiththread();
 #endif
+	bool play(short threaded=0);
 	int geterrorcode(void) { return Mpegfileplayer::geterrorcode(); }
 	bool openfile(char *filename, char *device, soundtype write2file=NONE) {
 		return Mpegfileplayer::openfile(filename, device, write2file); }

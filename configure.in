@@ -1,8 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(src/main.cc)
-AM_INIT_AUTOMAKE(mp3blaster, 2.0b16)
-
-dnl CPLUS_INCLUDE_PATH=$C_INCLUDE_PATH:/usr/local/lib/qt/include
+AM_INIT_AUTOMAKE(mp3blaster, 2.0b17)
 
 dnl Checks for programs.
 AC_PROG_CC
@@ -11,21 +9,49 @@ AC_PROG_LN_S
 AC_PROG_INSTALL
 AC_PROG_RANLIB
 
+dnl Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+dnl AC_C_BIGENDIAN
+
+dnl Checks for library functions.
+AC_PROG_GCC_TRADITIONAL
+AC_CHECK_FUNCS(strdup strstr)
+
 #For FreeBSD, look in /usr/local/(lib,include) first, since ncurses4
 #must be installed as an add-on on these systems in /usr/local
-FRIET="`uname -sr|cut -d'.' -f1`"
-if test "$FRIET" = "FreeBSD 3" -o "$FRIET" = "FreeBSD 4" ; then
-  echo "FreeBSD 3/4 detected."
+if test "`uname -s`" = "FreeBSD" ; then
+  echo "FreeBSD detected."
+  FREEBSD=1
   LDFLAGS="-L/usr/local/lib $LDFLAGS"
   CPPFLAGS="-I/usr/local/include $CPPFLAGS"
 fi
 
+dnl Check for additional paths to include-files and directories first 
+AC_ARG_WITH(mysql-includes,
+  [  --with-mysql-includes   Specify location of MySQL headers],
+  [ CPPFLAGS="$CPPFLAGS -I$withval" ])
+AC_ARG_WITH(mysql-libs,
+  [  --with-mysql-libs       Specify location of MySQL libs],
+  [ LDFLAGS="$LDFLAGS -L$withval" ])
+AC_ARG_WITH(nas-includes,
+  [  --with-nas-includes     Specify location of NAS headers],
+  [ CPPFLAGS="$CPPFLAGS -I$withval" ])
+AC_ARG_WITH(nas-libs,
+  [  --with-nas-libs         Specify location of NAS libs],
+  [ LDFLAGS="$LDFLAGS -L$withval" ])
+
 dnl Checks for libraries.
 AC_CHECK_LIB(m,main,,AC_MSG_ERROR("No libm or no cos"))
-AC_CHECK_LIB(pthread,main,INCLUDEPTHREAD=1)
 AC_CHECK_LIB(ncurses,main,INCLUDENCURSES=1)
 AC_CHECK_LIB(curses,main,INCLUDECURSES=1)
+AC_CHECK_LIB(mysqlclient,main,HAVE_MYSQL=1)
+AC_CHECK_LIB(sidplay, main, HAVE_SID=1)
 AC_CHECK_LIB(ossaudio,main)
+if test "$FREEBSD" = 1 ; then
+  AC_CHECK_LIB(c_r,main,INCLUDEPTHREAD=1)
+else
+  AC_CHECK_LIB(pthread,main,INCLUDEPTHREAD=1)
+fi
 
 dnl Checks for header files.
 AC_HEADER_STDC
@@ -34,82 +60,78 @@ AC_CHECK_HEADERS(bool.h)
 AC_CHECK_HEADERS(pthread.h pthread/mit/pthread.h)
 AC_CHECK_HEADERS(ncurses/ncurses.h ncurses/curses.h ncurses.h curses.h)
 AC_CHECK_HEADERS(sys/soundcard.h machine/soundcard.h soundcard.h getopt.h)
+AC_CHECK_HEADER(mysql/mysql.h,HAVE_MYSQL_MYSQL_H=1)
+AC_CHECK_HEADER(mysql.h,HAVE_MYSQL_H=1)
 
-AC_ARG_WITH(pthread,  [  --with-pthread          playing with pthread], \
-  if test "$withval" = "yes" ; then
-    INCLUDEPTHREAD=1
+dnl Extra features 
+AC_ARG_WITH(pthread,
+  [  --with-pthread          playing with pthread (default=yes)],
+  if test "$withval" = "yes" ; then INCLUDEPTHREAD=1;else INCLUDEPTHREAD=0 ; fi)
+AC_ARG_WITH(mysql,
+  [  --with-mysql            mp3tag with MySQL support (alpha, default=no)], \
+  if test "$withval" = "yes" ; then WANT_MYSQL=1 ; else WANT_MYSQL=0; fi)
+AC_ARG_WITH(nas,
+  [  --with-nas              network audio system (default=no)], \
+  if test "$withval" = "yes" ; then WANTNAS=1 ; else WANTNAS=0 ; fi)
+AC_ARG_WITH(sidplay,
+  [  --with-sidplay          sidplayer support (default=no)], \
+  if test "$withval" = "yes" ; then WANTSID=1 ; else WANTSID=0 ; fi)
+AC_ARG_WITH(modules,
+  [  --with-modules=LIST     Add modules as a : separated list of names],
+  [ mp3b_mods=`echo "$withval"|sed -e s+':'+' '+g`
+  cat << EOF > src/modules.h
+#ifndef _MP3BLASTER_MODULES_
+#define _MP3BLASTER_MODULES_
+#include "../modules/inputplugin.h"
+EOF
+  for yadda in $mp3b_mods ; do
+    { test -f modules/${yadda}.h && test -f modules/${yadda}.cc; }|| { echo "File modules/${yadda}.h/cc non-existant." ; exit 1; }
+    echo "#include \"../modules/${yadda}.h\"" >> src/modules.h
+    MP3B_MODULES="modules/${yadda}.cc $MP3B_MODULES"
+  done
+  AC_SUBST(MP3B_MODULES)
+  cat << EOF >> src/modules.h
+#endif /* _MP3BLASTER_MODULES_ */
+EOF
+])
+
+dnl Check MySQL support
+if test "$WANT_MYSQL" = "1" ; then
+  if test "$HAVE_MYSQL_MYSQL_H" = 1 ; then
+    MYSQL_H="mysql/mysql.h"
+  elif test "$HAVE_MYSQL_H" = 1 ; then
+    MYSQL_H="mysql.h"
   else
-    INCLUDEPTHREAD=0
-  fi;)
-
-AC_ARG_WITH(nas,  [  --with-nas              network audio system (default=no)], \
-  if test "$withval" = "yes" ; then
-    WANTNAS=1
+    MYSQL_H=""
+  fi
+  if test -z "$HAVE_MYSQL" -o -z "$MYSQL_H" ; then
+    echo "*** MySQL support for mp3tag disabled: Library/includes not found."
   else
-    WANTNAS=0
-  fi;)
-
-dnl Checks for typedefs, structures, and compiler characteristics.
-AC_C_CONST
-AC_C_BIGENDIAN
-
-dnl Checks for library functions.
-AC_PROG_GCC_TRADITIONAL
-AC_CHECK_FUNCS(strdup strstr)
-
-dnl check argument
-
-SRCDIRS="mpegsound nmixer src"
-AC_SUBST(SRCDIRS)
-
-LIBMPEGSOUND="../mpegsound/libmpegsound.a"
-LIBNMIXER="../nmixer/libnmixer.a"
-AC_SUBST(LIBMPEGSOUND)
-AC_SUBST(LIBNMIXER)
-
-AC_CHECK_LIB(sidplay, main, INCLUDESIDPLAY=1)
-
-if test "$INCLUDESIDPLAY" = 1 ; then
-  SID_LIBS="-lsidplay"
-  AC_DEFINE(HAVE_SIDPLAYER)
+  	LIBMYSQL="-lmysqlclient"
+ 	AC_SUBST(LIBMYSQL)
+	AC_DEFINE(WANT_MYSQL)
+	AC_DEFINE_UNQUOTED(MYSQL_H, <$MYSQL_H>)
+  	echo "*** MySQL support for mp3tag enabled."
+  fi
 fi
 
-if test "`uname -s`" = "OpenBSD" ; then
-  SOUNDDEV="/dev/audio"
-else
-  SOUNDDEV="/dev/dsp"
-fi
-AC_DEFINE_UNQUOTED(SOUND_DEVICE, "$SOUNDDEV")
-
-if test "$INCLUDEPTHREAD" = 1 ; then
-  LIBS="$LIBS -lpthread"
-  AC_DEFINE(PTHREADEDMPEG)
-  AC_DEFINE(_REENTRANT)
-fi
-
-if test "$INCLUDENCURSES" = 1 ; then
-  LIBS="$LIBS -lncurses"
-elif test "$INCLUDECURSES" = 1 ; then
-  LIBS="$LIBS -lcurses"
-else
-  echo 'You need a decent ncurses (called curses on OpenBSD) library!'
-  exit 1
+dnl Check SID support
+if test "$WANT_SID" = 1 ; then
+  if test "$HAVE_SID" = 1 ; then
+    SID_LIBS="-lsidplay"
+    AC_DEFINE(HAVE_SIDPLAYER)
+	AC_SUBST(SID_LIBS)
+    echo "*** Sidplayer support enabled."
+  else
+    echo "*** Sidplayer library not found."
+  fi
 fi
 
-dnl A check for a particular __math.h file that causes sigsegv's in combination
-dnl with gcc 2.7.*  / egcs-1.1.1 or older versions
-if test -f /usr/include/__math.h -a "`grep 'long long int __p = (long long int) __y' /usr/include/__math.h 2>/dev/null`" != "" -a \( "`$CXX -v 2>&1|grep 'gcc version 2.[[567]]'`" != "" -o "`$CXX -v 2>&1|tail -1|grep egcs|cut -d'(' -f2|egrep 'egcs-(0|1.(0|1.[[01]]))'`" != "" \) ; then
-    CXXFLAGS="$CXXFLAGS -D__NO_MATH_INLINES"
-fi
-CXXFLAGS="$CXXFLAGS -D__NO_MATH_INLINES"
-
-dnl check for Network Audio System library
-
+dnl Check NAS support
 if test "$WANTNAS" = "1" ; then
   AC_PATH_XTRA
   dnl X_CFLAGS are needed to find audio/audiolib.h on many systems
   tmp_CPPFLAGS=$CPPFLAGS
-  echo "X_CFLAGSi: $X_CFLAGS"
   CPPFLAGS="$CPPFLAGS $X_CFLAGS"
   
   dnl AC_CHECK_LIB(audio, AuOpenServer,INCLUDENAS=1,,-lXt -lX11 -lm)
@@ -130,29 +152,57 @@ if test "$WANTNAS" = "1" ; then
     echo "************************"
   fi
 fi
+if test "`uname -s`" = "OpenBSD" ; then
+  SOUNDDEV="/dev/audio"
+else
+  SOUNDDEV="/dev/dsp"
+fi
+AC_DEFINE_UNQUOTED(SOUND_DEVICE, "$SOUNDDEV")
 
-AC_SUBST(SID_LIBS)
+if test "$INCLUDEPTHREAD" = 1 ; then
+  if test "$FREEBSD" = "1" ; then
+    LIBS="$LIBS -lc_r"
+  else
+	LIBS="$LIBS -lpthread"
+  fi
+  AC_DEFINE(PTHREADEDMPEG)
+  AC_DEFINE(_REENTRANT)
+fi
+
+if test "$INCLUDENCURSES" = 1 ; then
+  LIBS="$LIBS -lncurses"
+elif test "$INCLUDECURSES" = 1 ; then
+  LIBS="$LIBS -lcurses"
+else
+  echo 'You need a decent ncurses (called curses on OpenBSD) library!'
+  exit 1
+fi
+
+dnl A check for a particular __math.h file that causes sigsegv's in combination
+dnl with gcc 2.7.*  / egcs-1.1.1 or older versions
+if test -f /usr/include/__math.h -a "`grep 'long long int __p = (long long int) __y' /usr/include/__math.h 2>/dev/null`" != "" -a \( "`$CXX -v 2>&1|grep 'gcc version 2.[[567]]'`" != "" -o "`$CXX -v 2>&1|tail -1|grep egcs|cut -d'(' -f2|egrep 'egcs-(0|1.(0|1.[[01]]))'`" != "" \) ; then
+    CXXFLAGS="$CXXFLAGS -D__NO_MATH_INLINES"
+fi
+dnl Even the script above is not foolproof. Since I can't tell the difference
+dnl in speed with or without this define, just define it.
+CXXFLAGS="$CXXFLAGS -D__NO_MATH_INLINES"
+
+dnl check for Network Audio System library
+
+
+LDFLAGS="$LDFLAGS -L../mpegsound -L../nmixer"
+LIBMPEGSOUND="-lmpegsound"
+LIBNMIXER="-lnmixer"
+AC_SUBST(LIBMPEGSOUND)
+AC_SUBST(LIBNMIXER)
 
 CXXFLAGS="$CXXFLAGS -g -Wall -Wstrict-prototypes -W -fno-strength-reduce "
-
-dnl Huh? -SKY-
-dnl PACKAGE=mp3blaster
-dnl VERSION=2.0b12
-dnl PACKAGE_VERSION="$PACKAGE-$VERSION"
-dnl AC_DEFINE_UNQUOTED(PACKAGE, "$PACKAGE")
-dnl AC_DEFINE_UNQUOTED(VERSION, "$VERSION")
-dnl AC_SUBST(PACKAGE)
-dnl AC_SUBST(VERSION)
-
-
+SRCDIRS="mpegsound nmixer src"
+AC_SUBST(SRCDIRS)
 AC_OUTPUT(src/Makefile mpegsound/Makefile Makefile nmixer/Makefile)
 
-echo 
-echo "******************************************************************"
-echo "If configure can't find certain libraries or include files, you can" 
-echo "specify them on the commandline like:"
-echo "CPPFLAGS=\"-I/usr/local/nas/include\" LDFLAGS=\"-L/usr/local/nas/lib\" "\
-	"./configure"
-echo "If mp3blaster's layout  is incorrect, or if  mp3blaster only plays "
-echo "while holding a key, UPGRADE your ncurses library and includefiles"
-echo "to  version 4.0  or better. This  is generally a GOOD IDEA anyway."
+cat << EOF
+If configure can't find certain libraries or include files, you can specify them on the commandline like:
+CPPFLAGS="-I/usr/local/nas/include" LDFLAGS="-L/usr/local/nas/lib" ./configure
+If mp3blaster's layout is incorrect, UPGRADE your ncurses library and includefiles to version 4.2 or better (but not 5.*).
+EOF

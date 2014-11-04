@@ -14,7 +14,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
- * This file contains global functions that are globally useful.
+ * This file contains global functions that are globally useful for the
+ * mp3blaster binary
  */
 
 #include <stdio.h>
@@ -26,9 +27,9 @@
 #include <unistd.h>
 #include <pwd.h>
 #include <sys/types.h>
+#include "mp3blaster.h"
 
-
-extern FILE *debug_info;
+extern _globalopts globalopts;
 void debug(const char*);
 
 /* get homedir of user 'username' (username == NULL => user running this prog)
@@ -165,6 +166,24 @@ expand_path(const char *org_path)
 void 
 debug(const char *txt)
 {
+	static int debug_init = 1;
+	static FILE *debug_info = NULL;
+
+	if (!globalopts.debug)
+		return;
+
+	if (debug_init)
+	{
+		debug_init = 0;
+		char *homedir = get_homedir(NULL);
+		if (!homedir) return;
+		const char flnam[] = ".mp3blaster";
+		char to_open[strlen(homedir) + strlen(flnam) + 2];
+		sprintf(to_open, "%s/%s", homedir, flnam);
+		if (!(debug_info = fopen(to_open, "a")))
+			return;
+		//debug("Debugging messages enabled. Hang on to yer helmet!\n");
+	}
 	if (debug_info)
 	{
 		fwrite(txt, sizeof(char), strlen(txt), debug_info);
