@@ -1,4 +1,17 @@
-V3.0pre2 2000/10/29
+V3.0pre3 2000/11/??
+===================
+-Small bugfixes - thanks to all the people who reported them! It should 
+ compile flawlessly in RedHat 7 now.
+-On some FreeBSD boxes, mp3blaster consumed 100% cpu-time. This version fixes
+ this by using non-blocking I/O to the soundcard.
+-This version quits automatically after playing only mp3's from commandline.
+ (as in the 2.0* versions)
+-Playlists from other players named *.m3u will be accepted by default as well.
+ Playlists will be saved with a default extension ".lst" if one's omitted.
+ Each group's shuffle setting as well as the global playmode is also saved.
+-First 3.* version with working buffered (threaded) playback.
+
+V3.0pre2 2000/11/14
 ===================
 -Repeat of playlist now works
 -wav-playback fixed (did it ever work?)
@@ -9,6 +22,8 @@ V3.0pre2 2000/10/29
  subdirectory)
 -One-key clear playlist
 -Added scrollable help screen.
+-For configfile directives, see src/config.cc (man mp3blasterrc does not yet
+ exist)
 
 V3.0pre1 2000/08/28
 ===================

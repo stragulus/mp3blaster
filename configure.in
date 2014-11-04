@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(src/main.cc)
-AM_INIT_AUTOMAKE(mp3blaster, 3.0p2)
+AM_INIT_AUTOMAKE(mp3blaster, 3.0p3)
 
 dnl Checks for programs.
 AC_PROG_CC
@@ -33,12 +33,18 @@ AC_ARG_WITH(mysql-includes,
 AC_ARG_WITH(mysql-libs,
   [  --with-mysql-libs       Specify location of MySQL libs],
   [ LDFLAGS="$LDFLAGS -L$withval" ])
+AC_ARG_WITH(extra-includes,
+  [  --with-extra-includes   Specify paths for additional headerfiles],
+  [ CPPFLAGS="$CPPFLAGS $withval" ])
 AC_ARG_WITH(nas-includes,
   [  --with-nas-includes     Specify location of NAS headers],
   [ CPPFLAGS="$CPPFLAGS -I$withval" ])
 AC_ARG_WITH(nas-libs,
   [  --with-nas-libs         Specify location of NAS libs],
   [ LDFLAGS="$LDFLAGS -L$withval" ])
+AC_ARG_WITH(extra-libs,
+  [  --with-extra-libs       Specify location of extra libs],
+  [ LDFLAGS="$LDFLAGS $withval" ])
 
 dnl Checks for libraries.
 AC_CHECK_LIB(m,main,,AC_MSG_ERROR("No libm or no cos"))
@@ -48,7 +54,9 @@ AC_CHECK_LIB(mysqlclient,main,HAVE_MYSQL=1)
 AC_CHECK_LIB(sidplay, main, HAVE_SID=1)
 AC_CHECK_LIB(ossaudio,main)
 if test "$FREEBSD" = 1 ; then
-  AC_CHECK_LIB(c_r,main,INCLUDEPTHREAD=1)
+#  AC_CHECK_LIB(c_r,main,INCLUDEPTHREAD=1)
+	LDFLAGS="$LDFLAGS -pthread"
+	INCLUDEPTHREAD=1
 else
   AC_CHECK_LIB(pthread,main,INCLUDEPTHREAD=1)
 fi
@@ -162,12 +170,19 @@ AC_DEFINE_UNQUOTED(SOUND_DEVICE, "$SOUNDDEV")
 if test "$INCLUDEPTHREAD" = 1 ; then
   if test "$FREEBSD" = "1" ; then
     LIBS="$LIBS -lc_r"
+		AC_DEFINE(_THREAD_SAFE)
   else
-	LIBS="$LIBS -lpthread"
+		LIBS="$LIBS -lpthread"
+		#Is _REENTRANT only needed for Linux? Is it still needed? Where is the
+		#documentation about _REENTRANT???? I've read in a newsgroup _THREAD_SAFE
+		#should be used for FreeBSD, _REENTRANT for linux....dunno why.
+  	AC_DEFINE(_REENTRANT)
   fi
   AC_DEFINE(PTHREADEDMPEG)
   dnl AC_DEFINE(THREAD_2)
-  AC_DEFINE(_REENTRANT)
+else
+	echo "Sorry, pthread support is now required!"
+	exit 1;
 fi
 
 if test "$INCLUDENCURSES" = 1 ; then
@@ -203,7 +218,7 @@ AC_SUBST(SRCDIRS)
 AC_OUTPUT(src/Makefile mpegsound/Makefile Makefile nmixer/Makefile doc/Makefile)
 
 cat << EOF
-If configure can't find certain libraries or include files, you can specify them on the commandline like:
-CPPFLAGS="-I/usr/local/nas/include" LDFLAGS="-L/usr/local/nas/lib" ./configure
-If mp3blaster's layout is incorrect, UPGRADE your ncurses library and includefiles to version 4.2 or better (but not 5.*).
+If configure can't find certain libraries or include files, you can specify the path in which they can be found like this:
+./configure --with-extra-includes="-I/usr/local/somedir/include" --with-extra-libs="-L/usr/local/somedir/lib"
+If mp3blaster's layout is incorrect, UPGRADE your ncurses library and includefiles to version 4.2 or newer (beware of beta versions).
 EOF

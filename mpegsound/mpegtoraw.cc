@@ -14,9 +14,20 @@
 #include <math.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 
 #include "mpegsound.h"
 #include "mpegsound_locals.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include SOUNDCARD_HEADERFILE
+
+#ifdef __cplusplus
+}
+#endif
 
 #define MY_PI 3.14159265358979323846
 #undef DEBUG
@@ -737,7 +748,7 @@ bool Mpegtoraw::run(int frames)
     if(frames<0)
     {
       frames=-frames;
-      player->setsoundtype(outputstereo,16,
+      player->setsoundtype(outputstereo,AFMT_S16_NE,
 	frequencies[version][frequency]>>downfrequency);
       totaltime = (totalframe * framesize) / (getbitrate() * 125);
     }

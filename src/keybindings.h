@@ -5,9 +5,9 @@ keybind_t keys[] =
 {
 	{ KEY_F(1), CMD_SELECT_FILES, PM_NORMAL, "Select Files" },
 	{ KEY_F(2), CMD_ADD_GROUP, PM_NORMAL, "Add Group" },
+	{ KEY_F(5), CMD_SET_GROUP_TITLE, PM_NORMAL, "Set Group Title" },
 	{ KEY_F(3), CMD_LOAD_PLAYLIST, PM_NORMAL, "Load/Add Playlist" },
 	{ KEY_F(4), CMD_WRITE_PLAYLIST, PM_NORMAL, "Write Playlist" },
-	{ KEY_F(5), CMD_SET_GROUP_TITLE, PM_NORMAL, "Set Group Title" },
 	{ 'C', CMD_CLEAR_PLAYLIST, PM_NORMAL, "Clear Playlist" },
 	{ 'm', CMD_MOVE_AFTER, PM_NORMAL, "Move Files After" },
 	{ 'M', CMD_MOVE_BEFORE, PM_NORMAL, "Move Files Before" },

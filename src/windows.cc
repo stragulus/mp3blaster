@@ -18,6 +18,7 @@
 #include "mp3blaster.h"
 #include NCURSES
 #include <unistd.h>
+#include <string.h>
 
 extern struct _globalopts globalopts;
 /* Function Name: PopUpWindow

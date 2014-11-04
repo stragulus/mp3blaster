@@ -294,7 +294,7 @@ cf_type_key(const char *string)
 		case '9': return KEY_A3;
 		}
 	}
-	else if (sscanf(string, "s%x", &((unsigned int)dum)) && dum >=0 && dum < 256)
+	else if (sscanf(string, "s%x", &dum) && dum >=0 && dum < 256)
 		return dum;
 
 	//bad key descriptor.

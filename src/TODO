@@ -1,15 +1,19 @@
+-sigsegv sometimes when: starting with 1 mp3 on commandline, stopping ([]),
+ [hitting play], starting playlist (F9), quit
+-'next group' knop
+-save shuffle mode for main group, and playback mode for entire group in
+ playlist
+-change cd-style keys to have logical mappings on the numeric keypad
+-skip certain directories (e.g. '.resources' and some more..)
+
+
 scrollWin class: Use a global variable to determine for each function if
                  the window needs to be refreshed. This is much more
 								 userfriendly for the end user of this class!
 mp3blaster: 
 Basic features:
 -move all selected files in filemanager to current dir (m) (!)
--clear playlist
--CMD_FILE_MARK_BAD: implement
--'next group' knop
--playlist herstarten => pas na een keer of 3..
--import/export playlist (compatible met o.a. winamp)
--set_action(AC_NONE) altijd in play_list() ?? (denk het wel)
+-import/export playlist (compatible met o.a. winamp) (fixed? might work :))
 -fix warning()
 -sort order of files in groups!
 -rename global playmodes to make sense 
@@ -20,7 +24,7 @@ Basic features:
 -split up playmode PLAY_GROUP in 'play current group but not its subgroups' and
  'play current group including subgroups'
 -help in scrollwin! (separate program mode + scrollWin obj)
--read/write playlist +save tmp.playlist to continue it later.
+-read/write playlist +save tmp.playlist to continue it later. (partly done)
 -scrollable input in popup_win ?
 
 Enhanced functionality:

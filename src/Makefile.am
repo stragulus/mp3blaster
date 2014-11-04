@@ -1,4 +1,4 @@
-bin_PROGRAMS		= mp3blaster mp3tag
+bin_PROGRAMS		= mp3blaster mp3tag splay
 mp3blaster_SOURCES	= fileman.cc \
 			  main.cc \
 			  scrollwin.cc \
@@ -22,6 +22,9 @@ mp3blaster_SOURCES	= fileman.cc \
 			  mp3item.h \
 				keybindings.h \
 			  @MP3B_MODULES@
+splay_SOURCES = splay.cc splay.h splay_common.cc
+splay_DEPENDENCIES = ../mpegsound/libmpegsound.a
+splay_LDADD = @LIBMPEGSOUND@
 mp3tag_SOURCES = id3parse.cc mp3tag.cc
 mp3tag_DEPENDENCIES = ../mpegsound/libmpegsound.a ../nmixer/libnmixer.a
 mp3tag_LDADD = @LIBMPEGSOUND@ @LIBMYSQL@

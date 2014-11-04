@@ -112,8 +112,10 @@ bool Wavefileplayer::run(int)
 	return true;
 }
 
-bool Wavefileplayer::initialize()
+bool Wavefileplayer::initialize(void *init_args)
 {
+	if (init_args); //prevent warning
+
 	if (!server->run())
 	{
 		seterrorcode(server->geterrorcode());
@@ -144,10 +146,13 @@ Mpegfileplayer::Mpegfileplayer()
   loader=NULL;
   server=NULL;
   player=NULL;
+	use_threads = 0;
 };
 
 Mpegfileplayer::~Mpegfileplayer()
 {
+	if (use_threads && server)
+		server->freethreadedplayer();
   if(loader)delete loader;
   if(server)delete server;
 }
@@ -211,8 +216,21 @@ bool Mpegfileplayer::playing()
   return false;
 }
 
-bool Mpegfileplayer::initialize()
+bool Mpegfileplayer::initialize(void *init_args)
 {
+	int threads = 0;
+
+	if (init_args)
+		threads = *((int*)init_args);
+
+#ifdef PTHREADEDMPEG
+	if (threads > 20)
+	{
+		use_threads = 1;
+		server->makethreadedplayer(threads);
+	}
+#endif
+
 	if (!server->run(-1))
 	{
 		seterrorcode(server->geterrorcode());

@@ -206,25 +206,6 @@ distdir: $(DISTFILES)
 	    || cp -p $$d/$$file $(distdir)/$$file || :; \
 	  fi; \
 	done
-bitwindow.o: bitwindow.cc mpegsound.h
-fileinput.o: fileinput.cc mpegsound.h
-fileplayer.o: fileplayer.cc mpegsound.h
-filter.o: filter.cc mpegsound.h
-filter_2.o: filter_2.cc mpegsound.h
-httpinput.o: httpinput.cc mpegsound.h
-huffmantable.o: huffmantable.cc mpegsound.h
-mpeglayer1.o: mpeglayer1.cc mpegsound.h
-mpeglayer2.o: mpeglayer2.cc mpegsound.h
-mpeglayer3.o: mpeglayer3.cc mpegsound.h mpegsound_locals.h
-mpegtable.o: mpegtable.cc mpegsound.h
-mpegtoraw.o: mpegtoraw.cc mpegsound.h mpegsound_locals.h
-nasplayer.o: nasplayer.cc
-rawplayer.o: rawplayer.cc mpegsound.h
-rawtofile.o: rawtofile.cc mpegsound.h
-sidplayer.o: sidplayer.cc mpegsound.h
-soundinputstream.o: soundinputstream.cc mpegsound.h
-soundplayer.o: soundplayer.cc mpegsound.h
-wavetoraw.o: wavetoraw.cc mpegsound.h
 
 info-am:
 info: info-am

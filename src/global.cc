@@ -412,13 +412,24 @@ is_playlist(const char *filename)
 		const char *ext;
 		int doesmatch;
 
-		if (!globalopts.plist_exts || !globalopts.plist_exts[i])
+		if (!globalopts.plist_exts || (!i && !globalopts.plist_exts[i]))
 		{
-			ext = "\\.lst$";
-			loop = 0;
+			if (!i)
+			{
+				ext = "\\.lst$";
+				i++;
+			}
+			else
+			{
+				ext = "\\.m3u$";
+				loop = 0;
+			}
 		}
 		else
+		{
 			ext = globalopts.plist_exts[i];
+			loop = (globalopts.plist_exts[++i] != NULL);
+		}
 
 		regex_t dum;
 		regcomp(&dum, ext, 0);
@@ -426,8 +437,6 @@ is_playlist(const char *filename)
 		regfree(&dum);
 		if (!doesmatch) //regexec returns 0 for a match.
 			return 1;
-		if (loop)
-			loop = (globalopts.plist_exts[++i] != NULL);
 	}
 	return 0;
 }

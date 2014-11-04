@@ -1,0 +1,68 @@
+#This mp3blasterrc redefines the most commonly used keybindings so that 
+#mp3blaster can be used in X, where function keys are often not available.
+
+#With DownFrequency, sound is downsampled to 22Khz.
+DownFrequency = No
+
+#The #threads determine the amount of buffering i/o to prevent hickups.
+#On my system, I don't want buffering. 0 <= threads <= 500, only multiples 
+#of 50 are accepted.
+Threads=150
+
+#SoundDevice is the digital sound device in your system. Usually /dev/dsp
+#SoundDevice = /dev/dsp0
+
+#AudiofileMatching is a list of regular expressions that determine which file
+#is considered a valid audiofile. matching is done using default settings and
+#regexec(3). Beware that case-insensitiveness does not apply by default when
+#using regexs!
+#This line would match any not-directory file:
+#AudiofileMatching = \\.*
+
+#SkipFrames sets the number of frames that should be skipped when fast
+#forwarding or rewinding during mp3 playback. Range = 100..1000 (100=default).
+#More frames means larger skips.
+SkipFrames = 750
+
+#Which files are considered playlists (use a list of regexps, escape \'s with
+#another backslash, do the same with comma's and spaces.
+#PlaylistMatching = \\.lst$, \\.m3u$
+#
+##Set a bunch of colours. Try and find out what they do; most should be obvious.
+##Colours: black, red, green, yellow, blue, magenta, cyan, white
+#Color.Default.bg = blue
+#Color.Default.fg = white
+#Color.Popup.bg = black
+#Color.Popup.fg = white
+#Color.PopupInput.bg = yellow
+#Color.PopupInput.fg = black
+#Color.Button.bg = blue
+#Color.Button.fg = cyan
+#Color.Number.fg = yellow
+#Color.Number.bg = blue
+#Color.FileMp3.fg = green
+#Color.FileDir.fg = blue
+#Color.FileLst.fg = red
+
+##Set keybindings
+Key.SelectFiles = 1
+Key.AddGroup = 2
+Key.SetGroupTitle = 5
+Key.ToggleRepeat = 0
+Key.ToggleShuffle = 7
+Key.TogglePlaymode = 8
+Key.StartPlaylist = 9
+Key.ChangeThread = #
+Key.File.AddFiles = 1
+Key.File.InvSelection = 2
+Key.File.RecursiveSelect = 3
+Key.File.SetPath = 4
+Key.File.DirsAsGroups = 5
+Key.LoadPlaylist = l
+Key.WritePlaylist = w
+Key.Play.Next = n
+Key.Play.Previous = N
+Key.Play.Forward = 6
+Key.Play.Rewind = 4
+Key.Play.Play = p
+Key.Play.Stop = s

@@ -24,6 +24,28 @@
 #endif
 #endif
 
+#ifdef HAVE_SYS_SOUNDCARD_H
+#define SOUNDCARD_HEADERFILE <sys/soundcard.h>
+#elif HAVE_MACHINE_SOUNDCARD_H
+#define SOUNDCARD_HEADERFILE <machine/soundcard.h>
+#else
+#define SOUNDCARD_HEADERFILE <soundcard.h>
+#endif
+
+/* Not all OSS implementations define an endian-independant samplesize. 
+ * This code is taken from linux' <sys/soundcard.h, OSS version 0x030802
+ */
+#ifndef AFMT_S16_NE
+#if defined(_AIX) || defined(AIX) || defined(sparc) || defined(HPPA) || defined(PPC)
+/* Big endian machines */
+#  define _PATCHKEY(id) (0xfd00|id)
+#  define AFMT_S16_NE AFMT_S16_BE
+#else
+#  define _PATCHKEY(id) ((id<<8)|0xfd)
+#  define AFMT_S16_NE AFMT_S16_LE
+#endif
+#endif
+
 #ifndef _L__SOUND__
 #define _L__SOUND__
 
@@ -772,9 +794,12 @@ public:
   virtual bool playing()                             =0;
 	virtual bool run(int)                              =0;
 	virtual void skip(int)                             =0;
-	virtual bool initialize()                          =0;
+	virtual bool initialize(void *)                    =0;
 	virtual bool forward(int)                          =0;
 	virtual bool rewind(int)                           =0;
+	virtual bool pause()                               =0;
+	virtual bool unpause()                             =0;
+	virtual bool stop()                                =0;
 	virtual int elapsed_time()                         =0;
 	virtual int remaining_time()                       =0;
   
@@ -802,9 +827,12 @@ public:
   void set8bitmode() { if(player) player->set8bitmode(); }
   bool playing();
 	bool run(int);
-	bool initialize();
+	bool initialize(void *);
 	bool forward(int frames) { return frames==frames; } //TODO: implement
 	bool rewind(int frames) { return frames==frames; } //TODO: implement
+	bool pause() { return true; }
+	bool unpause() { return true; }
+	bool stop() { return true; }
 	int elapsed_time() { return 0; } //TODO: implement
 	int remaining_time() { return 0; } //TODO: implement
 	void skip(int) {} //TODO: implement
@@ -832,9 +860,12 @@ public:
   bool playing();
 	bool run(int);
 	void skip(int);
-	bool initialize();
+	bool initialize(void *);
 	bool forward(int);
 	bool rewind(int);
+	bool pause() { if (use_threads) server->pausethreadedplayer(); return true;}
+	bool unpause() { if (use_threads) server->unpausethreadedplayer(); return true;}
+	bool stop() { if (use_threads) server->stopthreadedplayer(); return true; }
 	int elapsed_time();
 	int remaining_time();
 #if PTHREADEDMPEG
@@ -843,6 +874,7 @@ public:
 
 private:
   Soundinputstream *loader;
+	short use_threads;
 
 protected:
   Mpegtoraw *server;
