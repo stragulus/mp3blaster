@@ -76,7 +76,8 @@ enum playstatus_t { PS_PLAY, PS_PAUSE, PS_REWIND, PS_FORWARD, PS_PREV,
 
 /* values for global var 'window' */
 enum _action { AC_NONE, AC_REWIND, AC_FORWARD, AC_NEXT, AC_PREV,
-	AC_SONG_ENDED, AC_STOP, AC_RESET, AC_START, AC_ONE_MP3, AC_PLAY } action;
+	AC_SONG_ENDED, AC_STOP, AC_RESET, AC_START, AC_ONE_MP3, AC_PLAY,
+	AC_STOP_LIST } action;
 /* External functions */
 extern short cf_parse_config_file(const char *);
 extern cf_error cf_get_error();
@@ -154,6 +155,7 @@ void end_help();
 void update_songinfo(playstatus_t, short);
 void update_ncurses();
 void end_program();
+const char *get_error_string(int);
 
 #ifdef TEMPIE
 #define LOCK_NCURSES (!pthread_mutex_trylock(&ncurses_mutex))
@@ -230,6 +232,7 @@ pthread_t
 mp3Win
 	*mp3_curwin = NULL, /* currently displayed mp3 window */
 	*mp3_rootwin = NULL, /* root mp3 window */
+	*mp3_groupwin = NULL, /* starting group for PLAY_GROUPS mode */
 	*playing_group = NULL; /* in group-mode playback: group being played */
 fileManager
 	*file_window = NULL; /* window to select files with */
@@ -290,6 +293,7 @@ main(int argc, char *argv[])
 	mixer = NULL;
 	helpwin = NULL;
 	bighelpwin = NULL;
+	mp3_groupwin = NULL;
 	long_index = 0;
 	played_songs = (char**)malloc(sizeof(char*));
 	played_songs[0] = NULL;
@@ -302,7 +306,6 @@ main(int argc, char *argv[])
 	/* parse arguments */
 	while (1)
 	{
-#if 1
 		static struct option long_options[] = 
 		{
 			{ "downsample", 0, 0, '2'},
@@ -319,14 +322,12 @@ main(int argc, char *argv[])
 			{ "runframes", 1, 0, 'r'},
 			{ "sound-device", 1, 0, 's'},
 			{ "threads", 1, 0, 't'},
+			{ "version", 0, 0, 'v'},
 			{ 0, 0, 0, 0}
 		};
 		
-		c = getopt_long_only(argc, argv, "28a:c:dhl:no:p:qr:s:t:", long_options,
+		c = getopt_long_only(argc, argv, "28a:c:dhl:no:p:qr:s:t:v", long_options,
 			&long_index);
-#else
-		c = getopt(argc, argv, "28a:c:dhl:no:p:qr:s:t:");
-#endif
 
 		if (c == EOF)
 			break;
@@ -401,6 +402,11 @@ main(int argc, char *argv[])
 #ifdef PTHREADEDMPEG
 			tmp.threads = atoi(optarg);
 #endif
+			break;
+		case 'v': /* version info */
+			printf("%s version %s - http://www.stack.nl/~brama/mp3blaster.html\n",
+				argv[0], VERSION);
+			exit(0);
 			break;
 		default:
 			usage();
@@ -640,7 +646,10 @@ main(int argc, char *argv[])
 #else
 	while ( (key = handle_input(1)) >= 0);
 #endif
-
+	
+#ifdef TEMPIE
+	pthread_cancel(thread_ncurses);
+#endif
 	endwin();
 	return 0;
 }
@@ -653,7 +662,7 @@ main(int argc, char *argv[])
 void
 usage()
 {
-	fprintf(stderr, "Mp3blaster v%s (C)1997 - 1999 Bram Avontuur.\n%s", \
+	fprintf(stderr, "Mp3blaster v%s (C)1997 - 2001 Bram Avontuur.\n%s", \
 		VERSION, \
 		"Usage:\n" \
 		"\tmp3blaster [options]\n"\
@@ -675,10 +684,9 @@ usage()
 		"\t\tThis affects *ALL* file operations in mp3blaster!!(including\n"\
 		"\t\tplaylist reading&writing!) Note that only users with uid 0\n"\
 		"\t\tcan use this option (yet?). This feature will change soon.\n"\
-		"\t--playmode/-p={onegroup,allgroups,groupsrandom,allrandom}\n"\
+		"\t--playmode/-p={onegroup,allgroups,allrandom}\n"\
 		"\t\tDefault playing mode is resp. Play first group only, Play\n"\
-		"\t\tall groups in given order(default), Play all groups in random\n"\
-		"\t\torder, Play all songs in random order.\n"\
+		"\t\tall groups, Play all songs in random order.\n"\
 		"\t--dont-quit/-q: Don't quit after playing mp3[s] (only makes sense\n"\
 		"\t\tin combination with --autolist or files from command-line)\n"\
 		"\t--runframes/-r=<number>: Number of frames to decode in one loop.\n"\
@@ -694,6 +702,7 @@ usage()
 		"\t--threads/-t=<amount>: Numbers of threads to use for buffering\n"\
 		"\t\t(only works if mp3blaster was compiled with threads). Range is \n"\
 		"\t\t0..500 in increments of 50 only.\n"\
+		"\t--version,v: Display version number.\n"\
 		"");
 
 	exit(1);
@@ -786,7 +795,10 @@ fw_end()
 		for (i = 0; i < nselfiles; i++)
 		{
 			bla[0] = (const char*)selected_files[i];
-			bla[1] = chop_path(selected_files[i]);
+			if (strncasecmp(selected_files[i], "http://", 7))
+				bla[1] = chop_path(selected_files[i]);
+			else
+				bla[1] = (const char*)selected_files[i];
 			bla[2] = NULL;
 			sw->addItem(bla, foo, CP_FILE_MP3);
 			free(selected_files[i]);
@@ -1014,7 +1026,7 @@ draw_static(int file_mode)
 	//Draw Next Song:
 	move(8,2);
 	addstr("Next Song      :");
-	mw_settxt("Visit http://tutorial.mp3blaster.cx/");
+	//mw_settxt("Visit http://tutorial.mp3blaster.cx/");
 
 	if (!globalopts.layout)
 	{
@@ -1741,8 +1753,6 @@ write_group(mp3Win *group, FILE *f, short indent_level)
 	int itemcount = 0;
 	char *indent_string = new char[indent_level + 1];
 	
-char dummy[100];sprintf(dummy, "write_group(%d)\n", indent_level);debug(dummy);
-
 	if (indent_level > 10)
 		return 0;
 
@@ -1825,7 +1835,7 @@ write_playlist(const char *filename)
 	{
 		case PLAY_GROUP: pmstr = "onegroup"; break;
 		case PLAY_GROUPS: pmstr = "allgroups"; break;
-		case PLAY_GROUPS_RANDOMLY: pmstr = "groupsrandom"; break;
+		//case PLAY_GROUPS_RANDOMLY: pmstr = "groupsrandom"; break;
 		case PLAY_SONGS: pmstr = "allrandom"; break;
 		default: pmstr = "unknown";
 	}
@@ -1952,8 +1962,8 @@ set_play_mode(const char *pm)
 		globalopts.play_mode = PLAY_GROUP;
 	else if (!strcasecmp(pm, "allgroups"))
 		globalopts.play_mode = PLAY_GROUPS;
-	else if (!strcasecmp(pm, "groupsrandom"))
-		globalopts.play_mode = PLAY_GROUPS_RANDOMLY;
+	//else if (!strcasecmp(pm, "groupsrandom"))
+	//	globalopts.play_mode = PLAY_GROUPS_RANDOMLY;
 	else if (!strcasecmp(pm, "allrandom"))
 		globalopts.play_mode = PLAY_SONGS;
 	else
@@ -1968,11 +1978,10 @@ cw_toggle_play_mode()
 {
 	switch(globalopts.play_mode)
 	{
-		case PLAY_GROUP:  globalopts.play_mode = PLAY_GROUPS; break;
-		case PLAY_GROUPS: globalopts.play_mode = PLAY_GROUPS_RANDOMLY; break;
-		case PLAY_GROUPS_RANDOMLY: globalopts.play_mode = PLAY_SONGS; break;
-		case PLAY_SONGS: globalopts.play_mode = PLAY_GROUP; break;
-		default: globalopts.play_mode = PLAY_GROUP;
+		case PLAY_GROUPS: globalopts.play_mode = PLAY_GROUP; break;
+		case PLAY_GROUP:  globalopts.play_mode = PLAY_SONGS; break;
+		case PLAY_SONGS: globalopts.play_mode = PLAY_GROUPS; break;
+		default: globalopts.play_mode = PLAY_GROUPS;
 	}
 	cw_draw_play_mode();
 	refresh();
@@ -1987,17 +1996,17 @@ cw_draw_play_mode(short cleanit)
 		/* PLAY_NONE */
 		"",
 		// PLAY_GROUP
-		"Global Playback: Only play songs from the current group",
+		"Global Playback: Play current group, but not its subgroups",
 		//PLAY_GROUPS
-		"Global Playback: Play all songs from all groups without shuffle",
+		"Global Playback: Play current group, including subgroups",
 		//PLAY_GROUPS_RANDOMLY
-		"Global Playback: Play all subgroups in this group",
+		"Global Playback: You Should Not See This",
 		//PLAY_SONGS
-		"Global Playback: Play all songs from all groups in random order",
+		"Global Playback: Shuffle all songs from all groups",
 	};
 
 
-	for (i = 2; i < strlen(playmodes_desc[2])+2; i++)
+	for (i = 2; i < strlen(playmodes_desc[1])+2; i++)
 	{
 		move(6, i);
 		addch(' ');
@@ -2021,6 +2030,7 @@ play_list(void *arg)
 	while (1)
 	{
 		_action my_action;
+		pthread_testcancel();
 		pthread_mutex_lock(&playing_mutex);
 		if (!playopts.playing)
 		{
@@ -2031,10 +2041,11 @@ play_list(void *arg)
 				pthread_cond_wait(&playing_cond, &playing_mutex);
 			}
 			debug("THREAD playing woke up!\n");
-			if (action == AC_START) //TODO: make difference between AC_START/AC_PLAY
+			if (action == AC_START)
 			{
 				my_action = AC_NONE;
 				action = AC_NONE;
+				reset_playlist(1);
 			}
 		}
 		my_action = action;
@@ -2044,13 +2055,14 @@ play_list(void *arg)
 		switch(my_action)
 		{
 		case AC_STOP:
-			debug("Player pressed stop!\n");
+		case AC_STOP_LIST:
 			stop_song(); //sets action to AC_NONE
 			pthread_mutex_lock(&playing_mutex);
 			playopts.playing = 0;
 			pthread_mutex_unlock(&playing_mutex);
 			update_songinfo(PS_NONE, 16);
-			debug("End of case STOP\n");
+			if (my_action == AC_STOP_LIST)
+				reset_playlist(1);
 		break;
 		case AC_NEXT:
 			stop_song(); //status => AC_NONE
@@ -2066,7 +2078,7 @@ play_list(void *arg)
 			if (!playopts.pause && playopts.song_played)
 			{
 				bool mystatus = (playopts.player)->run(globalopts.fpl);
-				if (!mystatus)
+				if (!mystatus && (playopts.player)->ready())
 					stop_song(); //status => AC_NONE
 				else
 					update_play_display();
@@ -2083,7 +2095,7 @@ play_list(void *arg)
 					stop_list();
 					//end the program?
 					if (quit_after_playlist)
-						end_program();
+						end_program(); //this is *so* not thread-safe!
 					if (allow_repeat && globalopts.repeat)
 					{
 						reset_playlist(1);
@@ -2095,19 +2107,6 @@ play_list(void *arg)
 			}
 			else if (playopts.pause)
 				usleep(10000);
-			/*
-			else if (!playopts.pause) //!song_played, let's start one then
-			{
-				debug("No song to play, let's find one!\n");
-				if (!start_song())
-				{
-					debug("End of playlist reached?\n");
-					stop_list();
-				}
-			}
-			else //pause
-				usleep(10000);
-			*/
 		}
 		break;
 		case AC_ONE_MP3: //plays 1 mp3, can interrupt a playlist
@@ -2239,10 +2238,9 @@ stop_list()
 	}
 }
 
-void
-stop_song()
+const char *
+get_error_string(int errcode)
 {
-	int vaut;
 	const char *sound_errors[21] =
 	{
 		"Everything's OK (You shouldnt't see this!)",
@@ -2273,6 +2271,15 @@ stop_song()
 		"Unknown error."
 	};
 
+	if (errcode < 0 || errcode > 20)
+		return "";
+	return sound_errors[errcode];
+}
+
+void
+stop_song()
+{
+	int vaut;
 	if (playopts.player)
 	{
 		(playopts.player)->stop();
@@ -2292,8 +2299,8 @@ stop_song()
 		}
 		if (vaut != SOUND_ERROR_OK && vaut != SOUND_ERROR_FINISH)
 		{
-			songinf.warning = new char[strlen(sound_errors[vaut])+1];
-			strcpy(songinf.warning, sound_errors[vaut]);
+			songinf.warning = new char[strlen(get_error_string(vaut))+1];
+			strcpy(songinf.warning, get_error_string(vaut));
 			songinf.update |= 8;
 		}
 		songinf.status = PS_STOP;
@@ -2337,9 +2344,7 @@ start_song(short was_playing)
 	if (!song)
 	{
 		song = determine_song();
-		if (song)
-			debug("Song determined in start_song()\n");
-		else
+		if (!song)
 			debug("Could not determine song in start_song()\n");
 		playopts.playing_one_mp3 = 0;
 		if (!song)
@@ -2355,7 +2360,7 @@ start_song(short was_playing)
 
 	void *init_args = NULL;
 
-	if (is_mp3(song))
+	if (is_mp3(song) || is_httpstream(song))
 	{
 #ifdef PTHREADEDMPEG
 		int draadjes = globalopts.threads;
@@ -2371,9 +2376,28 @@ start_song(short was_playing)
 		playopts.player = new SIDFileplayer();
 #endif
 
-	if (!playopts.player || !(playopts.player)->openfile(song,
-		(globalopts.sound_device ? globalopts.sound_device : NULL)) ||
-		!(playopts.player)->initialize(init_args))
+	if (!playopts.player)
+	{
+		stop_song();
+		delete[] song;
+		return 0;
+	}
+		
+	if (!(playopts.player)->openfile(song, (globalopts.sound_device ?
+		globalopts.sound_device : NULL)))
+	{
+		//TODO: add warning here (geterrorcode())
+		stop_song();
+		delete[] song;
+		return 0;
+	}
+		
+	if (globalopts.downsample)
+		(playopts.player)->setdownfrequency(1);
+	if (globalopts.eightbits)
+		(playopts.player)->set8bitmode();
+
+	if ( !(playopts.player)->initialize(init_args) )
 	{
 		stop_song();
 		delete[] song;
@@ -2513,11 +2537,20 @@ recsel_files(const char *path, short d2g=0, int d2g_init=0)
 		if ( (dir2 = opendir(newpath)) )
 		{
 			char *dummy = entry->d_name;
+			const char *baddirs[] = {
+				".", "..",
+				".AppleDouble",
+				".resources", //HPFS stuff
+				".finderinfo",
+				NULL,
+			};
 
 			closedir(dir2);
 
-			if (!strcmp(dummy, ".") || !strcmp(dummy, ".."))
-				continue; /* next while-loop */
+			int i = 0;
+			while (baddirs[i])
+				if (!strcmp(dummy, baddirs[i++]))
+					continue; /* next while-loop */
 		
 			recsel_files(newpath, d2g);
 		}
@@ -2725,6 +2758,8 @@ handle_input(short no_delay)
 			else
 			{
 				pthread_mutex_unlock(&playing_mutex); //otherwise deadlock occures
+				pthread_cancel(thread_playlist); //MUST do this first.
+				pthread_join(thread_playlist, NULL);
 				stop_song();
 				stop_list();
 				retval = -1;
@@ -2778,6 +2813,7 @@ handle_input(short no_delay)
 					break;
 				}
 				reset_playlist(1);
+				mp3_groupwin = NULL;
 			}
 
 			/* Also mark file as bad? */
@@ -2924,6 +2960,7 @@ handle_input(short no_delay)
 			if (!myplay)
 			{
 				reset_playlist(1);
+				mp3_groupwin = NULL;
 				action = AC_START;
 				pthread_mutex_unlock(&playing_mutex);
 				pthread_cond_signal(&playing_cond); //wake up playlist
@@ -2931,7 +2968,7 @@ handle_input(short no_delay)
 			else
 			{
 				pthread_mutex_unlock(&playing_mutex);
-				set_action(AC_STOP);
+				set_action(AC_STOP_LIST);
 			}
 		}
 		break;
@@ -2962,7 +2999,6 @@ handle_input(short no_delay)
 			halfpath = fm->getPath();
 			debug("halpath: ");if(halfpath)debug(halfpath);debug("\n");
 
-char snikkel[80]; sprintf(snikkel, "Wannadies: %d\n", itemcnt);debug(snikkel);
 			for (i = 0; i < itemcnt; i++)
 			{
 				fullpath = new char[strlen(halfpath) + strlen(selitems[i]) + 1];
@@ -3561,15 +3597,18 @@ determine_song(short set_played)
 	char *song;
 	int total_songs;
 
-	debug("determine_song called\n");
 	total_songs = mp3_rootwin->getUnplayedSongs();
 	if (!total_songs)
 		return NULL;
 	
 	switch(globalopts.play_mode)
 	{
+	case PLAY_GROUPS_RANDOMLY:
+		return NULL;
+	break;
 	case PLAY_NONE:
 	break;
+	/*
 	case PLAY_GROUPS:
 		if (next_song > -1)
 			mysong = mp3_rootwin->getUnplayedSong(next_song, set_played);
@@ -3577,7 +3616,7 @@ determine_song(short set_played)
 			mysong = mp3_rootwin->getUnplayedSong(0, set_played);
 		next_song = (total_songs - 1 ? 0 : -1);
 	break;
-
+	*/
 	case PLAY_SONGS: //all songs in random order
 		if (next_song > -1)	
 			mysong = mp3_rootwin->getUnplayedSong(next_song, set_played);
@@ -3587,11 +3626,17 @@ determine_song(short set_played)
 	break;
 
 	case PLAY_GROUP: //current group:
-	case PLAY_GROUPS_RANDOMLY:
+	case PLAY_GROUPS:
 	{
+		if (globalopts.play_mode == PLAY_GROUPS && !mp3_groupwin)
+		{
+			mp3_groupwin = mp3_curwin;
+			playing_group = NULL;
+		}
+			
 		while (!playing_group || !playing_group->getUnplayedSongs())
 		{
-			if (playing_group) //this means that there are unplayed songs in it
+			if (playing_group) //this means that there are no unplayed songs in it
 			{
 				playing_group->setNotPlaying();
 				playing_group = NULL;
@@ -3600,22 +3645,31 @@ determine_song(short set_played)
 					break;
 			}
 
-			if (globalopts.play_mode == PLAY_GROUPS_RANDOMLY)
+			if (globalopts.play_mode == PLAY_GROUPS)
 			{
-				int 
-					tg = mp3_rootwin->getUnplayedGroups();
-
-				if (!tg) //no more groups left to play!
+				if (!mp3_groupwin) //shouldn't happen...
 				{
 					reset_playlist(0);
 					break;
 				}
+				
+				//getUnplayedGroups counts the group itself as well if it contains
+				//unplayed songs. Just so you know. I forgot this myself ;-)
+				int 
+					tg = mp3_groupwin->getUnplayedGroups();
+
+				if (!tg) //no more groups left to play!
+				{
+					reset_playlist(0);
+					//mp3_groupwin = NULL;
+					break;
+				}
 
 				//determine which group to play.
-				if (mp3_rootwin->getPlaymode())
-					playing_group = mp3_rootwin->getUnplayedGroup(myrand(tg));
+				if (mp3_groupwin->getPlaymode())
+					playing_group = mp3_groupwin->getUnplayedGroup(myrand(tg));
 				else
-					playing_group = mp3_rootwin->getUnplayedGroup(0);
+					playing_group = mp3_groupwin->getUnplayedGroup(0);
 					
 				if (playing_group->getUnplayedSongs(0))
 				{
@@ -3623,7 +3677,10 @@ determine_song(short set_played)
 					playing_group->setPlaying();
 				}
 				else
+				{
 					playing_group = NULL;
+					mp3_groupwin = NULL;
+				}
 			}
 			else
 			{
@@ -3680,15 +3737,19 @@ set_next_song(int next_song)
 	
 	switch(globalopts.play_mode)
 	{
-	case PLAY_GROUPS:
 	case PLAY_SONGS:
 		ns = mp3_rootwin->getUnplayedSong(next_song, 0); break;
 	case PLAY_GROUP:
-	case PLAY_GROUPS_RANDOMLY:
+	case PLAY_GROUPS:
 		if (!playing_group)
 			break;
-		ns = playing_group->getUnplayedSong(next_song, 0, 0); break;
+		ns = playing_group->getUnplayedSong(next_song, 0, 0);
+		if (globalopts.play_mode == PLAY_GROUPS && !ns)
+			ns = "??? (can't know yet)";
+		break;
 	case PLAY_NONE: break;
+	case PLAY_GROUPS_RANDOMLY:
+		ns = "You shouldn't see this!";
 	}
 	//don't draw next_song on the screen yet, because this function can be
 	//called from different threads.
@@ -3701,8 +3762,6 @@ set_next_song(int next_song)
 		if (songinf.next_song)
 			free(songinf.next_song);
 		songinf.next_song = strdup(chop_path(ns));
-		debug(songinf.next_song);
-		debug("!\n");
 		UPDATE_CURSES;
 		pthread_mutex_unlock(&ncurses_mutex);
 	}
@@ -3841,7 +3900,7 @@ reset_playlist(int full)
 		{
 			playing_group->resetSongs(0); //reset SONGS in played group
 			playing_group->setNotPlaying(); //reset playing status of played group
-			playing_group->setNotPlayed(); //reset playlist status of played GROUP
+			playing_group->setNotPlayed(); //reset PLAYLIST status of played group
 			playing_group = NULL;
 		}
 	}
@@ -3850,6 +3909,7 @@ reset_playlist(int full)
 		if (playing_group)
 			playing_group->setNotPlaying();
 		playing_group = NULL;
+		mp3_groupwin = NULL;
 		mp3_rootwin->resetSongs();
 		mp3_rootwin->resetGroups();
 	}

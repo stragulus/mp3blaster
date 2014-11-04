@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(src/main.cc)
-AM_INIT_AUTOMAKE(mp3blaster, 3.0p3)
+AM_INIT_AUTOMAKE(mp3blaster, 3.0p4)
 
 dnl Checks for programs.
 AC_PROG_CC
@@ -45,6 +45,9 @@ AC_ARG_WITH(nas-libs,
 AC_ARG_WITH(extra-libs,
   [  --with-extra-libs       Specify location of extra libs],
   [ LDFLAGS="$LDFLAGS $withval" ])
+AC_ARG_ENABLE(static,
+  [  --enable-static         Build static binaries instead [default=no]],
+	[ LDFLAGS="$LDFLAGS -static" ])
 
 dnl Checks for libraries.
 AC_CHECK_LIB(m,main,,AC_MSG_ERROR("No libm or no cos"))

@@ -1,4 +1,27 @@
-V3.0pre3 2000/11/??
+V3.0pre4 2001/01/24
+===================
+-Finally fixed bugs in the mpegsound lib that caused crashes (notably
+ floating point exceptions, and segmentation faults to some extent). This
+ also fixes problems with some VBR mp3's - you should be able to play them
+ well now. If you still find an mp3 that crashes mp3blaster (and it's 
+ repeatable), please mail bram@avontuur.org.
+-The program 'nmixer' shows which devices can be recorded from, and you can
+ set the recording device.
+-Global playmodes have been renamed and their behaviour has changed to make
+ more use of the new recursive group structure.
+-Changed behaviour of start/stop buttons compared to start/stop playlist.
+ Starting/stopping the playlist (F9) always resets the played songs status.
+ The start&stop buttons don't.
+-Quiting mp3blaster immediately during audio playback now works.
+-added splay progam (it's mp3blaster's origine). splay is (c) Woo-jae Jung,
+ it's added merely for testing purposes, use it as you see fit.
+-Songs got cut off during threaded playback in a playlist. This has been
+ fixed.
+-Recursive selection of files omits dirs '.findinfo','.resources' and 
+ '.AppleDouble' (HPFS filesystem-specific dirs). Thanks for hinting about this!
+-8 bits & 22Khz playback supported again.
+
+V3.0pre3 2001/01/11
 ===================
 -Small bugfixes - thanks to all the people who reported them! It should 
  compile flawlessly in RedHat 7 now.
@@ -9,7 +32,9 @@ V3.0pre3 2000/11/??
 -Playlists from other players named *.m3u will be accepted by default as well.
  Playlists will be saved with a default extension ".lst" if one's omitted.
  Each group's shuffle setting as well as the global playmode is also saved.
--First 3.* version with working buffered (threaded) playback.
+-First 3.* version with working buffered (threaded) playback. (FreeBSD version
+ runs quite inefficient with threading playback, therefore the default is not
+ to use threads)
 
 V3.0pre2 2000/11/14
 ===================

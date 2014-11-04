@@ -517,7 +517,6 @@ private:
   /*************************/
   /* Initialization vars   */
   /*************************/
-  short first_header;
   struct mpeg_header
   {
     int layer;
@@ -659,6 +658,7 @@ private:
   /********************/
 private:
   int lastfrequency,laststereo;
+	int suppress_sound;
 
   // for Layer3
   int layer3slots,layer3framestart,layer3part2start;
@@ -677,7 +677,6 @@ private:
   /* Decoding functions for each layer */
   /*************************************/
 private:
-  bool isvalidheader(int,int,int,int);
   bool loadheader(void);
 
   //
@@ -790,6 +789,7 @@ public:
   virtual bool openfile(char *filename,char *device, soundtype write2file=NONE)=0;
   virtual void closefile(void)                       =0;
   virtual void setforcetomono(short flag)            =0;
+	virtual void setdownfrequency(int)                 =0;
   virtual void set8bitmode()                         =0;
   virtual bool playing()                             =0;
 	virtual bool run(int)                              =0;
@@ -800,6 +800,7 @@ public:
 	virtual bool pause()                               =0;
 	virtual bool unpause()                             =0;
 	virtual bool stop()                                =0;
+	virtual bool ready()                               =0;
 	virtual int elapsed_time()                         =0;
 	virtual int remaining_time()                       =0;
   
@@ -824,6 +825,7 @@ public:
   bool openfile(char *filename,char *device, soundtype write2file=NONE);
   void closefile(void); 
   void setforcetomono(short flag);
+	void setdownfrequency(int value) { if (value); }
   void set8bitmode() { if(player) player->set8bitmode(); }
   bool playing();
 	bool run(int);
@@ -831,6 +833,7 @@ public:
 	bool forward(int frames) { return frames==frames; } //TODO: implement
 	bool rewind(int frames) { return frames==frames; } //TODO: implement
 	bool pause() { return true; }
+	bool ready() { return true; }
 	bool unpause() { return true; }
 	bool stop() { return true; }
 	int elapsed_time() { return 0; } //TODO: implement
@@ -865,7 +868,8 @@ public:
 	bool rewind(int);
 	bool pause() { if (use_threads) server->pausethreadedplayer(); return true;}
 	bool unpause() { if (use_threads) server->unpausethreadedplayer(); return true;}
-	bool stop() { if (use_threads) server->stopthreadedplayer(); return true; }
+	bool stop();
+	bool ready();
 	int elapsed_time();
 	int remaining_time();
 #if PTHREADEDMPEG
@@ -899,6 +903,7 @@ public:
 	void set8bitmode() {}
 	bool run(int frames);
 	bool playing();
+	bool ready() { return true; }
 	void skip(int) {}
 	int elapsed_time();
 	int remaining_time();

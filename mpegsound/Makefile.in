@@ -206,6 +206,7 @@ distdir: $(DISTFILES)
 	    || cp -p $$d/$$file $(distdir)/$$file || :; \
 	  fi; \
 	done
+soundinputstream.o: soundinputstream.cc mpegsound.h
 
 info-am:
 info: info-am

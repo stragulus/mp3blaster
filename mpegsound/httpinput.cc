@@ -254,10 +254,12 @@ bool Soundinputstreamfromhttp::open(char *url)
 {
   if((fp=http_open(url))==NULL)
   {
+		debug("Could not open url..\n");
     seterrorcode(SOUND_ERROR_FILEOPENFAIL);
     return false;
   }
-
+	
+	debug("url opened\n");
   return true;
 }
 
@@ -299,7 +301,7 @@ int Soundinputstreamfromhttp::getblock(char *buffer,int size)
 
 int Soundinputstreamfromhttp::getsize(void)
 {
-  return 0;
+  return 1;
 }
 
 void Soundinputstreamfromhttp::setposition(int)

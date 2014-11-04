@@ -183,6 +183,16 @@ NMixer::DrawScrollbar(short i, int spos)
 			mvwchgat(mixwin, my_y - 1, my_x, strlen(source), A_REVERSE, 
 				cpairs[0], NULL);
 		}
+
+		//draw recording checkbox
+		if (mixers->CanRecord(supported[i]))
+		{
+			if (mixers->GetRecord(supported[i]))
+				mvwprintw(mixwin, my_y, my_x, "[X]");
+			else
+				mvwprintw(mixwin, my_y, my_x, "[ ]");
+			mvwchgat(mixwin, my_y, my_x, 3, A_BOLD, cpairs[3], NULL);
+		}
 	}
 	else //minimode
 	{
@@ -402,6 +412,19 @@ NMixer::ProcessKey(int key)
 		case KEY_END:
 			ChangeBar(currentbar, -2, 0, RIGHT_CHANNEL);
 			break;
+		case ' ':
+		{
+			int barID = supported[currentbar];
+			if (mixers->CanRecord(barID))
+			{
+				if (mixers->GetRecord(barID))
+					mixers->SetRecord(barID, false);
+				else
+					mixers->SetRecord(barID, true);
+				RedrawBars();
+			}
+		}
+		break;
 	}
 	return 1;
 }

@@ -30,6 +30,7 @@ OSSMixer::OSSMixer(baseMixer *next) : baseMixer(next)
 	for (int i = 0; i < SOUND_MIXER_NRDEVICES; i++)
 		if (setting & (1 << i)) AddDevice(i);
 
+
 #ifdef MOZART
 	/* On my system, the mozart souncard I have (with OTI-601 chipset) 
 	 * produces a lot of noise and fuss after initialisation. Setting 
@@ -68,4 +69,39 @@ const char *OSSMixer::Label(int device)
 	if ((device < 0) || (device >= SOUND_MIXER_NRDEVICES))
 		return "<OSS:none>";
 	return sources[device];
+}
+
+bool OSSMixer::CanRecord(int device)
+{
+	unsigned int setting;
+
+	ioctl(mixer, MIXER_READ(SOUND_MIXER_RECMASK), &setting);
+	return (setting & (1 << device));
+}
+
+bool OSSMixer::SetRecord(int device, bool set)
+{
+	unsigned int setting;
+	ioctl(mixer, MIXER_READ(SOUND_MIXER_RECSRC), &setting);
+
+	if (set)
+	{
+		setting |= (1 << (unsigned int)device);
+		ioctl(mixer, MIXER_WRITE(SOUND_MIXER_RECSRC), &setting);
+	}
+	else
+	{
+		setting &= ~(1 << (unsigned int)device);
+		ioctl(mixer, MIXER_WRITE(SOUND_MIXER_RECSRC), &setting);
+	}
+
+	return true;
+}
+
+bool OSSMixer::GetRecord(int device)
+{
+	unsigned int setting;
+
+	ioctl(mixer, MIXER_READ(SOUND_MIXER_RECSRC), &setting);
+	return (setting & (1 << device));
 }

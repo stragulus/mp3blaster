@@ -99,7 +99,6 @@ mp3Win::addItem(const char **item, short *status, short colour, int index,
 	tmp->setColour(colour);
 	if (object)
 		tmp->setObject(object, type);
-	debug("mp3Win::addItem(char**)\n");
 	return scrollWin::addItem(tmp, index, before);
 }
 
@@ -213,7 +212,9 @@ mp3Win::getUnplayedItems(short type, short recursive)
 			}
 		}
 		else if (!type && !tmp->isPlayed())
+		{
 			count++;
+		}
 		tmp = (mp3Item*)tmp->next;
 	}
 	//count this group if it's not played and contains unplayed songs.
@@ -248,6 +249,7 @@ mp3Win::getUnplayedGroup(int unplayed_index, short set_played, short recursive)
 						count += subgroup_count;
 				}
 			}
+			/* HUH? Group [..] should never be checked..why did I do this?
 			else if (!tmp_win->isPlayed() && tmp_win->getUnplayedSongs())
 			{
 				if (count == unplayed_index)
@@ -259,6 +261,7 @@ mp3Win::getUnplayedGroup(int unplayed_index, short set_played, short recursive)
 				else
 					count++;
 			}
+			*/
 		}
 		tmp = (mp3Item*)tmp->next;
 	}

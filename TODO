@@ -1,30 +1,41 @@
-scrollWin class: Use a global variable to determine for each function if
-                 the window needs to be refreshed. This is much more
-								 userfriendly for the end user of this class!
+-hide cursor (again?)
+-show files as their id3 tag info, not filenames (optional)
+-if a song's finished in a playlist, it gets cut off because the decoding is
+ done (run returns false), but the audio output isn't... FIX!
+-'next group' knop
+-make 'next song' skippable (could be tough, it's not a pointer to a group
+ member, but just a const char *..)
+-save shuffle mode for main group, and playback mode for entire group in
+ playlist
+-change cd-style keys to have logical mappings on the numeric keypad
+-skip certain directories (e.g. '.resources' and some more..)
+
 mp3blaster: 
 Basic features:
--'next group' knop
--playlist herstarten => pas na een keer of 3..
--set_action(AC_NONE) altijd in play_list() ?? (denk het wel)
+-move all selected files in filemanager to current dir (m) (!)
+-import/export playlist (compatible met o.a. winamp) (fixed? might work :))
 -fix warning()
 -sort order of files in groups!
 -rename global playmodes to make sense 
+ -Play current group, including subgroups
+ -Play current group, but not its subgroups
+ -Shuffle all songs from all groups (PLAY_RANDOM)
 [-missing playmodes (mp3win->beingPlayed() function?)]
 -clear mpeg-info when songplay's finished.
 -rename group->getPlayedmode() to group->randomOrder()
--lock on group->playing/played (for deletion) + lock on group access...
 -split up playmode PLAY_GROUP in 'play current group but not its subgroups' and
  'play current group including subgroups'
--help in scrollwin! (separate program mode + scrollWin obj)
--read/write playlist +save tmp.playlist to continue it later.
+-read/write playlist +save tmp.playlist to continue it later. (partly done)
 -scrollable input in popup_win ?
 
 Enhanced functionality:
 -'skip to next mp3 and delete this one from list'
 -pulldown menus instead of space-consuming help window!
--filesize in filemanager f/each file
 
 DONE:
+[DONE-filesize in filemanager f/each file:]
+[DONE-help in scrollwin! (separate program mode + scrollWin obj)]
+[DONE-lock on group->playing/played (for deletion) + lock on group access...]
 -configurable keys
 -kleuren groups
 -next song: clear line before drawing a new song in it
@@ -34,37 +45,6 @@ DONE:
 -next song: update it when :user deletes mp3/group, changes playlist mode,stops
             playlist, goes back one song, ..
 
-
-Old TODO file:
--Documentation!!!
--Fix NAS player
--delete mp3stack.* & gstack.*
--MP3->WAV: Ask for path, convert all selected mp3's to resp. .wav's
- -and pad with zeroes until a multiple of 2352 bytes has been reached
--sleeptimer
--autorepeat
--libmpegsound dynamic lib
--check why some mp3's crash mp3blaster.
--fix sigsegv which occurs after a few attempts to play non-audio files.
--Save playing status when program is interrupted, so the playlist can be 
- resumed when mp3blaster is restarted (useful for *big* playlists)
--dir as argument recursively adds all files in it
--make interface control independant of physical interface 
--add remote control option (mp3blaster listens to a socket for commands)
--add record enable/disable to nmixer
--mp3blasterrc file (with support for adjustable keybindings)
--esd (enlightenment sound daemon) support
--When a directory is selected (with spacebar) in the filemanager, add this
- as a separate group to the playlist
--Link to MySQL for statistical purposes
--(compatible with WinAmp playlist)
--(``cold start'' option)
--(add browsable playlist in playwindow)
--Allowing user to change group-order (and mp3-order afterwards)
--when paused, show this on the interface.
--InfraRed support! (lirc)
--"multiple del"
--fix a memory-leak. After each played song, 4kb is lost(oops) (but 
- regained if you leave the playlist by F1 :) So far I can't find anything
- causing it in my program..
--better chrooted environment
+scrollWin class: Use a global variable to determine for each function if
+                 the window needs to be refreshed. This is much more
+								 userfriendly for the end user of this class!

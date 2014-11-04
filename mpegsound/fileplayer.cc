@@ -153,6 +153,7 @@ Mpegfileplayer::~Mpegfileplayer()
 {
 	if (use_threads && server)
 		server->freethreadedplayer();
+
   if(loader)delete loader;
   if(server)delete server;
 }
@@ -167,22 +168,29 @@ bool Mpegfileplayer::openfile(char *filename,char *device, soundtype write2file)
 	return seterrorcode(SOUND_ERROR_DEVOPENFAIL);
 // Loader
   {
-    int err;
-	if (loader)
-		delete loader;
-    if((loader=Soundinputstream::hopen(filename,&err))==NULL)
-      return seterrorcode(err);
-  }
+		int err;
+		if (loader)
+			delete loader;
+		if((loader=Soundinputstream::hopen(filename,&err))==NULL)
+		{
+			debug("Failed in hopen\n");
+			return seterrorcode(err);
+		}
+	}
 
 // Server
   if (server)
   	delete server;
 
   if((server=new Mpegtoraw(loader,player))==NULL)
+	{
+		debug("Error in mpegtoraw\n");
     return seterrorcode(SOUND_ERROR_MEMORYNOTENOUGH);
+	}
 
 // Initialize server
   if (!server->initialize(filename)) {
+	debug("error in initialize\n");
 	return seterrorcode(server->geterrorcode());
   }
 
@@ -333,3 +341,28 @@ bool Mpegfileplayer::playingwiththread(int framenumbers)
   return false;
 }
 #endif
+
+bool
+Mpegfileplayer::stop()
+{
+	if (use_threads)
+	{
+		if (server)
+		{
+			server->stopthreadedplayer();
+			//server->freethreadedplayer();
+		}
+	}
+
+	return true;
+}
+
+/* all sound output has been sent to the sound card? */
+bool
+Mpegfileplayer::ready()
+{
+	if (use_threads && server && server->getframesaved())
+		return false;
+
+	return true;	
+}
