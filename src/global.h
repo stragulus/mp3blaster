@@ -21,5 +21,6 @@ int is_audiofile(const char *);
 int is_playlist(const char *);
 char *crunch_string(const char*, unsigned int);
 short read_file(const char *filename, char ***lines, int *linecount);
+char *id3_filename(const char *filename);
 
 #endif /* _MP3B_GLOBAL_ */

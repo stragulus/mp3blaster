@@ -21,6 +21,7 @@ keybind_t keys[] =
 	{ KEY_F(7), CMD_FILE_ADD_URL, PM_FILESELECTION, "Add URL(shoutcast)" },
 	{ '/', CMD_FILE_START_SEARCH, PM_FILESELECTION, "Start File Search" },
 	{ 's', CMD_FILE_TOGGLE_SORT, PM_FILESELECTION, "Toggle File Sort" },
+	{ 'f', CMD_FILE_TOGGLE_DISPLAY, PM_FILESELECTION, "Toggle File Display" },
 	{ KEY_BACKSPACE, CMD_FILE_UP_DIR, PM_FILESELECTION, "Go Up One Dir" },
 	{ ' ', CMD_FILE_SELECT, PM_FILESELECTION, "Select File" },
 	{ KEY_F(6), CMD_TOGGLE_REPEAT, PM_NORMAL, "Toggle Repeat" },
@@ -30,6 +31,7 @@ keybind_t keys[] =
 	{ KEY_F(10), CMD_CHANGE_THREAD, PM_ANY, "Change #Threads" },
 	{ ' ', CMD_SELECT, PM_NORMAL, "Select File" },
 	{ 'b', CMD_FILE_MARK_BAD, PM_FILESELECTION, "Mark file(s) as bad" },
+	{ 'D', CMD_FILE_DELETE, PM_FILESELECTION, "Delete file" },
 	{ 't', CMD_TOGGLE_MIXER, PM_ANY, "Toggle Mixer Device" },
 	{ '<', CMD_MIXER_VOL_DOWN, PM_ANY, "MixerVolume Down" },
 	{ '>', CMD_MIXER_VOL_UP, PM_ANY, "MixerVolume Up" },
@@ -52,6 +54,7 @@ keybind_t keys[] =
 	{ '6', CMD_PLAY_FORWARD, PM_ANY, "Forward Song" },
 	{ '-', CMD_HELP_PREV, PM_ANY, "Scroll Up Helptext" },
 	{ '+', CMD_HELP_NEXT, PM_ANY, "Scroll Down Helptxt" },
+	{ 'E', CMD_PLAY_SKIPEND, PM_ANY, "Skip to End Song" },
 	{ 0, CMD_NONE, PM_ANY, "" } //this should *always* be the last struct here */
 };
 

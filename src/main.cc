@@ -23,7 +23,6 @@
  * Dec 31 2000: Applied a patch from Rob Funk to fix randomness bug
  */
 #include "mp3blaster.h"
-#include NCURSES
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -35,11 +34,14 @@
 #include <sys/time.h>
 #include <signal.h>
 #include <fnmatch.h>
-#ifdef HAVE_PTHREAD_H
+#if defined(PTHREADEDMPEG) && defined(HAVE_PTHREAD_H)
 #include <pthread.h>
+#elif defined (LIBPTH) && defined(HAVE_PTH_H)
+#include <pth.h>
 #else
-#error "No pthread, no mp3blaster"
+#error "No pthreads/pth, no mp3blaster."
 #endif
+#include NCURSES
 #ifdef HAVE_GETOPT_H
 #include <getopt.h>
 #else
@@ -60,6 +62,12 @@
 //load keybindings
 #include "keybindings.h"
 
+#ifdef LIBPTH
+#define USLEEP(x) pth_usleep(x)
+#else
+#define USLEEP(x) usleep(x)
+#endif
+
 /* paranoia define[s] */
 #ifndef FILENAME_MAX
 #define FILENAME_MAX 1024
@@ -71,13 +79,14 @@
  * more efficient though
  */
 #undef TEMPIE
+
 enum playstatus_t { PS_PLAY, PS_PAUSE, PS_REWIND, PS_FORWARD, PS_PREV,
                     PS_NEXT, PS_STOP, PS_RECORD, PS_NONE };
 
 /* values for global var 'window' */
 enum _action { AC_NONE, AC_REWIND, AC_FORWARD, AC_NEXT, AC_PREV,
 	AC_SONG_ENDED, AC_STOP, AC_RESET, AC_START, AC_ONE_MP3, AC_PLAY,
-	AC_STOP_LIST } action;
+	AC_STOP_LIST, AC_SKIPEND } action;
 /* External functions */
 extern short cf_parse_config_file(const char *);
 extern cf_error cf_get_error();
@@ -104,6 +113,8 @@ void set_one_mp3(char*);
 void stop_song();
 void stop_list();
 void update_play_display();
+void lock_playing_mutex();
+void unlock_playing_mutex();
 
 #ifdef PTHREADEDMPEG
 void change_threads();
@@ -123,6 +134,7 @@ void fw_addurl();
 void fw_search_next_char(char);
 void fw_start_search(int timeout=2);
 void fw_end_search();
+void fw_delete();
 void set_sound_device(const char *);
 short set_fpl(int);
 void set_default_colours();
@@ -158,13 +170,22 @@ void end_program();
 const char *get_error_string(int);
 void fw_toggle_sort();
 void fw_draw_sortmode(sortmodes_t);
+short fw_toggle_display();
+void warning(const char *);
+void wake_player();
 
 #ifdef TEMPIE
 #define LOCK_NCURSES (!pthread_mutex_trylock(&ncurses_mutex))
 #define UPDATE_CURSES pthread_cond_signal(&ncurses_cond)
-#else
+#define UNLOCK_NCURSES pthread_mutex_unlock(&ncurses_mutex)
+#elif defined(PTHREADEDMPEG)
 #define LOCK_NCURSES (!pthread_mutex_lock(&ncurses_mutex))
 #define UPDATE_CURSES
+#define UNLOCK_NCURSES pthread_mutex_unlock(&ncurses_mutex)
+#elif defined(LIBPTH)
+#define LOCK_NCURSES (pth_mutex_acquire(&ncurses_mutex, FALSE, NULL) != -1)
+#define UPDATE_CURSES
+#define UNLOCK_NCURSES pth_mutex_release(&ncurses_mutex)
 #endif
 
 #define OPT_LOADLIST 1
@@ -215,6 +236,7 @@ struct ptag_t
 
 program_mode
 	progmode;
+#ifdef PTHREADEDMPEG
 pthread_mutex_t
 	playing_mutex = PTHREAD_MUTEX_INITIALIZER,
 	ncurses_mutex = PTHREAD_MUTEX_INITIALIZER,
@@ -231,6 +253,16 @@ pthread_t
 pthread_t
 	thread_ncurses; //thread that modifies ncurses structures
 #endif
+#elif defined(LIBPTH)
+pth_mutex_t
+	playing_mutex,
+	ncurses_mutex,
+	onemp3_mutex;
+pth_cond_t
+	playing_cond;
+pth_t
+	thread_playlist;
+#endif /* PTHREADEDMPEG */
 mp3Win
 	*mp3_curwin = NULL, /* currently displayed mp3 window */
 	*mp3_rootwin = NULL, /* root mp3 window */
@@ -258,10 +290,11 @@ char
 	**selected_files = NULL,
 	*startup_path = NULL,
 	*fw_searchstring,
-	**played_songs = NULL;
+	**played_songs = NULL,
+	**environment = NULL;
 
 int
-main(int argc, char *argv[])
+main(int argc, char *argv[], char *envp[])
 {
 	int
 		c,
@@ -284,9 +317,16 @@ main(int argc, char *argv[])
 		int threads;
 #endif
 	} tmp;
+
+#ifdef LIBPTH
+	pth_init();
+#endif
+
 	tmp.sound_device = NULL;
 	tmp.play_mode = NULL;
 	
+	environment = envp;
+
 	songinf.update = 0;
 	songinf.path = NULL;
 	songinf.next_song = NULL;
@@ -421,7 +461,6 @@ main(int argc, char *argv[])
 		debug("Debugging of mp3blaster started.\n");
 	}
 
-	char bla[100];sprintf(bla,"sm:%d!\n",(unsigned int)globalopts.fw_sortingmode);debug(bla);
 	//read .mp3blasterrc
 	if (!cf_parse_config_file(config_file) &&
 		(config_file || cf_get_error() != NOSUCHFILE))
@@ -642,10 +681,23 @@ main(int argc, char *argv[])
 			set_action(AC_START);
 	}
 
+#ifdef PTHREADEDMPEG
 	pthread_create(&thread_playlist, NULL, play_list, NULL);
 #ifdef TEMPIE
 	pthread_create(&thread_ncurses, NULL, curses_thread, NULL);
 #endif
+#elif defined(LIBPTH)
+	warning("Setting up PTH thread");
+
+	pth_mutex_init(&playing_mutex);
+	pth_mutex_init(&ncurses_mutex);
+	pth_mutex_init(&onemp3_mutex);
+	pth_cond_init(&playing_cond);
+
+	thread_playlist = pth_spawn(PTH_ATTR_DEFAULT, play_list, NULL);
+	pth_yield(NULL);
+
+#endif /* PTHREADEDMPEG */
 
 	/* read input from keyboard */
 #ifdef TEMPIE
@@ -654,8 +706,10 @@ main(int argc, char *argv[])
 	while ( (key = handle_input(1)) >= 0);
 #endif
 	
+#ifdef PTHREADEDMPEG
 #ifdef TEMPIE
 	pthread_cancel(thread_ncurses);
+#endif
 #endif
 	endwin();
 	return 0;
@@ -928,12 +982,12 @@ draw_play_key(short do_refresh)
 
 	move(maxy-9,r+4);
 	
-	pthread_mutex_lock(&playing_mutex);
+	lock_playing_mutex();
 	if (!playopts.playing || (playopts.playing && playopts.song_played && playopts.pause))
 		addstr(" |>");
 	else
 		addstr(" ||");
-	pthread_mutex_unlock(&playing_mutex);
+	unlock_playing_mutex();
 
 	get_label(CMD_PLAY_PLAY, klabel);
 	move(maxy-8,r+4); addstr(klabel);
@@ -1623,7 +1677,7 @@ read_playlist(const char *filename)
 				if (keyval && !strcasecmp(keyval, "shuffle"))
 				{
 					mp3_rootwin->setPlaymode(1);
-					debug("Shufflemode aan!\n");
+					debug("Shufflemode on!\n");
 				}
 			}
 			else if (!strcasecmp(ptag.tag, "group"))
@@ -2015,7 +2069,8 @@ cw_draw_play_mode(short cleanit)
 	};
 
 
-	for (i = 2; i < strlen(playmodes_desc[1])+2; i++)
+	unsigned int nrchars = COLS - 16;
+	for (i = 2; i < nrchars + 2; i++)
 	{
 		move(6, i);
 		addch(' ');
@@ -2039,15 +2094,23 @@ play_list(void *arg)
 	while (1)
 	{
 		_action my_action;
+#ifdef PTHREADEDMPEG
 		pthread_testcancel();
-		pthread_mutex_lock(&playing_mutex);
+#elif defined(LIBPTH)
+		pth_cancel_point();
+#endif
+		lock_playing_mutex();
 		if (!playopts.playing)
 		{
 			debug("Not playing, waiting to start playlist\n");
 			while (action != AC_START && action != AC_ONE_MP3 && action != AC_PLAY)
 			{
 				debug("THREAD playing going to sleep.\n");
+#ifdef PTHREADEDMPEG
 				pthread_cond_wait(&playing_cond, &playing_mutex);
+#elif defined(LIBPTH)
+				pth_cond_await(&playing_cond, &playing_mutex, NULL);
+#endif
 			}
 			debug("THREAD playing woke up!\n");
 			if (action == AC_START)
@@ -2059,16 +2122,16 @@ play_list(void *arg)
 		}
 		my_action = action;
 		playopts.playing = 1;
-		pthread_mutex_unlock(&playing_mutex);
+		unlock_playing_mutex();
 
 		switch(my_action)
 		{
 		case AC_STOP:
 		case AC_STOP_LIST:
 			stop_song(); //sets action to AC_NONE
-			pthread_mutex_lock(&playing_mutex);
+			lock_playing_mutex();
 			playopts.playing = 0;
-			pthread_mutex_unlock(&playing_mutex);
+			unlock_playing_mutex();
 			update_songinfo(PS_NONE, 16);
 			if (my_action == AC_STOP_LIST)
 				reset_playlist(1);
@@ -2108,14 +2171,14 @@ play_list(void *arg)
 					if (allow_repeat && globalopts.repeat)
 					{
 						reset_playlist(1);
-						pthread_mutex_lock(&playing_mutex);
+						lock_playing_mutex();
 						playopts.playing = 1;
-						pthread_mutex_unlock(&playing_mutex);
+						unlock_playing_mutex();
 					}
 				}
 			}
 			else if (playopts.pause)
-				usleep(10000);
+				USLEEP(10000);
 		}
 		break;
 		case AC_ONE_MP3: //plays 1 mp3, can interrupt a playlist
@@ -2147,6 +2210,14 @@ play_list(void *arg)
 			}
 			set_action(AC_NONE);
 		break;
+		case AC_SKIPEND:
+			if (playopts.song_played)
+			{
+				(playopts.player)->forward(-300);
+				update_play_display();
+			}
+			set_action(AC_NONE);
+		break;
 		case AC_PLAY: //pause,unpause,na stop
 			set_action(AC_NONE);
 			if (playopts.song_played && playopts.pause)
@@ -2172,6 +2243,9 @@ play_list(void *arg)
 		default:
 			if(1);
 		}
+#ifdef LIBPTH
+		pth_yield(NULL);
+#endif
 	}
 }
 
@@ -2197,7 +2271,7 @@ update_play_display()
 			songinf.remain = (playopts.player)->remaining_time();
 			songinf.update = 2;
 			UPDATE_CURSES;
-			pthread_mutex_unlock(&ncurses_mutex);
+			UNLOCK_NCURSES;
 		}
 		playopts.tyd = playopts.newtyd;
 	}
@@ -2206,7 +2280,11 @@ update_play_display()
 void 
 set_one_mp3(const char *mp3)
 {
+#ifdef PTHREADEDMPEG
 	pthread_mutex_lock(&onemp3_mutex);
+#elif defined(LIBPTH)
+	pth_mutex_acquire(&onemp3_mutex, FALSE, NULL);
+#endif
 	if (playopts.one_mp3)
 		delete[] playopts.one_mp3;
 	if (mp3)
@@ -2216,7 +2294,11 @@ set_one_mp3(const char *mp3)
 	}
 	else
 		playopts.one_mp3 = NULL;
+#ifdef PTHREADEDMPEG
 	pthread_mutex_unlock(&onemp3_mutex);
+#elif defined(LIBPTH)
+	pth_mutex_release(&onemp3_mutex);
+#endif
 }
 
 /* POST: Delete[] returned char*-pointer when you don't use it anymore!! */
@@ -2243,7 +2325,7 @@ stop_list()
 	{
 		songinf.update |= 32;
 		UPDATE_CURSES;
-		pthread_mutex_unlock(&ncurses_mutex);
+		UNLOCK_NCURSES;
 	}
 }
 
@@ -2292,6 +2374,7 @@ stop_song()
 	if (playopts.player)
 	{
 		(playopts.player)->stop();
+		playopts.pause = 0;
 		vaut = (playopts.player)->geterrorcode();
 	}
 	else
@@ -2315,7 +2398,7 @@ stop_song()
 		songinf.status = PS_STOP;
 		songinf.update |= 4;
 		UPDATE_CURSES;
-		pthread_mutex_unlock(&ncurses_mutex);
+		UNLOCK_NCURSES;
 	}
 
 	if (playopts.player)
@@ -2396,6 +2479,7 @@ start_song(short was_playing)
 		globalopts.sound_device : NULL)))
 	{
 		//TODO: add warning here (geterrorcode())
+		warning("Couldn't open file.");
 		stop_song();
 		delete[] song;
 		return 0;
@@ -2427,7 +2511,7 @@ start_song(short was_playing)
 		songinf.status = PS_PLAY;
 		songinf.update = (1|2|4); //update time,songinfo,status
 		UPDATE_CURSES;
-		pthread_mutex_unlock(&ncurses_mutex);
+		UNLOCK_NCURSES;
 	}
 	time(&(playopts.tyd));
 	delete[] song;
@@ -2452,9 +2536,9 @@ play_one_mp3(const char *filename)
 {
 	set_one_mp3(filename);
 	set_action(AC_ONE_MP3);
-	pthread_mutex_lock(&playing_mutex);
-	pthread_cond_signal(&playing_cond); //wake up playlist
-	pthread_mutex_unlock(&playing_mutex);
+	lock_playing_mutex();
+	wake_player();
+	unlock_playing_mutex();
 }
 
 void
@@ -2689,6 +2773,10 @@ handle_input(short no_delay)
 	fileManager
 		*fm = file_window;
 
+#ifdef LIBPTH
+	pth_yield(NULL);
+#endif
+
 	if (no_delay)
 	{
 		fflush(stdin);
@@ -2711,41 +2799,50 @@ handle_input(short no_delay)
 	}
 
 #ifndef TEMPIE
-	pthread_mutex_lock(&ncurses_mutex);
+	LOCK_NCURSES;
 
 	if (songinf.update)
 		update_ncurses();
 	
-	pthread_mutex_unlock(&ncurses_mutex);
+	UNLOCK_NCURSES;
 #endif
 
 	if (no_delay && key == ERR)
 	{
-		usleep(10000);
+#ifdef LIBPTH
+		pth_yield(NULL);
+		USLEEP(10000);
+#else
+		USLEEP(1000);
+#endif
+
 		return 0;
 	}
 
 #ifdef TEMPIE
 	//lock the ncurses mutex during the entire input loop.
-	pthread_mutex_lock(&ncurses_mutex);
+	LOCK_NCURSES;
 #endif
 	cmd = get_command(key, progmode);
 
 	if (fw_searchmode &&
 		((key >= 'a' && key <= 'z') ||
 		(key >= 'A' && key <= 'Z') ||
-		(key >= '0' && key <= '9')))
+		(key >= '0' && key <= '9') ||
+		(strchr("(){}[]<>,.?;:\"'=+-_!@#$%^&*", key))))
 	{
 		fw_search_next_char(key);
 #ifdef TEMPIE
-		pthread_mutex_unlock(&ncurses_mutex);
+		UNLOCK_NCURSES;
 #endif
 		return 1;
 	}
 
 	switch(cmd)
 	{
-		case CMD_PLAY_PLAY: set_action(AC_PLAY); pthread_cond_signal(&playing_cond);
+		case CMD_PLAY_PLAY: set_action(AC_PLAY); 
+			wake_player();
+	
 		break;
 	//wake up playlist
 		case CMD_PLAY_NEXT: set_action(AC_NEXT); break;
@@ -2755,6 +2852,7 @@ handle_input(short no_delay)
 		case CMD_PLAY_FORWARD: set_action(AC_FORWARD); break;
 		case CMD_PLAY_REWIND: set_action(AC_REWIND); break;
 		case CMD_PLAY_STOP: set_action(AC_STOP); break;
+		case CMD_PLAY_SKIPEND: set_action(AC_SKIPEND); break;
 		//case 'i': sw->setDisplayMode(0); sw->swRefresh(2); break;
 		//case 'I': sw->setDisplayMode(1); sw->swRefresh(2); break;
 		case CMD_MOVE_AFTER:
@@ -2766,17 +2864,22 @@ handle_input(short no_delay)
 			sw->swRefresh(1);
 		break;
 		case CMD_QUIT_PROGRAM: //quit mp3blaster
-			pthread_mutex_lock(&playing_mutex);
+			lock_playing_mutex();
 			if (!playopts.playing)
 			{
 				retval = -1;
-				pthread_mutex_unlock(&playing_mutex);
+				unlock_playing_mutex();
 			}
 			else
 			{
-				pthread_mutex_unlock(&playing_mutex); //otherwise deadlock occures
+				unlock_playing_mutex(); //otherwise deadlock occurs..
+#ifdef PTHREADEDMPEG
 				pthread_cancel(thread_playlist); //MUST do this first.
 				pthread_join(thread_playlist, NULL);
+#elif defined(LIBPTH)
+				pth_cancel(thread_playlist);
+				pth_join(thread_playlist, NULL);
+#endif
 				stop_song();
 				stop_list();
 				retval = -1;
@@ -2818,7 +2921,7 @@ handle_input(short no_delay)
 			if (progmode != PM_NORMAL && cmd == CMD_DEL_MARK)
 				break;
 
-			pthread_mutex_lock(&playing_mutex);
+			lock_playing_mutex();
 			//don't delete a group that's playing right now (or contains a group
 			//that's being played)
 			if (sw->isGroup(sw->sw_selection) && (tmpgroup =
@@ -2826,7 +2929,9 @@ handle_input(short no_delay)
 			{
 				if (playopts.playing) //TODO: add warning here
 				{
-					pthread_mutex_unlock(&playing_mutex);
+					warning("Can't delete an active group.");
+					unlock_playing_mutex();
+			//don't delete a group that's playing right now (or contains a group
 					break;
 				}
 				reset_playlist(1);
@@ -2839,7 +2944,7 @@ handle_input(short no_delay)
 
 			sw->delItem(sw->sw_selection);	
 			reset_next_song();
-			pthread_mutex_unlock(&playing_mutex);
+			unlock_playing_mutex();
 		}
 		break;
 		case CMD_NEXT_PAGE:
@@ -2948,7 +3053,7 @@ handle_input(short no_delay)
 		break;
 		case CMD_TOGGLE_SHUFFLE: cw_toggle_group_mode(); reset_next_song(); break; 
 		case CMD_TOGGLE_PLAYMODE: 
-			pthread_mutex_lock(&playing_mutex);
+			lock_playing_mutex();
 			if (!playopts.playing)
 			{
 				//TODO: is this safe? What if the users STOPS a song (!playing), and
@@ -2958,33 +3063,33 @@ handle_input(short no_delay)
 				//up...have to check into this.
 				cw_toggle_play_mode();
 				reset_next_song();
-				pthread_mutex_unlock(&playing_mutex);
+				unlock_playing_mutex();
 			}
 			else
 			{
 				debug("Playing, can't toggle playmode\n");
 				//TODO: FIX WARNING to not use sleep() in a threaded env.
-				mw_settxt("Not possible during playback");
-				pthread_mutex_unlock(&playing_mutex);
+				warning("Not possible during playback");
+				unlock_playing_mutex();
 				refresh_screen();
 			}
 		break;
 		case CMD_START_PLAYLIST:
 		{
 			short myplay;
-			pthread_mutex_lock(&playing_mutex);
+			lock_playing_mutex();
 			myplay = playopts.playing;
 			if (!myplay)
 			{
 				reset_playlist(1);
 				mp3_groupwin = NULL;
 				action = AC_START;
-				pthread_mutex_unlock(&playing_mutex);
-				pthread_cond_signal(&playing_cond); //wake up playlist
+				unlock_playing_mutex();
+				wake_player();
 			}
 			else
 			{
-				pthread_mutex_unlock(&playing_mutex);
+				unlock_playing_mutex();
 				set_action(AC_STOP_LIST);
 			}
 		}
@@ -2993,6 +3098,7 @@ handle_input(short no_delay)
 		case CMD_FILE_UP_DIR: fw_changedir(".."); break;
 		case CMD_FILE_START_SEARCH: fw_start_search(); break;
 		case CMD_FILE_TOGGLE_SORT: fw_toggle_sort(); fw_changedir("."); break;
+		case CMD_FILE_TOGGLE_DISPLAY: fw_toggle_display(); fm->swRefresh(2); break;
 		case CMD_FILE_MARK_BAD:
 		{
 			char *fullpath = NULL;
@@ -3015,7 +3121,6 @@ handle_input(short no_delay)
 				debug("Used highlighted file to mark as bad.\n");
 			}
 			halfpath = fm->getPath();
-			debug("halpath: ");if(halfpath)debug(halfpath);debug("\n");
 
 			for (i = 0; i < itemcnt; i++)
 			{
@@ -3036,6 +3141,8 @@ handle_input(short no_delay)
 			if (moved_items_count)
 				fw_changedir(".");
 		}
+		case CMD_FILE_DELETE:
+			fw_delete();
 		break;
 		case CMD_FILE_ENTER: /* change into dir, play soundfile, load playlist, 
 		                      * end search */
@@ -3096,14 +3203,14 @@ handle_input(short no_delay)
 		case CMD_CHANGE_THREAD: change_threads(); break;
 #endif
 		case CMD_CLEAR_PLAYLIST:
-			pthread_mutex_lock(&playing_mutex);
+			lock_playing_mutex();
 			if (!playopts.playing)
 			{
 				mp3_rootwin->delItems();
 				mp3_curwin = mp3_rootwin;
 				mp3_rootwin->swRefresh(2);
 			}
-			pthread_mutex_unlock(&playing_mutex);
+			unlock_playing_mutex();
 		break;
 		case CMD_NONE: break;
 		default:
@@ -3112,7 +3219,7 @@ handle_input(short no_delay)
 	}
 	
 #ifdef TEMPIE
-	pthread_mutex_unlock(&ncurses_mutex);
+	UNLOCK_NCURSES;
 #endif
 	return retval;
 }
@@ -3183,10 +3290,33 @@ end_help()
 }
 
 void
+cw_draw_filesort(short cleanit)
+{
+	if (!cleanit)
+	{
+		if (progmode == PM_FILESELECTION)
+			fw_draw_sortmode(globalopts.fw_sortingmode);
+	}
+	else
+	{
+		//clear 'Sorting mode' line.
+		move(6, 2);
+		int stextlen = COLS - 16;
+		char emptyline[stextlen + 1];
+		memset(emptyline, ' ', stextlen * sizeof(char));
+		emptyline[stextlen] = '\0';
+		addstr(emptyline);
+	}
+}
+
+void
 draw_settings(int cleanit)
 {
 	cw_draw_group_mode(cleanit);
-	cw_draw_play_mode(cleanit);
+	if (progmode == PM_FILESELECTION)
+		cw_draw_filesort(cleanit);
+	else if (progmode == PM_NORMAL)
+		cw_draw_play_mode(cleanit);
 	cw_draw_repeat();
 #ifdef PTHREADEDMPEG
 		cw_draw_threads(cleanit);
@@ -3597,11 +3727,11 @@ newgroup()
 void
 set_action(_action bla)
 {
-	pthread_mutex_lock(&playing_mutex);
+	lock_playing_mutex();
 	action = bla;
 	if (bla == AC_STOP)
 		quit_after_playlist = 0;
-	pthread_mutex_unlock(&playing_mutex);
+	unlock_playing_mutex();
 }
 
 /* determine_song returns a pointer to the song to play (or NULL if there is
@@ -3781,7 +3911,7 @@ set_next_song(int next_song)
 			free(songinf.next_song);
 		songinf.next_song = strdup(chop_path(ns));
 		UPDATE_CURSES;
-		pthread_mutex_unlock(&ncurses_mutex);
+		UNLOCK_NCURSES;
 	}
 }
 
@@ -4180,7 +4310,7 @@ void
 init_globalopts()
 {
 	globalopts.no_mixer = 0; /* mixer on by default */
-	globalopts.fpl = 5; /* 5 frames are played between input handling */
+	globalopts.fpl = 10; /* 5 frames are played between input handling */
 	globalopts.sound_device = NULL; /* default sound device */
 	globalopts.downsample = 0; /* no downsampling */
 	globalopts.eightbits = 0; /* 8bits audio off by default */
@@ -4206,6 +4336,7 @@ init_globalopts()
 	globalopts.threads = 0;
 #endif
 #endif
+	globalopts.want_id3names = 1;
 }
 
 void
@@ -4453,6 +4584,7 @@ update_ncurses()
 //      to get around this, is to write a non-blocking version of get[n]str
 //      so that the main thread doesn't have to lock the ncurses_mutex until
 //      the user has finished input (e.g. F4 in file mode, change to subdir).
+//      Or, write a curses events queueing system.
 void *
 curses_thread(void *arg)
 {
@@ -4460,16 +4592,20 @@ curses_thread(void *arg)
 
 	while(1)
 	{
-		pthread_mutex_lock(&ncurses_mutex);
+		LOCK_NCURSES;
 		if (!songinf.update)
 		{
 			debug("THREAD ncurses going to sleep.\n");
+#ifdef PTHREADEDMPEG
 			pthread_cond_wait(&ncurses_cond, &ncurses_mutex);
+#elif defined(LIBPTH)
+			pth_cond_await(&ncurses_cond, &ncurses_mutex, NULL);
+#endif
 		}
 		debug("THREAD ncurses woke up!\n");
 
 		update_ncurses();
-		pthread_mutex_unlock(&ncurses_mutex);
+		UNLOCK_NCURSES;
 	}
 }
 #endif
@@ -4482,7 +4618,7 @@ update_songinfo(playstatus_t status, short update)
 		songinf.update = update;
 		songinf.status = status;
 		UPDATE_CURSES;
-		pthread_mutex_unlock(&ncurses_mutex);
+		UNLOCK_NCURSES;
 	}
 }
 
@@ -4493,9 +4629,9 @@ end_program()
 	if (playopts.playing)
 		stop_song();
 	//prevent ncurses clash
-	pthread_mutex_lock(&ncurses_mutex);
+	LOCK_NCURSES;
 	endwin();
-	pthread_mutex_unlock(&ncurses_mutex);
+	UNLOCK_NCURSES;
 	exit(0);
 };
 
@@ -4532,9 +4668,8 @@ fw_draw_sortmode(sortmodes_t sm)
 		NULL,
 	};
 	short
-		idx = 0,
-		long_idx = 2; //longest char* in dsc[].
-	int maxlen = strlen(dsc[long_idx]);
+		idx = 0;
+	int maxlen = COLS - 16;
 	
 	char emptyline[maxlen + 1];
 	memset(emptyline, ' ', maxlen * sizeof(char));
@@ -4550,8 +4685,8 @@ fw_draw_sortmode(sortmodes_t sm)
 	case FW_SORT_SIZE_BIG:   idx = 5; break;
 	case FW_SORT_NONE:       idx = 6; break;
 	}
-	move(8, 2); printw("Sorting mode   : %s", emptyline);
-	move(8, 2); printw("Sorting mode   : %s", dsc[idx]);
+	move(6, 2); addstr(emptyline);
+	move(6, 2); printw("Sorting mode   : %s", dsc[idx]);
 }
 
 short
@@ -4599,4 +4734,78 @@ set_sort_mode(const char *mstring)
 	if (progmode == PM_FILESELECTION)
 		fw_draw_sortmode(smode);
 	return found_it;
+}
+
+short
+fw_toggle_display()
+{
+	if (!file_window)
+		return 0;
+
+	short dispmode = file_window->getDisplayMode() + 1;
+	if (dispmode > 2)
+		dispmode = 0;
+	file_window->setDisplayMode(dispmode);
+	//refresh fm after this function has been called.
+	return 1;
+}
+
+/* delete currently selected file */
+void
+fw_delete()
+{
+	const char
+		*file = file_window->getSelectedItem();
+	
+	if (file && !is_dir(file))
+	{
+		if (unlink(file) < 0)
+			warning("Could not delete file.");
+		else
+		{
+			fw_changedir(".");
+			mw_settxt("File deleted.");
+		}
+	}
+}
+
+void
+warning(const char *txt)
+{
+	mw_clear();
+	move(LINES-2,1);
+	attrset(COLOR_PAIR(CP_ERROR)|A_BOLD);
+	addnstr(txt, COLS - 14);
+	attrset(COLOR_PAIR(CP_DEFAULT)|A_NORMAL);
+	refresh();
+}
+
+void
+unlock_playing_mutex()
+{
+#ifdef PTHREADEDMPEG
+	pthread_mutex_unlock(&playing_mutex);
+#elif defined(LIBPTH)
+	pth_mutex_release(&playing_mutex);
+#endif
+}
+
+void
+lock_playing_mutex()
+{
+#ifdef PTHREADEDMPEG
+	pthread_mutex_lock(&playing_mutex);
+#elif defined(LIBPTH)
+	pth_mutex_acquire(&playing_mutex, FALSE, NULL);
+#endif
+}
+
+void
+wake_player()
+{	
+#ifdef PTHREADEDMPEG
+	pthread_cond_signal(&playing_cond);
+#elif defined(LIBPTH)
+	pth_cond_notify(&playing_cond, TRUE);
+#endif
 }

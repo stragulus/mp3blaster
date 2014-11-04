@@ -15,14 +15,19 @@
 #include <bool.h>
 #endif
 #ifdef PTHREADEDMPEG
-#ifdef HAVE_PTHREAD_H
-#include <pthread.h>
-#else
-#ifdef HAVE_PTHREAD_MIT_PTHREAD_H
-#include <pthread/mit/pthread.h>
+#  ifdef HAVE_PTHREAD_H
+#    include <pthread.h>
+#  else
+#    ifdef HAVE_PTHREAD_MIT_PTHREAD_H
+#      include <pthread/mit/pthread.h>
+#    endif
+#  endif
+#elif defined(LIBPTH)
+#  include <pth.h>
 #endif
-#endif
-#endif
+
+#ifndef _L__SOUND__
+#define _L__SOUND__
 
 #ifdef HAVE_SYS_SOUNDCARD_H
 #define SOUNDCARD_HEADERFILE <sys/soundcard.h>
@@ -46,8 +51,11 @@
 #endif
 #endif
 
-#ifndef _L__SOUND__
-#define _L__SOUND__
+#ifdef LIBPTH
+#define USLEEP(x) pth_usleep(x)
+#else
+#define USLEEP(x) usleep(x)
+#endif
 
 /*\ ncurses #defines a lot of functions.  That sucks, because it
 |*| clashes with other things, such as C++ iostream stuff.
@@ -138,6 +146,20 @@
 /* Type definitions */
 /********************/
 typedef float REAL;
+
+#ifdef NEWTHREAD
+struct  mpeg_buffer {
+    short int data[RAWDATASIZE];
+    long framenumber;
+    int framesize;
+    short claimed;
+};
+
+struct buffer_node {
+    short index;
+    buffer_node *next;
+};
+#endif
 
 enum soundtype { NONE, RAW, WAV };
 
@@ -383,6 +405,9 @@ private:
   int  rawstereo,rawsamplesize,rawspeed,want8bit;
   short forcetomono,forceto8;
   int  quota;
+#ifdef NEWTHREAD
+	char *fnbak;
+#endif
 };
 
 #ifdef HAVE_NASPLAYER
@@ -582,6 +607,43 @@ public:
   int  getcurrentframe(void) const {return currentframe;};
   int  gettotalframe(void)   const {return totalframe;};
   void setframe(int framenumber);
+#ifdef NEWTHREAD
+  int skip;
+
+  void continueplaying(void); 
+  void createplayer(void);
+  void abortplayer(void);
+  void pauseplaying(void);
+private:
+  void setdecodeframe(int framenumber);
+  /*******************************/
+  /* Buffer management functions */
+  /*******************************/
+private:
+  void settotalbuffers(short amount);
+  short request_buffer(void);
+  void release_buffer(short index);
+  void queue_buf(short index);
+  void dequeue_buf(short index);
+  void dequeue_first();
+  struct mpeg_buffer *get_buffer(short index);
+  void makeroom(int size);
+
+public:
+	void real_alarm_handler(int bla); 
+
+  int getfreebuffers(void);
+  /*******************************/
+  /* Buffer management variables */
+  /*******************************/
+private:
+  FILE *debugfile;
+  short no_buffers;
+  short free_buffers;
+  mpeg_buffer *buffers;
+  buffer_node *queue;
+  buffer_node *spare;
+#endif
 
   /***************************************/
   /* Variables made by MPEG-Audio header */
@@ -733,12 +795,21 @@ private:
 
   void clearrawdata(void)    {rawdataoffset=0;};
   void putraw(short int pcm) {rawdata[rawdataoffset++]=pcm;};
+#ifdef NEWTHREAD
+  void flushrawdata(short index=0);
+#else
   void flushrawdata(void);
+#endif
 
   /***************************/
   /* Interface for threading */
   /***************************/
-#ifdef PTHREADEDMPEG
+#ifdef NEWTHREAD
+public:
+    pth_t play_thread;
+    bool player_run;
+    void threadplay(void *bla);
+#elif defined(PTHREADEDMPEG)
 private:
   struct
   {
@@ -769,7 +840,7 @@ public:
 
   bool existthread(void);
   int  getframesaved(void);
-#endif
+#endif /* NEWTHREAD */
 };
 
 
@@ -795,6 +866,7 @@ public:
 	virtual bool run(int)                              =0;
 	virtual void skip(int)                             =0;
 	virtual bool initialize(void *)                    =0;
+	//if argument to forward < 0, will skip to end - <argument>
 	virtual bool forward(int)                          =0;
 	virtual bool rewind(int)                           =0;
 	virtual bool pause()                               =0;
@@ -866,15 +938,25 @@ public:
 	bool initialize(void *);
 	bool forward(int);
 	bool rewind(int);
+#ifdef NEWTHREAD
+	bool pause() { server->pauseplaying(); return true; }
+	bool unpause() { server->continueplaying(); return true; }
+#elif defined(PTHREADEDMPEG)
 	bool pause() { if (use_threads) server->pausethreadedplayer(); return true;}
 	bool unpause() { if (use_threads) server->unpausethreadedplayer(); return true;}
+#else
+	bool pause() { return true;}
+	bool unpause() { return true;}
+#endif
 	bool stop();
 	bool ready();
 	int elapsed_time();
 	int remaining_time();
+#ifndef NEWTHREAD
 #if PTHREADEDMPEG
   bool playingwiththread(int framenumbers);
 #endif
+#endif /* NEWTHREAD */
 
 private:
   Soundinputstream *loader;

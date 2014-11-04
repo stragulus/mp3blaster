@@ -3,6 +3,21 @@
 #include <string.h>
 #include <errno.h>
 
+/* tampers with 's' to replace non-printable chars with dots. */
+void
+convert_to_sane_string(char *s)
+{
+	unsigned int
+		cnt = strlen(s),
+		i;
+
+	for (i = 0; i < cnt; i++)
+	{
+		if (s[i] < (char)32)
+			s[i] = '.';
+	}
+}
+
 id3Parse::id3Parse(const char *filename)
 {
 	flnam = new char[strlen(filename)+1];
@@ -89,24 +104,28 @@ id3Parse::parseID3()
 	{
 		strncpy(song->songname, buf, 30);
 		song->songname[30] = '\0';
+		convert_to_sane_string(song->songname);
 		success++;
 	}
 	if (fread(buf, 30, sizeof(char), fp) == sizeof(char))
 	{
 		strncpy(song->artist, buf, 30);
 		song->artist[30] = '\0';
+		convert_to_sane_string(song->artist);
 		success++;
 	}
 	if (fread(buf, 30, sizeof(char), fp) == sizeof(char))
 	{
 		strncpy(song->type, buf, 30);
 		song->type[30] = '\0';
+		convert_to_sane_string(song->type);
 		success++;
 	}
 	if (fread(buf,  4, sizeof(char), fp) ==  sizeof(char))
 	{
 		strncpy(song->year, buf, 4);
 		song->year[4] = '\0';
+		convert_to_sane_string(song->year);
 		success++;
 	}
 	if (fread(buf, 30, sizeof(char), fp) == sizeof(char))
@@ -118,6 +137,7 @@ id3Parse::parseID3()
 			//ID3V1.1 Standard - specify track in last byte of comment field
 			song->track = buf[29];
 		}
+		convert_to_sane_string(song->etc);
 		success++;
 	}
 	if (fread(buf, 1, sizeof(char), fp) == sizeof(char))

@@ -1,4 +1,4 @@
-#include <nmixer.h>
+#include "nmixer.h"
 #include <string.h>
 #define MIXER_DEVICE "/dev/mixer"
 

@@ -244,15 +244,16 @@ fileManager::readDir()
 
 
 	const char
-		*bla[3],
+		*bla[4],
 		*fsizedescs[] = { "B", "K", "M", "G" },
 		*fsizedesc = NULL;
 	char
-		*fdesc = NULL;
+		*fdesc = NULL,
+		*id3name = NULL;
 	short
-		foo[2] = { 0, 1 },
+		foo[3] = { 0, 1, 2 },
 		fsize,
-		clr;
+		clr = 0;
 	struct stat
 		buffy;
 	
@@ -292,18 +293,36 @@ fileManager::readDir()
 			fdesc = new char[strlen(entries[i]) + 10];
 			sprintf(fdesc, "[%4d%s] %s", fsize, fsizedesc, entries[i]);
 
+			id3name = NULL;
 			bla[0] = entries[i];
 			bla[1] = fdesc;
-			bla[2] = NULL;
-
-			if (is_audiofile(entries[i]))
-				clr = CP_FILE_MP3;
-			else if (is_playlist(entries[i]))
-				clr = CP_FILE_LST;
+			if (globalopts.want_id3names && is_audiofile(entries[i]))
+			{
+				id3name = id3_filename(entries[i]); //must be deleted later!
+				if (id3name)
+					bla[2] = id3name; 
+				else
+					bla[2] = entries[i];
+			}
 			else
-				clr = CP_DEFAULT;
+				bla[2] = entries[i];
+
+			bla[3] = NULL;
+
+			if (!clr)
+			{
+				if (is_audiofile(entries[i]))
+					clr = CP_FILE_MP3;
+				else if (is_playlist(entries[i]))
+					clr = CP_FILE_LST;
+				else
+					clr = CP_DEFAULT;
+			}
 			addItem(bla, foo, clr);
+
 			delete[] fdesc;
+			if (id3name)
+				free(id3name);
 		}
 	}
 

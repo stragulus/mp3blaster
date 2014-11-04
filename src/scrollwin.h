@@ -46,6 +46,7 @@ public:
 	void dump_contents();
 	void dump_info();
 	void setDisplayMode(short mode);
+	short getDisplayMode() { return dispindex; }
 	void setDefaultColor(short color);
 	short moveItem(int index_from, int index_to, short before=0);
 	short moveSelectedItems(int index_to, short before=0);

@@ -39,7 +39,8 @@ enum command_t {
 	CMD_FILE_UP_DIR, CMD_PLAY_PREVIOUS, CMD_PLAY_PLAY, CMD_PLAY_NEXT,
 	CMD_PLAY_REWIND, CMD_PLAY_STOP, CMD_PLAY_FORWARD, CMD_NONE,
 	CMD_FILE_SELECT, CMD_HELP_PREV, CMD_HELP_NEXT, CMD_FILE_MARK_BAD,
-	CMD_CLEAR_PLAYLIST, CMD_DEL_MARK, CMD_FILE_TOGGLE_SORT
+	CMD_CLEAR_PLAYLIST, CMD_DEL_MARK, CMD_FILE_TOGGLE_SORT,
+	CMD_FILE_TOGGLE_DISPLAY, CMD_FILE_DELETE, CMD_PLAY_SKIPEND
 };
 
 /* how to sort files in dirs ? */
@@ -110,6 +111,7 @@ struct _globalopts /* global options, exported for other classes */
 #if defined(PTHREADEDMPEG)
 	int threads;
 #endif
+	short want_id3names; /* non-zero if user wants to be able to see id3names */
 };
 
 enum keydescs { Main_SelectFiles, Fileman_AddFiles, Playwin_Previous };

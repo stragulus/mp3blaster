@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(src/main.cc)
-AM_INIT_AUTOMAKE(mp3blaster, 3.0p6)
+AM_INIT_AUTOMAKE(mp3blaster, 3.0p7)
 
 dnl Checks for programs.
 AC_PROG_CC
@@ -24,7 +24,9 @@ if test "`uname -s`" = "FreeBSD" ; then
   FREEBSD=1
   LDFLAGS="-L/usr/local/lib $LDFLAGS"
   CPPFLAGS="-I/usr/local/include $CPPFLAGS"
+	AC_DEFINE(AUDIO_NONBLOCKING)
 fi
+
 
 dnl Check for additional paths to include-files and directories first 
 AC_ARG_WITH(mysql-includes,
@@ -48,7 +50,20 @@ AC_ARG_WITH(extra-libs,
 AC_ARG_ENABLE(static,
   [  --enable-static         Build static binaries instead [default=no]],
 	[ LDFLAGS="$LDFLAGS -static" ])
+AC_ARG_ENABLE(newthreads,
+	[  --enable-newthreads     New (very experimental) buffering [default=no]],
+	[ NEWTHREAD=1 ])
+AC_ARG_ENABLE(pthreads,
+	[  --enable-pthreads       Use pthreads [default=yes]],
+	[ if "$enableval"="yes" ; then INCLUDEPTHREAD=1 ; else INCLUDEPTHREAD=0; fi ],
+	[ INCLUDEPTHREAD=1 ])
+AC_ARG_ENABLE(pth,
+	[  --enable-pth            Experimental support for pth lib [default=no]],
+	  [ WANT_PTH=1; INCLUDEPTHREAD=0 ])
 
+if test "$INCLUDEPTHREAD" = "0" ; then
+	echo "***** NO PTHREADS *****"
+fi
 dnl Checks for libraries.
 AC_CHECK_LIB(m,main,,AC_MSG_ERROR("No libm or no cos"))
 AC_CHECK_LIB(ncurses,main,INCLUDENCURSES=1)
@@ -56,28 +71,49 @@ AC_CHECK_LIB(curses,main,INCLUDECURSES=1)
 AC_CHECK_LIB(mysqlclient,main,HAVE_MYSQL=1)
 AC_CHECK_LIB(sidplay, main, HAVE_SID=1)
 AC_CHECK_LIB(ossaudio,main)
-if test "$FREEBSD" = 1 ; then
-#  AC_CHECK_LIB(c_r,main,INCLUDEPTHREAD=1)
+if test "$FREEBSD" = 1 -a "$INCLUDEPTHREAD" = 1 ; then
 	LDFLAGS="$LDFLAGS -pthread"
-	INCLUDEPTHREAD=1
-else
-  AC_CHECK_LIB(pthread,main,INCLUDEPTHREAD=1)
+elif test "$INCLUDEPTHREAD" = 1 ; then
+  AC_CHECK_LIB(pthread,main,,INCLUDEPTHREAD=0)
 fi
+
+dnl Check PTH support
+if test "$WANT_PTH" = "1" ; then
+	if test -z "`pth-config --version 2>/dev/null`" ; then
+		echo "***********"
+		echo "You want PTH support but pth-config is not in your path."
+		exit 1
+	fi
+	
+	if ! test "$INCLUDEPTHREAD" = "0" ; then
+		echo "***********"
+		echo "You can't use pthread *and* pth, disable one of both."
+		exit 1
+	fi
+
+	LDFLAGS="$LDFLAGS `pth-config --ldflags`"
+	LIBS="$LIBS `pth-config --libs`"
+	CXXFLAGS="$CXXFLAGS -I`pth-config --includedir`"
+	dnl set CPPFLAGS so AC_CHECK_HEADER can find pth.h
+	CPPFLAGS="$CPPFLAGS -I`pth-config --includedir`"
+	AC_DEFINE(LIBPTH)
+	echo "*************"
+	echo "PTH support enabled. Mail testresults to bram@mp3blaster.avontuur.org."
+	echo "*************"
+fi
+
 
 dnl Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADERS(fcntl.h malloc.h sys/ioctl.h unistd.h errno.h)
 AC_CHECK_HEADERS(bool.h)
-AC_CHECK_HEADERS(pthread.h pthread/mit/pthread.h)
+AC_CHECK_HEADERS(pthread.h pthread/mit/pthread.h pth.h)
 AC_CHECK_HEADERS(ncurses/ncurses.h ncurses/curses.h ncurses.h curses.h)
 AC_CHECK_HEADERS(sys/soundcard.h machine/soundcard.h soundcard.h getopt.h)
 AC_CHECK_HEADER(mysql/mysql.h,HAVE_MYSQL_MYSQL_H=1)
 AC_CHECK_HEADER(mysql.h,HAVE_MYSQL_H=1)
 
 dnl Extra features 
-AC_ARG_WITH(pthread,
-  [  --with-pthread          playing with pthread (default=yes)],
-  if test "$withval" = "yes" ; then INCLUDEPTHREAD=1;else INCLUDEPTHREAD=0 ; fi)
 AC_ARG_WITH(mysql,
   [  --with-mysql            mp3tag with MySQL support (alpha, default=no)], \
   if test "$withval" = "yes" ; then WANT_MYSQL=1 ; else WANT_MYSQL=0; fi)
@@ -126,6 +162,12 @@ if test "$WANT_MYSQL" = "1" ; then
   fi
 fi
 
+if ! test -z "$NEWTHREAD" ; then
+	echo "***********"
+	echo "Enabling experimental 'newthreads' buffered playback support."
+	AC_DEFINE(NEWTHREAD)
+fi
+
 dnl Check SID support
 if test "$WANT_SID" = 1 ; then
   if test "$HAVE_SID" = 1 ; then
@@ -172,8 +214,9 @@ AC_DEFINE_UNQUOTED(SOUND_DEVICE, "$SOUNDDEV")
 
 if test "$INCLUDEPTHREAD" = 1 ; then
   if test "$FREEBSD" = "1" ; then
-    LIBS="$LIBS -lc_r"
+    LDFLAGS="$LDFLAGS -pthread"
 		AC_DEFINE(_THREAD_SAFE)
+  	AC_DEFINE(_REENTRANT)
   else
 		LIBS="$LIBS -lpthread"
 		#Is _REENTRANT only needed for Linux? Is it still needed? Where is the
@@ -183,8 +226,8 @@ if test "$INCLUDEPTHREAD" = 1 ; then
   fi
   AC_DEFINE(PTHREADEDMPEG)
   dnl AC_DEFINE(THREAD_2)
-else
-	echo "Sorry, pthread support is now required!"
+elif ! test "$WANT_PTH" = "1" ; then
+	echo "Sorry, pthread OR pth support is now required!"
 	exit 1;
 fi
 
@@ -221,7 +264,18 @@ AC_SUBST(SRCDIRS)
 AC_OUTPUT(src/Makefile mpegsound/Makefile Makefile nmixer/Makefile doc/Makefile)
 
 cat << EOF
-If configure can't find certain libraries or include files, you can specify the path in which they can be found like this:
-./configure --with-extra-includes="-I/usr/local/somedir/include" --with-extra-libs="-L/usr/local/somedir/lib"
-If mp3blaster's layout is incorrect, UPGRADE your ncurses library and includefiles to version 4.2 or newer (beware of beta versions).
+*****************************************************************************
+* Before asking questions, be sure to read the FAQ included in the source   *
+* or read it here:                                                          *
+*                                                                           *
+* http://www.stack.nl/~brama/mp3blaster/?page=faq                           *
+*                                                                           *
+* Custom include/libpaths can be given with --with-extra-libs and           *
+* --with-extra-includes                                                     *
+*                                                                           *
+* Mail bugs/development issues to mp3blaster-devel@stack.nl please!         *
+*                                                                           *
+* I wish you lots of listening pleasure!                                    *
+* Bram (bram@mp3blaster.avontuur.org) http://www.stack.nl/~brama/           *
+*****************************************************************************
 EOF

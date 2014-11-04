@@ -141,6 +141,9 @@ struct _confopts
 { "Key,DeleteMark", 2 },
 { "HideOtherFiles", 1 },
 { "File.SortMode", 15 },
+{ "File.ID3Names", 1 },         //85
+{ "Key.File.Delete", 2 },
+{ "Key.Play.SkipEnd", 2 },
 { NULL, 0 }, /* last entry's keyword MUST be NULL */
 };
 
@@ -486,6 +489,9 @@ cf_add_keyword(int keyword, const char **values, int nrvals)
 	case 84:
 		if (!set_sort_mode(values[0])) { error = BADVALUE; return 0; }
 	break;
+	case 85: globalopts.want_id3names = cf_type_yesno(values[0]); break;
+	case 86: bindkey(CMD_FILE_DELETE, cf_type_key(v)); break;
+	case 87: bindkey(CMD_PLAY_SKIPEND, cf_type_key(v)); break;
 	}
 
 	return 1;

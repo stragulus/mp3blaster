@@ -1,16 +1,174 @@
-MP3Blaster is (C) Bram Avontuur (brama@stack.nl)
-This program can be redistributed under the terms of GPL (see 'COPYING')
-------------------------------------------------------------------------
+---------------------------------------------------------------------
+                          MP3Blaster README
+---------------------------------------------------------------------
 
-Information about compiling and installing MP3Blaster on your system is listed
-in the file 'INSTALL'.
+Table of Contents
+------------------------
 
-MP3Blaster has been tested on:
-Linux/i386 (libc6)
-Linux/i386 (libc5)
-Linux/alpha 
-OpenBSD/alpha
-FreeBSD/i386
+1.  Introduction
+2.  Prerequisites
+3.  Installation
+4.  Usage
+5.  Examples (TODO)
+6.  Configuration
+7.  Availability
+8.  Bugs
+9.  Frequently Asked Questions
+10. Developer Information
+11. Links
+12. Copyright
 
-You can press 'h' in mp3blaster at startup to get an overview of the most 
-common keyboard shortcuts. There's also a fine manual which you should read.
+
+
+1.  Introduction
+-------------------------
+
+MP3Blaster is a text console based program for playing mainly mp3 audio
+files. It is very interactive, and has a great list of features. Its
+playlist can be divided in albums or categories (called 'groups'), which
+allows for very sophisticated playback orders.
+
+2.  Prerequisites
+-------------------------
+
+    - One of the following Operating Systems is currently supported:
+
+      FreeBSD, Linux, NetBSD, OpenBSD.
+
+      It should be trivial to port MP3Blaster to other UNIX-like
+      Operating Systems.
+
+    - A soundcard. Although 8-bit soundcards, and those that are limited
+      to 22 Khz playback will work, a 44Khz capable 16 bits soundcard
+      (as all new cards are) is recommended.
+
+    - Threads. Most Operating Systems have a pthreads implementation. If
+      yours doesn't, you can use libpth instead (see section Links for
+      the URL) by conifuring with an extra flag '--enable-pth'.
+
+3.  Installation
+-------------------------
+
+    If you're eager to start, this will do:
+        ./configure
+        make
+        make install
+
+    Run './configure --help' to get a list of compile-time options.
+    There are a few important options that can have an impact on the
+    quality of audio-playback and CPU usage on your system. These are:
+
+    --enable-newthreads (to be used with --enable-pth)
+        This will use an alternative playback buffering system. It
+        might work better than the conventional buffering system on many
+        systems. Please give it a try if you're experiencing skips
+        during sound playback. Mail problems / successes.
+
+    --enable-pth (without --enable-newthreads)
+        Uses libpth instead of the OS-specific pthreads implementation.
+        This might reduce CPU-overhead and improve sound playback.
+        Please try this and reports problems / successes.
+
+    If you don't supply any of the above mentioned flags, the
+    OS-specific pthreads implementation will be used, with default
+    buffering mechanism. On FreeBSD no buffering will be used by default
+    since it will probably hog your CPU or simply hang. using libpth on
+    Free(/Net/Open)BSD is therefor recommended.
+
+4.  Usage
+-------------------------
+
+Read the MP3Blaster manpage (man mp3blaster or man -lmp3blaster.1 from
+source) for information about commandline parameters, config files,
+usage, etc. Read the next section for some examples
+
+
+5.  Examples
+-------------------------
+
+MP3Blaster's defaults should be good for most systems. Most keybindings
+can be reconfigured easily using a config file.
+
+A simple way to play a lot of mp3's from the command line in random
+order:
+
+    mp3blaster -p allrandom /my/mp3s/*.mp3
+
+Load a playlist and start playing immediately:
+
+    mp3blaster -a /my/playlists/coolsongs.lst
+
+Use mp3blaster with an old, 8 bit soundcard that can do 22Khz sampling:
+
+    mp3blaster -28
+
+
+6.  Configuration
+-------------------------
+
+For an example configuration file, see or copy doc/sample.mp3blasterrc*
+to ~/.mp3blasterrc and modify to tastes. The man page has information on
+all available settings possible in the file.
+
+
+7.  Availability
+-------------------------
+
+MP3Blaster can be downloaded from:
+
+    http://www.stack.nl/~brama/mp3blaster/ (most up-to-date)
+    ftp://mud.stack.nl/pub/mp3blaster/
+    ftp://ftp.ibiblio.org/pub/Linux/apps/sound/players/mp3/
+    http://linux.tucows.com/
+
+
+8.  Bugs
+-------------------------
+
+None. MP3Blaster happens to be fully bug-free. If you find a bug, it's
+probably a real life one buzzing around your head.
+
+If you believed that, and you run a nice IT company, please contact me
+;-)
+Otherwise, read the "TODO" and "ChangeLog" files for known bugs, or
+features on the drawing board. If you find any bugs, please report
+them (see section 'Developer Information')
+
+9.  Frequently Asked Questions
+----------------------------------
+
+Read the "FAQ" file, or surf to:
+
+    http://www.stack.nl/~brama/mp3blaster/?page=faq
+
+
+10.  Developer Information
+----------------------------------
+
+All code used by and written for MP3Blaster is GPL'd. Read the "COPYING"
+file for more information about the GPL license.
+If you want to report bugs, ask development-related questions, or just
+want a taste of celebrity, mail to this address:
+
+    mp3blaster-devel@stack.nl
+
+If you want to be kept up-to-date on new mp3blaster releases, surf to
+
+    http://lists.stack.nl/
+
+And click on 'mp3blaster-announce'. You can subscribe yourself on the 
+mailinglist there. Same goes for 'mp3blaster-devel'.
+
+
+11.  Links
+----------------------------------
+
+    MP3Blaster    http://www.stack.nl/~brama/mp3blaster/
+    libpth        http://www.gnu.org/software/pth/pth.html 
+    
+
+12. Copyright
+----------------------------------
+
+All code used by and written for MP3Blaster is GPL'd. Read the "COPYING"
+file for more information about the GPL license.

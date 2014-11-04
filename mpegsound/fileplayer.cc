@@ -12,6 +12,7 @@
 extern void debug(const char*);
 
 #include <string.h>
+#include <unistd.h>
 
 #include "mpegsound.h"
 
@@ -151,8 +152,10 @@ Mpegfileplayer::Mpegfileplayer()
 
 Mpegfileplayer::~Mpegfileplayer()
 {
+#if !defined(NEWTHREAD) && defined(PTHREADEDMPEG)
 	if (use_threads && server)
 		server->freethreadedplayer();
+#endif
 
   if(loader)delete loader;
   if(server)delete server;
@@ -214,7 +217,7 @@ void Mpegfileplayer::setdownfrequency(int value)
 bool Mpegfileplayer::playing()
 {
   if(!server->run(-1))return false;       // Initialize MPEG Layer 3
-  while(server->run(100));                // Playing
+  while(server->run(10))USLEEP(10000);                // Playing
 
   seterrorcode(server->geterrorcode());
   if(seterrorcode(SOUND_ERROR_FINISH))return true;
@@ -228,6 +231,7 @@ bool Mpegfileplayer::initialize(void *init_args)
 	if (init_args)
 		threads = *((int*)init_args);
 
+#ifndef NEWTHREAD
 #ifdef PTHREADEDMPEG
 	if (threads > 20)
 	{
@@ -235,12 +239,16 @@ bool Mpegfileplayer::initialize(void *init_args)
 		server->makethreadedplayer(threads);
 	}
 #endif
+#endif /* NEWTHREAD */
 
-	if (!server->run(-1))
+	if (!server->run(-20))
 	{
 		seterrorcode(server->geterrorcode());
 		return false;
 	}
+#ifdef NEWTHREAD
+	server->continueplaying();
+#endif
 	info.mp3_layer = server->getlayer();
 	info.mp3_version = server->getversion();
 	strcpy(info.mode, server->getmodestring());
@@ -271,7 +279,11 @@ bool Mpegfileplayer::forward(int skipframes)
 	int
 		maxframe = server->gettotalframe(),
 		curframe = server->getcurrentframe();
-	curframe += skipframes;
+	
+	if (skipframes < 0) //jump to end of file
+		curframe = maxframe + skipframes;
+	else
+		curframe += skipframes;
 	if (curframe > maxframe)
 		curframe = maxframe - 1;
 		
@@ -322,6 +334,7 @@ void Mpegfileplayer::skip(int frames)
 	server->setframe(curframe);
 }
 
+#ifndef NEWTHREAD
 #ifdef PTHREADEDMPEG
 bool Mpegfileplayer::playingwiththread(int framenumbers)
 {
@@ -338,19 +351,16 @@ bool Mpegfileplayer::playingwiththread(int framenumbers)
   return false;
 }
 #endif
+#endif /* NEWTHREAD */
 
 bool
 Mpegfileplayer::stop()
 {
-	if (use_threads)
-	{
-		if (server)
-		{
-			server->stopthreadedplayer();
-			//server->freethreadedplayer();
-		}
-	}
-
+#if !defined(NEWTHREAD) && defined(PTHREADEDMPEG)
+	if (use_threads && server)
+		server->stopthreadedplayer();
+		//server->freethreadedplayer();
+#endif
 	return true;
 }
 
@@ -358,8 +368,10 @@ Mpegfileplayer::stop()
 bool
 Mpegfileplayer::ready()
 {
+#if !defined(NEWTHREAD) && defined(PTHREADEDMPEG)
 	if (use_threads && server && server->getframesaved())
 		return false;
+#endif
 
 	return true;	
 }

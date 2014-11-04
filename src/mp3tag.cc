@@ -1,3 +1,4 @@
+//TODO: mp3tag with NEWTHREADS is quite inefficient!
 #include <stdlib.h>
 #include <errno.h>
 #include <stdio.h>
@@ -302,9 +303,12 @@ parse_mp3(const char *flnam)
 {
 	Mpegtoraw *mp3;
 	Soundinputstream *loader;
-	Soundplayer *player = NULL;
+
+	//very dirty but hey, it works.
+	Soundplayer *player = Rawtofile::opendevice("/dev/null");
 	struct id3header *oldtag = NULL, *header = NULL;
 
+#if 1
 	loader = new Soundinputstreamfromfile;
 	if (!loader->open((char*)flnam))
 	{
@@ -320,9 +324,6 @@ parse_mp3(const char *flnam)
 		return -2; //error initializing mp3
 	}
 
-	oldtag = new id3header;
-	clearheader(oldtag);
-
 	//store all info about this mp3.
 	mp3info.bitrate = mp3->getbitrate();
 	mp3info.layer = mp3->getlayer();
@@ -331,6 +332,10 @@ parse_mp3(const char *flnam)
 	mp3info.frequency = mp3->getfrequency();
 	memset(mp3info.mode, 0, 20 * sizeof(char));
 	strncpy(mp3info.mode, mp3->getmodestring(), 19);
+#endif
+
+	oldtag = new id3header;
+	clearheader(oldtag);
 
 	id3Parse *tmp3 = new id3Parse(flnam);
 	id3header *bla = tmp3->parseID3();

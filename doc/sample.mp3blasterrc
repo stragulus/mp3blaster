@@ -2,17 +2,18 @@
 #and values.
 
 #With DownFrequency, sound is downsampled to 22Khz.
-DownFrequency = No
+#DownFrequency = No
 
 #The #threads determine the amount of buffering i/o to prevent hickups.
 #On my system, I don't want buffering. 0 <= threads <= 500, only multiples 
 #of 50 are accepted.
-Threads=0
+Threads=250
 
 #The FramesPerLoop keyword no longer exists. Remove it from your config file.
 
 #SoundDevice is the digital sound device in your system. Usually /dev/dsp
-SoundDevice = /dev/dsp
+#which is the default
+#SoundDevice = /dev/dsp
 
 #AudiofileMatching is a list of regular expressions that determine which file
 #is considered a valid audiofile. matching is done using default settings and
@@ -20,35 +21,26 @@ SoundDevice = /dev/dsp
 #using regexs!
 #This line would match any not-directory file:
 #AudiofileMatching = \\.*
-#And this is default:
-AudiofileMatching = \\.[mM][pP][23]$, \\.[sS][iI][dD]$, \\.[wW][aA][vV]$, ^[hH][tT][tT][pP]://
-
-#WarnDelay sets the time it takes for a warning to disappear. Valid range is
-#0..60. Value 0 does make the warning show up, but it will disappear 
-#immediately. 2 Seconds is default.
-WarnDelay = 1
+#And this (*.mp3,*.wav,http://*) is default:
+#AudiofileMatching = \\.[mM][pP][23]$, \\.[sS][iI][dD]$, \\.[wW][aA][vV]$, ^[hH][tT][tT][pP]://
 
 #SkipFrames sets the number of frames that should be skipped when fast
 #forwarding or rewinding during mp3 playback. Range = 100..1000 (100=default).
-#More frames means larger skips.
+#More frames means larger skips. I like large skips (about 25 secs/keypress):
 SkipFrames = 500
-
-#MiniMixer can be toggled on or off. If off (default), mp3blaster's mixer 
-#Will be large with multiple scrollbars. If on, the mixer will only use 11x2
-#characters, thus be very small.
-MiniMixer = No
 
 #Use PlaylistMatching to specify which files are considered to be playlists.
 #Files that are considered playlists, can be loaded by pressing enter over the
 #file when it's highlighted in the filemanager.
-PlaylistMatching = \\.lst$ \\.m3u$
+#Default playlist files are *.lst/*.m3u,which could be written like this:
+#PlaylistMatching = \\.lst$, \\.m3u$
 
 #Set a bunch of colours. Try and find out what they do; most should be obvious.
 #Colours: black, red, green, yellow, blue, magenta, cyan, white
-Color.Default.bg = black
-Color.Popup.bg = blue
-Color.PopupInput.bg = magenta
-Color.Button.bg = magenta
-Color.ProgressBar.bg = red
-Color.BarToken.fg = white
-Color.BarToken.bg = magenta
+#Color.Default.bg = black
+#Color.Popup.bg = blue
+#Color.PopupInput.bg = magenta
+#Color.Button.bg = magenta
+#Color.ProgressBar.bg = red
+#Color.BarToken.fg = white
+#Color.BarToken.bg = magenta

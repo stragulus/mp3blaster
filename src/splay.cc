@@ -51,7 +51,11 @@ static void playingthread(Mpegfileplayer *player)
   else
   {
     player->setforcetomono(splay_forcetomonoflag);
+#ifdef NEWTHREAD
+		player->playing();
+#else
     player->playingwiththread(splay_threadnum);
+#endif
     if(player->geterrorcode()>0)error(player->geterrorcode());
   }
 }
@@ -124,12 +128,18 @@ int main(int argc,char *argv[])
   {
     switch(c)
     {
-      case 'V':printf("%s %s"
+
+      case 'V':
+			{
 #ifdef PTHREADEDMPEG
-		      " with pthread"
+			const char *pt = " with pthreads";
+#else
+			const char *pt = "";
 #endif
-		      "\n","splay","0.8.2");
-               return 0;
+ 			printf("%s %s%s\n", "splay", "0.8.2", pt);
+      return 0;
+			break;
+			}
       case 'M':
 	{
 	  Mpegfileplayer player;
@@ -174,19 +184,23 @@ int main(int argc,char *argv[])
 
   if(argc<=optind && splay_listsize==0)
   {
-    printf("%s %s"
 #ifdef PTHREADEDMPEG
-	   " with pthread"
+		const char 
+			*t1 = " with pthread",
+			*t2 = "[-t number]";
+#else
+		const char 
+			*t1 = "",
+			*t2 = "";
 #endif
+
+    printf("%s %s%s"
 	   "\n"
-	   "Usage : splay [-2mrsvMVW] [-d device] [-l listfile] "
-#ifdef PTHREADEDMPEG
-	   "[-t number] "
-#endif
+	   "Usage : splay [-2mrsvMVW] [-d device] [-l listfile] %s"
 	   "files ...\n"
-	   "\n"
-	   "%s"
-	   ,PACKAGE,VERSION,help);
+	   "\n"\
+	   "%s"\
+	   ,PACKAGE,VERSION,t1,t2,help);
     return 0;
   }
 

@@ -113,7 +113,7 @@ bool NASplayer::resetsoundtype(void)
 bool NASplayer::putblock(void *buffer, int size)
 {
 	while (size > req_size) {
-		usleep(3);
+		USLEEP(3);
 		AuHandleEvents(aud);
 	}
 	req_size -= size;

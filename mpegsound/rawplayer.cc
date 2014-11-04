@@ -43,7 +43,6 @@ extern "C" {
 extern void debug(const char *);
 
 /* AUDIO_NONBLOCKING : If defined, non-blocking audio playback is used. */
-#define AUDIO_NONBLOCKING
 
 char *Rawplayer::defaultdevice=SOUND_DEVICE;
 
@@ -105,12 +104,14 @@ Rawplayer *Rawplayer::opendevice(char *filename)
 
 #ifdef AUDIO_NONBLOCKING
 	flag|=O_NDELAY; //don't block!
+	debug("Using non-blocking audio writes. This might hurt the sound.\n");
 #endif
 
 	if(fcntl(audiohandle,F_SETFL,flag)<0)
 		return NULL;
 
 #ifdef AIOSSIZE
+	debug("AIOSSIZE defined\n");
 	struct snd_size blocksize;
 	blocksize.play_size = RAWDATASIZE * sizeof(short int);
 	blocksize.rec_size = RAWDATASIZE * sizeof(short int);
@@ -120,6 +121,9 @@ Rawplayer *Rawplayer::opendevice(char *filename)
 	IOCTL(audiohandle,SNDCTL_DSP_GETBLKSIZE,audiobuffersize);
 	if(audiobuffersize<4 || audiobuffersize>65536)
 		return NULL;
+
+	int fragsize = (16<<16) | 10;
+	ioctl(audiohandle, SNDCTL_DSP_SETFRAGMENT, &fragsize);
 
 	return new Rawplayer(audiohandle, audiobuffersize);
 }
@@ -233,8 +237,10 @@ bool Rawplayer::putblock(void *buffer,int size)
 		}
 	}
 
+#if 0
 	if(quota)
-		while(getprocessed()>quota)usleep(3);
+		while(getprocessed()>quota)USLEEP(3);
+#endif
 
 #ifdef AUDIO_NONBLOCKING
 	register ssize_t
@@ -290,14 +296,18 @@ bool Rawplayer::putblock(void *buffer,int size)
 			remainsize -= wsize;
 			wbuf += wsize;
 		}
-		usleep(10000); //always sleep a bit at bad/partial writes..
+		USLEEP(10000); //always sleep a bit at bad/partial writes..
 	}
 #ifdef IOTRUBBEL
 	if (loop > 1)
 		debug("Done (write)\n");
 #endif
 #else /* AUDIO_NONBLOCKING */ 
+#ifdef LIBPTH
+	pth_write(audiohandle, buffer, modifiedsize);
+#else
 	write(audiohandle, buffer, modifiedsize);
+#endif
 #endif /* AUDIO_NONBLOCKING */
 
 	return true;

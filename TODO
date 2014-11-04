@@ -1,52 +1,36 @@
--http streaming
--file viewer in filemanager.
--hide cursor (again?)
+IMPORTANT
+-fix broken mp3tag when using --enable-newthreads!
+-working 'previous track'
+-implement ID3v2 tag parsing
+-'next group' keybinding
+
+INTERESTING
+-update autoconf scripts to use config.h.
+-when directories are given as final cmdline args, assume recursive search of
+ mp3's in that dir.
+-F5/F3 in filemanager mode: instead of using currently highlighted dir, check
+ if multiple dirs have been selected and use all those dirs to add mp3's instd.
+-check existence of files on playlistload (and report status)
+-'skip to next mp3 and delete this one from list'
+-Shout/IceCast .pls support.
 -show files as their id3 tag info, not filenames (optional)
--if a song's finished in a playlist, it gets cut off because the decoding is
- done (run returns false), but the audio output isn't... FIX!
--'next group' knop
--make 'next song' skippable (could be tough, it's not a pointer to a group
- member, but just a const char *..)
+ =>done, but now allow for a default viewmode too!
 -save shuffle mode for main group, and playback mode for entire group in
  playlist
--change cd-style keys to have logical mappings on the numeric keypad
--skip certain directories (e.g. '.resources' and some more..)
-
-mp3blaster: 
-Basic features:
--move all selected files in filemanager to current dir (m) (!)
--import/export playlist (compatible met o.a. winamp) (fixed? might work :))
--fix warning()
--sort order of files in groups!
--rename global playmodes to make sense 
- -Play current group, including subgroups
- -Play current group, but not its subgroups
- -Shuffle all songs from all groups (PLAY_RANDOM)
-[-missing playmodes (mp3win->beingPlayed() function?)]
--clear mpeg-info when songplay's finished.
--rename group->getPlayedmode() to group->randomOrder()
--split up playmode PLAY_GROUP in 'play current group but not its subgroups' and
- 'play current group including subgroups'
 -read/write playlist +save tmp.playlist to continue it later. (partly done)
+-import/export playlist (compatible met o.a. winamp) (fixed? might work :))
+-make 'next song' skippable (could be tough, it's not a pointer to a group
+ member, but just a const char *..)
+-Total playlist time displayed somewhere
+
+WHEN I'M BORED
+-move all selected files in filemanager to current dir (m) (!)
+-clear mpeg-info when songplay's finished.
+-file viewer in filemanager.
 -scrollable input in popup_win ?
-
-Enhanced functionality:
--'skip to next mp3 and delete this one from list'
+-rename group->getPlayedmode() to group->randomOrder()
+-change cd-style keys to have logical mappings on the numeric keypad
 -pulldown menus instead of space-consuming help window!
-
-DONE:
-[DONE-filesize in filemanager f/each file:]
-[DONE-help in scrollwin! (separate program mode + scrollWin obj)]
-[DONE-lock on group->playing/played (for deletion) + lock on group access...]
--configurable keys
--kleuren groups
--next song: clear line before drawing a new song in it
--crashes on null files.
--playmode change from group-mode to any other: BROKEN (fix: function
- reset_playlist) - can't change playmode during play anymore
--next song: update it when :user deletes mp3/group, changes playlist mode,stops
-            playlist, goes back one song, ..
-
-scrollWin class: Use a global variable to determine for each function if
-                 the window needs to be refreshed. This is much more
-								 userfriendly for the end user of this class!
+-scrollWin class: Use a global variable to determine for each function if
+                  the window needs to be refreshed. This is much more
+                  userfriendly for the end user of this class!

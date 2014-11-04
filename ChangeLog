@@ -1,3 +1,30 @@
+V3.0pre7 2001/04/11
+===================
+-Finally, the correct time is displayed for VBR mp3's (thanks to Thomas
+ Dreibholz)
+-Skips in sound should be severely reduced.
+-Disabled the nonblocking audio write code for all OS's except FreeBSD. It
+ uses more CPU-time but it stops the short sound interrupts which occurred
+ too easily (even with large buffer).
+-Added alpha buffer code from Martijn van Buul. You can try this code by
+ configuring with --enable-newthreads. Please test if you dare! You need
+ libpth though (http://www.gnu.org/software/pth/pth.html).
+-File display toggle in filemanager. If 'File.ID3Names' in config file is
+ enabled, mp3's can be shown by their id3-tag instead of their filename.
+ The toggle can also be used to get rid of the file sizes in the file manager.
+ The filemanager can be quite slow with ID3 names enabled in the config file!
+-Another mpegsound library fix that prevents too slow playback on some
+ damaged mp3's
+-File-deletion added ('D') - doesn't warn! Change the keybinding if you're
+ afraid of accidentally pressing it.
+-Skip to end of song functionality added ('E')
+-Unset pause when a new song is being played.
+-updated splay.cc to compile with recent gcc-3.0 prerelease.
+-updated sample.mp3blasterrc (PlaylistMatching line was bogus!)
+-mp3tag has become very slow due to changes in mpegsound lib. Gotta fix this
+ some day.
+-Rewrote README file, added FAQ, updated TODO
+
 V3.0pre6 2001/01/27
 ===================
 -Mp3blaster honours AudiofileMatching config parameter for command-line

@@ -32,6 +32,7 @@
 #include <regex.h>
 #include <sys/types.h>
 #include "mp3blaster.h"
+#include "id3parse.h"
 
 extern _globalopts globalopts;
 void debug(const char*);
@@ -491,4 +492,51 @@ read_file(const char *filename, char ***lines, int *linecount)
 	}
 
 	return 1;
+}
+
+//returns a filename built from id3tag info. Returned string is malloc()'d!
+char *
+id3_filename(const char *filename)
+{
+	if (!filename)
+		return NULL;
+
+	char *id3name = NULL;
+	id3Parse *id3 = new id3Parse(filename);
+	id3header *hdr;
+
+	if (!id3)
+		return NULL;
+	if (!(hdr = id3->parseID3()))
+	{
+		delete id3;
+		return NULL;
+	}
+
+	const char 
+		*artist = hdr->artist,
+		*song = hdr->songname;
+	
+	if (!strlen(artist) && !strlen(song)) //not enough info
+	{
+		delete id3;
+		return NULL;
+	}
+
+	if (!strlen(artist))
+		artist = "Unknown Artist";
+	if (!strlen(song))
+		song = "Unknown Title";
+
+	artist = crop_whitespace(artist);
+	song = crop_whitespace(song);
+
+	id3name = (char*)malloc( (strlen(artist) + strlen(song) + 20) *
+		sizeof(char));
+	
+	sprintf(id3name, "[ID3] %s - %s", artist, song);
+
+	delete id3;
+
+	return id3name;
 }
