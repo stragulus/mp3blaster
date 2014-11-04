@@ -18,12 +18,14 @@ you might like:
     If a directory is highlighted while selecting files, it will change to
     that dir.
 -SPACE:
-    While playing MP3's it will stop playing the current MP3. (so 
-    effectively it's the same as pressing F1)
+    While playing MP3's it will stop playing the current MP3 and skip to the
+	next song in the playlist.
 	If not playing MP3's it will select a file to be added to the playlist
 	when you're in the file-selection menu. It highlights an mp3 too when you
-	are not selecting files, but currently that doesn't influence anything.
+	are not selecting files, but currently that doesn't do anything.
 -'p' :
     Same as F2 during MP3 playback (pause)
+-'q' :
+    Leaves MP3Blaster or stops playing mp3['s].
 -CURSOR KEYS:
     Moves around the highlighted bar.

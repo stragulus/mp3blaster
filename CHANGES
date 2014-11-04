@@ -1,3 +1,18 @@
+V1.1.0: 1997/??/?? *yet to be completed*
+==================
+
+De code netjes maken, verdelen in C++ classes, interface mooier & gebruiks-
+vriendelijker maken (meer kleur, status-balk benutten (o.a. pauze, etc) en
+evt. zo maken dat het ook met FreeBSE werkt. En mixer-menuutje inbouwen.
+
+V1.0.1: 1997/09/29
+==================
+
+The code for keyboard input handling has been changed. Effectively nothing
+has been changed concerning the interface though. Soon however this new code
+will allow the playlist that's currently being played to be shown on-screen
+and it can be scrolled.
+
 V1.0.0: 1997/09/07
 ==================
 

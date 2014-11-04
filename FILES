@@ -1,0 +1,9 @@
+debug.cc	:	debug functions for the programmer
+gstack.cc	:	'vector' class for scrollWin elements
+main.cc		: 	main program
+mp3core.cc	:	depricated.
+mp3play.cc	: 	class that plays mp3lists
+mp3player.cc	:	class that plays one mp3 (+interaction)
+mp3stack.cc     :	extension to gstack-class, for mp3's specifically.
+playwindow.cc   :	interface-class (shown when playing mp3's)
+scrollwin.cc	:	class for a scrollable [ncurses]window

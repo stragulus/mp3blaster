@@ -9,6 +9,14 @@
 
 #define SOUND_DEVICE "/dev/dsp"
 
+/* play-stati */
+#define PS_NORMAL  0
+#define PS_STOPPED 1
+#define PS_PAUSED  2
+
+/* prototypes */
+extern int handle_input(short);
+
 class Mp3player
 {
 public:
@@ -64,7 +72,8 @@ bool Mp3player::openfile(char *filename)
 int Mp3player::playingwiththread(int threadstore)
 {
 	int
-		retval = 1;
+		retval = 1,
+		play_status = PS_NORMAL;
 
 	server->makethreadedplayer(threadstore);
 
@@ -73,49 +82,58 @@ int Mp3player::playingwiththread(int threadstore)
 
 	for (;;)
 	{
-		int keypressed = 0;
+		int
+			keypressed = 0;
 		
-		if ( (keypressed = getch()) != ERR)
+		if ( (keypressed = handle_input(1)) != ERR)
 		{
-			int stopped = 0;
-			
 			switch(keypressed)
 			{
 				case 'p': /* pause */
 				case KEY_F(2):
 				{
-					server->pausethreadedplayer();
-					while (getch() == ERR)
+					if ( play_status != PS_PAUSED)
 					{
-						if ( server->getframesaved() < threadstore - 1)
-							server->run(1);
-						else
-							usleep(100);
+						server->pausethreadedplayer();
+						play_status = PS_PAUSED;
 					}
-					server->pausethreadedplayer();
+					else
+					{
+						server->pausethreadedplayer();
+						play_status = PS_NORMAL;
+					}
 				}
 				break;
-				case 's': /* stop */
-				case ' ': /* stop */
-				{
-					server->stopthreadedplayer();
-					stopped = 1;
-				}
-				break;
+				case 'q': /* stop */
 				case KEY_F(1):
 				{
 					server->stopthreadedplayer();
-					stopped = 1;
+					play_status = PS_STOPPED;
 					retval = KEY_F(1);
+				}
+				break;
+				case ' ': /* skip song when using playlist, else stop */
+				{
+					/* implement code here */
+					server->stopthreadedplayer();
+					play_status = PS_STOPPED;
+					retval = ' ';
 				}
 				break;
 			}
 			
-			if (stopped)
+			if (play_status == PS_STOPPED)
 				break;
 		}
+		else if (play_status == PS_PAUSED)
+		{
+			if ( server->getframesaved() < threadstore - 1)
+				server->run(1);
+			else
+				usleep(100);
+		}
 
-		if (!server->run(5))
+		if (play_status != PS_PAUSED && !server->run(1))
 			break;
 	}
 	server->freethreadedplayer();
@@ -135,7 +153,7 @@ playingthread(Mp3player *player, int threads)
 		retval;
 		
  	if ( player->geterrorcode() > 0)
-		return 0;
+		return -1;
 
 	retval = player->playingwiththread(threads);
 	
@@ -161,11 +179,7 @@ playmp3(char *filename, int threads)
 	if ( !(player->openfile(filename)) )
 		retval = -1; /* error */
 	else
-	{
-		nodelay(stdscr, TRUE); /* getch() will not wait until keypressed */
 		retval = playingthread(player, threads);
-		nodelay(stdscr, FALSE);
-	}
 
 	delete player;
 	return retval;

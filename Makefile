@@ -1,7 +1,9 @@
 CC=gcc
 CPP=g++
-LIBPATHS=-L../splay-0.5/mpegsound -L/usr/local/lib
-INCS=-I../splay-0.5/mpegsound
+LIBPATHS=-L./lib -L/usr/local/lib
+INCS=-I./include -I/usr/include/ncurses
+#CPPFLAGS=-Wall -ansi -pedantic $(INCS) $(LIBPATHS)
+#use -g flag for debugging with gdb.
 CPPFLAGS=-Wall -ansi -pedantic -g $(INCS) $(LIBPATHS)
 OBJS=mp3play.o mp3core.o
 LIBS=-lncurses -lpthread -lmpegsound -lm
@@ -9,20 +11,22 @@ RM=rm -f
 INSTALL=/usr/bin/ginstall
 #PREFIX is the installation path. Binaries will be added to PREFIX/bin.
 PREFIX=/usr/local
+TESTOBJS=test.o debug.o scrollwin.o gstack.o mp3stack.o windows.o mp3player.o mp3play.o playwindow.o
+TSTOBJS=tst.o mp3player.o
 
 #End of configurable part
 
-mp3blaster: ${OBJS}
-			$(CPP) $(CPPFLAGS) -o mp3blaster ${OBJS} ${LIBS}
+test:			${TESTOBJS}
+				$(CC) $(CPPFLAGS) -o test ${TESTOBJS} $(LIBS)
 
-mp3play.o:  mp3play.cc
-			$(CPP) $(CPPFLAGS) -c mp3play.cc
+tst:			${TSTOBJS}
+				$(CC) $(CPPFLAGS) -o tst ${TSTOBJS} $(LIBS)
 
-mp3core.o:  mp3core.cc
-			$(CPP) $(CPPFLAGS) -DPTHREADEDMPEG -c mp3core.cc
+%.o:			%.cc
+				$(CPP) $(CPPFLAGS) -c $<
 
 clean:
-			$(RM) *.o mp3blaster core 
+			$(RM) *.o test mp3blaster core tst
 
-install:
-			$(INSTALL) -g bin -o root -m 0755 -s mp3blaster $(PREFIX)/bin
+#install:
+#			$(INSTALL) -g bin -o root -m 0755 -s linuxamp $(PREFIX)/bin

@@ -1,7 +1,6 @@
 /* MPEG/WAVE Sound library
-     Version 0.4
 
-   (C) 1997 by Jung woo-jae */
+   (C) 1997 by Woo-jae Jung */
 
 // Mpegsound.h
 //   This is typeset for functions in MPEG/WAVE Sound library.
@@ -11,46 +10,56 @@
 /* Inlcude default library packages */
 /************************************/
 #include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include <sys/types.h>
 
 #ifdef PTHREADEDMPEG
+#ifdef HAVE_PTHREAD_H
 #include <pthread.h>
+#else
+#ifdef HAVE_PTHREAD_MIT_PTHREAD_H
+#include <pthread/mit/pthread.h>
+#endif
+#endif
 #endif
 
-/************************************************************/
-/* BBitstream is my own library for MPEG/WAVE sound library */
-/************************************************************/
 #ifndef _L__SOUND__
-
 #define _L__SOUND__
 
 /****************/
 /* Sound Errors */
 /****************/
 // General error
-#define SOUND_ERROR_OK               0
-#define SOUND_ERROR_FINISH          -1
+#define SOUND_ERROR_OK                0
+#define SOUND_ERROR_FINISH           -1
 
 // Device error (for player)
-#define SOUND_ERROR_DEVOPENFAIL      1
-#define SOUND_ERROR_DEVBUSY          2
-#define SOUND_ERROR_DEVBADBUFFERSIZE 3
-#define SOUND_ERROR_DEVCTRLERROR     4
+#define SOUND_ERROR_DEVOPENFAIL       1
+#define SOUND_ERROR_DEVBUSY           2
+#define SOUND_ERROR_DEVBADBUFFERSIZE  3
+#define SOUND_ERROR_DEVCTRLERROR      4
 
 // Sound file (for reader)
-#define SOUND_ERROR_FILEOPENFAIL     5
-#define SOUND_ERROR_FILEREADFAIL     6
+#define SOUND_ERROR_FILEOPENFAIL      5
+#define SOUND_ERROR_FILEREADFAIL      6
+
+// Network
+#define SOUND_ERROR_UNKNOWNPROXY      7
+#define SOUND_ERROR_UNKNOWNHOST       8
+#define SOUND_ERROR_SOCKET            9
+#define SOUND_ERROR_CONNECT          10
+#define SOUND_ERROR_FDOPEN           11
+#define SOUND_ERROR_HTTPFAIL         12
+#define SOUND_ERROR_HTTPWRITEFAIL    13
+#define SOUND_ERROR_TOOMANYRELOC     14
 
 // Miscellneous (for translater)
-#define SOUND_ERROR_MEMORYNOTENOUGH  7
-#define SOUND_ERROR_EOF              8
-#define SOUND_ERROR_BAD              9
+#define SOUND_ERROR_MEMORYNOTENOUGH  15
+#define SOUND_ERROR_EOF              16
+#define SOUND_ERROR_BAD              17
 
-#define SOUND_ERROR_THREADFAIL       10
+#define SOUND_ERROR_THREADFAIL       18
 
-#define SOUND_ERROR_UNKNOWN          11
+#define SOUND_ERROR_UNKNOWN          19
 
 
 /**************************/
@@ -96,20 +105,8 @@
 /* Type definitions */
 /********************/
 typedef float REAL;
+
 typedef struct _waveheader {
-/*  unsigned long	 main_chunk;  // 'RIFF'
-  unsigned long	 length;      // filelen
-  unsigned long	 chunk_type;  // 'WAVE'
-
-  unsigned long  sub_chunk;   // 'fmt '
-  unsigned long  sc_len;      // length of sub_chunk, =16
-  unsigned short format;      // should be 1 for PCM-code
-  unsigned short modus;	      // 1 Mono, 2 Stereo
-  unsigned long	 sample_fq;   // frequence of sample
-  unsigned long  byte_p_sec;
-  unsigned short byte_p_spl;  // samplesize; 1 or 2 bytes
-  unsigned short bit_p_spl;   // 8, 12 or 16 bit */
-
   u_int32_t     main_chunk;  // 'RIFF'
   u_int32_t     length;      // filelen
   u_int32_t     chunk_type;  // 'WAVE'
@@ -125,9 +122,6 @@ typedef struct _waveheader {
 
   u_int32_t     data_chunk;  // 'data'
   u_int32_t     data_length; // samplecount
-
-/*  unsigned long  data_chunk;  // 'data'
-  unsigned long  data_length; // samplecount */
 }WAVEHEADER;
 
 typedef struct
@@ -172,153 +166,87 @@ typedef struct
   unsigned int xlen,ylen;
   unsigned int linbits;
   unsigned int treelen;
-  const unsigned char (*val)[2];
+  const unsigned int (*val)[2];
 }HUFFMANCODETABLE;
 
 /*********************************/
 /* Sound input interface classes */
 /*********************************/
-// Superclass for inputstream
+// Superclass for Inputbitstream // Yet, Temporary
 class Soundinputstream
 {
 public:
-  Soundinputstream() {__errorcode=SOUND_ERROR_OK;};
+  Soundinputstream();
+  virtual ~Soundinputstream();
 
-  virtual int getblock(char *buffer,int size)=0;
+  static Soundinputstream *hopen(char *filename,int *errcode);
 
-  int  geterrorcode(void)          { return __errorcode;   };
+  int geterrorcode(void)  {return __errorcode;};
 
-protected:  
-  void seterrorcode(int errorcode) { __errorcode=errorcode; };
+  virtual bool open(char *filename)              =0;
+  virtual int  getbytedirect(void)               =0;
+  virtual bool _readbuffer(char *buffer,int size)=0;
+  virtual bool eof(void)                         =0;
+  virtual int  getblock(char *buffer,int size)   =0;
 
-private:
-  int __errorcode;
-};
-
-// Stream class for opened file
-class Soundinputstreamfromfile : public Soundinputstream
-{
-public:
-  Soundinputstreamfromfile(int handle) {filehandle=handle;};
-  int getblock(char *buffer,int size)
-  {
-    int i=read(filehandle,buffer,size);
-    if(i<0)seterrorcode(SOUND_ERROR_FILEREADFAIL);
-    return i;
-  };
-
-private:
-  int filehandle;
-};
-
-// Superclass for inputbitstream
-class Soundinputbitstream
-{
-public:
-  virtual ~Soundinputbitstream() {__errorcode=SOUND_ERROR_OK; point=0;};
-  virtual int  geterrorcode(void)=0;
-
-  virtual bool open(char *filename)                    =0;
-  virtual int  getbytedirect(void)                     =0;
-  virtual bool _readbuffer(char *buffer,int size)      =0;
-  virtual bool eof(void)                               =0;
-
-  bool fillbuffer(int size) {bitindex=0;return _readbuffer(buffer,size);};
-  int getbyte(void) 
-  {
-    int r=(unsigned char)buffer[bitindex>>3];
-
-    bitindex+=8;
-    return r;
-  };
-  void sync(void) {bitindex&=0xFFFFFFF8;};
-  bool issync(void) {return (bitindex&7);};
-  int getbits(int bits);
-  int getbits9(int bits)
-  {
-    register unsigned short a;
-
-//    if(bits>9)exit(0);        // For debuging.......
-
-#ifndef WORDS_BIGENDIAN
-    {
-      int offset=bitindex>>3;
-
-      a=(((unsigned char)buffer[offset])<<8) | ((unsigned char)buffer[offset+1]);
-    }
-#else
-    a=((unsigned short *)(buffer+((bixindex>>3))));
-#endif
-
-    a<<=(bitindex&7);
-    bitindex+=bits;
-    return (int)((unsigned int)(a>>(16-bits)));
-  };
-
-  int getbits8(void)
-  {
-    register unsigned short a;
-
-#ifndef WORDS_BIGENDIAN
-    {
-      int offset=bitindex>>3;
-
-      a=(((unsigned char)buffer[offset])<<8) | ((unsigned char)buffer[offset+1]);
-    }
-#else
-    a=((unsigned short *)(buffer+((bixindex>>3))));
-#endif
-
-    a<<=(bitindex&7);
-    bitindex+=8;
-    return (int)((unsigned int)(a>>8));
-  };
-
-  int getbit(void)
-  {
-    register int r=(buffer[bitindex>>3]>>(7-(bitindex&7)))&1;
-
-    bitindex++;
-    return r;
-  };
+  virtual int  getsize(void)                     =0;
+  virtual int  getposition(void)                 =0;
+  virtual void setposition(int pos)              =0;
 
 protected:
   void seterrorcode(int errorcode) {__errorcode=errorcode;};
 
 private:
   int __errorcode;
-  union
-  {
-    unsigned char store[4];
-    unsigned int current;
-  }u;
-  char buffer[4096];
-  int point;
-  int bitindex;
 };
 
-// Inputbitstream class for file
-class Soundinputbitstreamfromfile : public Soundinputbitstream
+// Inputstream from file
+class Soundinputstreamfromfile : public Soundinputstream
 {
 public:
-  Soundinputbitstreamfromfile() 
-    {fp=NULL;errorcode=SOUND_ERROR_OK;};
-  ~Soundinputbitstreamfromfile() {if(fp)fclose(fp);};
-
-  int geterrorcode(void){return errorcode;};
+  Soundinputstreamfromfile()  {fp=NULL;};
+  ~Soundinputstreamfromfile();
 
   bool open(char *filename);
   bool _readbuffer(char *buffer,int bytes);
-  int getbytedirect(void);
+  int  getbytedirect(void);
+  bool eof(void);
+  int  getblock(char *buffer,int size);
 
-  bool eof(void) {return (fp==NULL);};
+  int  getsize(void);
+  int  getposition(void);
+  void setposition(int pos);
 
 private:
-  int errorcode;
-
   FILE *fp;
+  int  size;
 };
 
+// Inputstream from http
+class Soundinputstreamfromhttp : public Soundinputstream
+{
+public:
+  Soundinputstreamfromhttp();
+  ~Soundinputstreamfromhttp();
+
+  bool open(char *filename);
+  bool _readbuffer(char *buffer,int bytes);
+  int  getbytedirect(void);
+  bool eof(void);
+  int  getblock(char *buffer,int size);
+
+  int  getsize(void);
+  int  getposition(void);
+  void setposition(int pos);
+
+private:
+  FILE *fp;
+  int  size;
+
+  bool writestring(int fd,char *string);
+  bool readstring(char *string,int maxlen,FILE *f);
+  FILE *http_open(char *url);
+};
 
 
 /**********************************/
@@ -328,14 +256,18 @@ private:
 class Soundplayer
 {
 public:
-  Soundplayer()          {__errorcode=SOUND_ERROR_OK;};
-  virtual ~Soundplayer() {};
+  Soundplayer() {__errorcode=SOUND_ERROR_OK;};
+  virtual ~Soundplayer();
 
   virtual bool initialize(char *filename)                       =0;
-  virtual bool setsoundtype(int stereo,int samplesize,int speed)=0;
-  virtual bool putblock(void *buffer,int size)                  =0;
+  virtual void abort(void);
+  virtual int  getprocessed(void);
 
-  virtual int  getblocksize(void) {return 1024;};
+  virtual bool setsoundtype(int stereo,int samplesize,int speed)=0;
+  virtual bool resetsoundtype(void);
+
+  virtual bool putblock(void *buffer,int size)                  =0;
+  virtual int  getblocksize(void);
 
   int geterrorcode(void) {return __errorcode;};
 
@@ -353,10 +285,8 @@ public:
   ~Rawtofile();
 
   bool initialize(char *filename);
-  bool setsoundtype(int stereo,int samplesize,int speed)
-    {rawstereo=stereo;rawsamplesize=samplesize;rawspeed=speed; return true;};
-  bool putblock(void *buffer,int size)
-    {return (write(filehandle,buffer,size)==size);};
+  bool setsoundtype(int stereo,int samplesize,int speed);
+  bool putblock(void *buffer,int size);
 
 private:
   int filehandle;
@@ -370,9 +300,21 @@ public:
   ~Rawplayer();
 
   bool initialize(char *filename);
+  void abort(void);
+  int  getprocessed(void);
+
   bool setsoundtype(int stereo,int samplesize,int speed);
+  bool resetsoundtype(void);
+
   bool putblock(void *buffer,int size);
-  int  getblocksize(void) {return audiobuffersize;};
+
+  int  getblocksize(void);
+
+  void setquota(int q){quota=q;};
+  int  getquota(void) {return quota;};
+
+  static char *defaultdevice;
+  static int  setvolume(int volume);
 
 private:
   short int rawbuffer[RAWDATASIZE];
@@ -380,6 +322,7 @@ private:
   int  audiohandle,audiobuffersize;
   int  rawstereo,rawsamplesize,rawspeed;
   bool forcetomono,forceto8;
+  int  quota;
 };
 
 
@@ -391,22 +334,22 @@ private:
 class Wavetoraw
 {
 public:
-  Wavetoraw(Soundinputstream *loader,Soundplayer *player)
-  {
-    __errorcode=SOUND_ERROR_OK;
-    initialized=false;buffer=NULL;
-    this->loader=loader;this->player=player;
-  };
-  ~Wavetoraw(){if(buffer)free(buffer);};
+  Wavetoraw(Soundinputstream *loader,Soundplayer *player);
+  ~Wavetoraw();
 
   bool initialize(void);
   void setforcetomono(bool flag){forcetomonoflag=flag;};
   bool run(void);
 
-  int getfrequency(void) { return speed; };
-  bool isstereo(void) {return stereo; };
+  int  getfrequency(void)    const {return speed;};
+  bool isstereo(void)        const {return stereo;};
+  int  getsamplesize(void)   const {return samplesize;};
 
-  int  geterrorcode(void){return __errorcode;};
+  int  geterrorcode(void)    const {return __errorcode;};
+
+  int  gettotallength(void)  const {return size/pcmsize;};
+  int  getcurrentpoint(void) const {return currentpoint/pcmsize;};
+  void setcurrentpoint(int p);
 
 private:
   int  __errorcode;
@@ -420,7 +363,9 @@ private:
   bool initialized;
   char *buffer;
   int  buffersize;
-  int  samplesize,speed,stereo,count;
+  int  samplesize,speed,stereo;
+  int  currentpoint,size;
+  int  pcmsize;
 
   bool testwave(char *buffer);
 };
@@ -433,7 +378,7 @@ public:
   Mpegbitwindow(){bitindex=point=0;};
 
   void initialize(void)  {bitindex=point=0;};
-  int  gettotalbit(void) {return bitindex;};
+  int  gettotalbit(void) const {return bitindex;};
   void putbyte(int c)    {buffer[point&(WINDOWSIZE-1)]=c;point++;};
   void wrap(void);
   void rewind(int bits)  {bitindex-=bits;};
@@ -444,67 +389,154 @@ public:
 
 private:
   int  point,bitindex;
-  char buffer[WINDOWSIZE+4];
+  char buffer[2*WINDOWSIZE];
 };
+
+
 
 // Class for converting mpeg format to raw format
 class Mpegtoraw
 {
-public:
-  Mpegtoraw(Soundinputbitstream *loader,Soundplayer *player)
-  {
-    forcetomonoflag=false;
-    __errorcode=SOUND_ERROR_OK;
-    this->loader=loader;
-    this->player=player;
-  };
-
-  void initialize(void);
-  void setforcetomono(bool flag){forcetomonoflag=flag;};
-  bool run(int frames);
-
-  // For Verbose
-  int getfrequency(void)    { return frequencies[frequency]; };
-  int getmode(void)         { return mode; };
-  int getbitrate(void)      { return bitrate[layer-1][bitrateindex]; };
-  int getlayer(void)        { return layer; };
-  bool getcrccheck(void)    { return (!protection); };
-  bool getforcetomono(void) { return forcetomonoflag; };
-  bool isstereo(void)       { return (getmode()!=single); };
-
-  static const char *modestring[4];
-
-  int  geterrorcode(void) {return __errorcode;};
-
-
+  /*****************************/
+  /* Constant tables for layer */
+  /*****************************/
 private:
-  bool loadheader(void);
-  int __errorcode;
+  static const int bitrate[2][3][15],frequencies[2][3];
+  static const REAL scalefactorstable[64];
+  static const HUFFMANCODETABLE ht[HTN];
+  static const REAL filter[512];
+  static REAL hcos_64[16],hcos_32[8],hcos_16[4],hcos_8[2],hcos_4;
 
-  //
-  // Variables
-  //
-  // Interface
-  Soundinputbitstream *loader;
-  Soundplayer *player;
-  unsigned int getbits(int num)       {return loader->getbits(num); };
-  unsigned int getbits9(int num)      {return loader->getbits9(num);};
-  unsigned int getbits8()             {return loader->getbits8();   };
-  unsigned int getbit()               {return loader->getbit();     };
-
-  // Global variables
-  int lastfrequency,laststereo;
-
-  // Mpeg Header variables
+  /*************************/
+  /* MPEG header variables */
+  /*************************/
+private:
   int layer,protection,bitrateindex,padding,extendedmode;
-  enum _mode      {fullstereo,joint,dual,single}                 mode;
+  enum _mpegversion  {mpeg1,mpeg2}                               version;
+  enum _mode    {fullstereo,joint,dual,single}                   mode;
   enum _frequency {frequency44100,frequency48000,frequency32000} frequency;
 
-  // Informatinons made by header variables
+  /*******************************************/
+  /* Functions getting MPEG header variables */
+  /*******************************************/
+public:
+  // General
+  int  getversion(void)   const {return version;};
+  int  getlayer(void)     const {return layer;};
+  bool getcrccheck(void)  const {return (!protection);};
+  // Stereo or not
+  int  getmode(void)      const {return mode;};
+  bool isstereo(void)     const {return (getmode()!=single);};
+  // Frequency and bitrate
+  int  getfrequency(void) const {return frequencies[version][frequency];};
+  int  getbitrate(void)   const {return bitrate[version][layer-1][bitrateindex];};
+
+  /***************************************/
+  /* Interface for setting music quality */
+  /***************************************/
+private:
+  bool forcetomonoflag;
+  int  downfrequency;
+
+public:
+  void setforcetomono(bool flag);
+  void setdownfrequency(int value);
+
+  /******************************************/
+  /* Functions getting other MPEG variables */
+  /******************************************/
+public:
+  bool getforcetomono(void);
+  int  getdownfrequency(void);
+  int  getpcmperframe(void);
+
+  /******************************/
+  /* Frame management variables */
+  /******************************/
+private:
+  int currentframe,totalframe;
+  int decodeframe;
+  int *frameoffsets;
+
+  /******************************/
+  /* Frame management functions */
+  /******************************/
+public:
+  int  getcurrentframe(void) const {return currentframe;};
+  int  gettotalframe(void)   const {return totalframe;};
+  void setframe(int framenumber);
+
+  /***************************************/
+  /* Variables made by MPEG-Audio header */
+  /***************************************/
+private:
   int tableindex,channelbitrate;
   int stereobound,subbandnumber,inputstereo,outputstereo;
   REAL scalefactor;
   int framesize;
+
+  /********************/
+  /* Song information */
+  /********************/
+private:
+  struct
+  {
+    char name   [30+1];
+    char musican[30+1];
+    char type   [30+1];
+    char year   [ 7+1];
+    char etc    [25+1];
+  }song;
+
+  /* Song information functions */
+public:
+  const char *getsongname(void) const { return (const char *)song.name;   };
+  const char *getmusican (void) const { return (const char *)song.musican;};
+  const char *getsongtype(void) const { return (const char *)song.type;   };
+  const char *getsongyear(void) const { return (const char *)song.year;   };
+  const char *getsongetc (void) const { return (const char *)song.etc;    };
+
+  /*******************/
+  /* Mpegtoraw class */
+  /*******************/
+public:
+  Mpegtoraw(Soundinputstream *loader,Soundplayer *player);
+  ~Mpegtoraw();
+  void initialize(char *filename);
+  bool run(int frames);
+  int  geterrorcode(void) {return __errorcode;};
+  void clearbuffer(void);
+
+private:
+  int __errorcode;
+  bool seterrorcode(int errorno){__errorcode=errorno;return false;};
+
+  /*****************************/
+  /* Loading MPEG-Audio stream */
+  /*****************************/
+private:
+  Soundinputstream *loader;   // Interface
+  union
+  {
+    unsigned char store[4];
+    unsigned int  current;
+  }u;
+  char buffer[4096];
+  int  bitindex;
+  bool fillbuffer(int size){bitindex=0;return loader->_readbuffer(buffer,size);};
+  void sync(void)  {bitindex=(bitindex+7)&0xFFFFFFF8;};
+  bool issync(void){return (bitindex&7);};
+  int getbyte(void);
+  int getbits(int bits);
+  int getbits9(int bits);
+  int getbits8(void);
+  int getbit(void);
+
+  /********************/
+  /* Global variables */
+  /********************/
+private:
+  int lastfrequency,laststereo;
 
   // for Layer3
   int layer3slots,layer3framestart,layer3part2start;
@@ -512,101 +544,48 @@ private:
   int currentprevblock;
   layer3sideinfo sideinfo;
   layer3scalefactor scalefactors[2];
+
   Mpegbitwindow bitwindow;
   int wgetbit(void);
   int wgetbits9(int bits);
   int wgetbits(int bits);
 
-  // Variables for synthesis
+
+  /*************************************/
+  /* Decoding functions for each layer */
+  /*************************************/
+private:
+  bool loadheader(void);
+
+  //
+  // Subbandsynthesis
+  //
   REAL calcbufferL[2][CALCBUFFERSIZE],calcbufferR[2][CALCBUFFERSIZE];
   int  currentcalcbuffer,calcbufferoffset;
 
-  // raw output
-  bool forcetomonoflag;
-  short int rawdata[RAWDATASIZE];
-  int  rawdataoffset;
-  void clearrawdata(void){rawdataoffset=0;};
-  void putraw(short int pcm){rawdata[rawdataoffset++]=pcm;};
-  void flushrawdata(void);
-
-#ifdef PTHREADEDMPEG
-public:
-  bool makethreadedplayer(int framenumbers);
-  void freethreadedplayer(void);
-  void stopthreadedplayer(void) {threadedplayer_quit=true;};
-  void pausethreadedplayer(void)
-    {threadedplayer_pause=(threadedplayer_pause==false);};
-  void threadedplayer(void);
-  int  getframesaved(void)
-  {
-    if(queue_framenumber)
-      return ((queue_tail+queue_framenumber-queue_head)%queue_framenumber);
-    return 0;
-  }
-
-private:
-  bool threadflag;
-  pthread_t thread;
-  short int *rawqueue;
-  int *queue_sizes;
-  int queue_framenumber,queue_frametail;
-  int queue_head,queue_tail;
-
-  bool threadedplayer_quit,threadedplayer_pause;
-
-  bool playlocked;
-#endif
-
-  //
-  // Const tables
-  //
-
-  // Tables for layer 1,2 and 3
-  static const int bitrate[3][15],frequencies[3];
-
-  // Tables for layer 1 and 2
-  static const int bitalloclengthtable[MAXTABLE][MAXSUBBAND];
-  static const REAL factortable[15],offsettable[15];
-  static const REAL scalefactorstable[64];
-  static const REAL group5bits[27*3],group7bits[125*3],group10bits[729*3];
-  static const REAL *grouptableA[16],*grouptableB1[16],*grouptableB234[16];
-  static const int codelengthtableA [16],
-                   codelengthtableB1[16],codelengthtableB2[16],
-                   codelengthtableB3[ 8],codelengthtableB4[ 4];
-  static const REAL factortableA [16],
-                    factortableB1[16],factortableB2[16],
-                    factortableB3[ 8],factortableB4[ 4];
-  static const REAL ctableA [16],
-                    ctableB1[16],ctableB2[16],
-                    ctableB3[ 8],ctableB4[ 4];
-  static const REAL dtableA [16],
-                    dtableB1[16],dtableB2[16],
-                    dtableB3[ 8],dtableB4[ 4];
-
-  // Tables for layer 3
-  static const HUFFMANCODETABLE ht[HTN];
-
-  // Tables for subbandsynthesis
-  static const REAL filter[512];
-
-  bool seterrorcode(int errorno){__errorcode=errorno;return false;};
-
-
-  // Subbandsynthesis
   void computebuffer(REAL *fraction,REAL buffer[2][CALCBUFFERSIZE]);
   void generatesingle(void);
   void generate(void);
   void subbandsynthesis(REAL *fractionL,REAL *fractionR);
 
+  void computebuffer_2(REAL *fraction,REAL buffer[2][CALCBUFFERSIZE]);
+  void generatesingle_2(void);
+  void generate_2(void);
+  void subbandsynthesis_2(REAL *fractionL,REAL *fractionR);
+
   // Extarctor
-  void extractlayer1(void);
+  void extractlayer1(void);    // MPEG-1
   void extractlayer2(void);
   void extractlayer3(void);
+  void extractlayer3_2(void);  // MPEG-2
 
-  // Functions for layer III
+
+  // Functions for layer 3
   void layer3initialize(void);
   bool layer3getsideinfo(void);
+  bool layer3getsideinfo_2(void);
   void layer3getscalefactors(int ch,int gr);
+  void layer3getscalefactors_2(int ch);
   void layer3huffmandecode(int ch,int gr,int out[SBLIMIT][SSLIMIT]);
   REAL layer3twopow2(int scale,int preflag,int pretab_offset,int l);
   REAL layer3twopow2_1(int a,int b,int c);
@@ -621,7 +600,56 @@ private:
   
   void huffmandecoder_1(const HUFFMANCODETABLE *h,int *x,int *y);
   void huffmandecoder_2(const HUFFMANCODETABLE *h,int *x,int *y,int *v,int *w);
+
+  /********************/
+  /* Playing raw data */
+  /********************/
+private:
+  Soundplayer *player;       // General playing interface
+  int       rawdataoffset;
+  short int rawdata[RAWDATASIZE];
+
+  void clearrawdata(void)    {rawdataoffset=0;};
+  void putraw(short int pcm) {rawdata[rawdataoffset++]=pcm;};
+  void flushrawdata(void);
+
+  /***************************/
+  /* Interface for threading */
+  /***************************/
+#ifdef PTHREADEDMPEG
+private:
+  struct
+  {
+    short int *buffer;
+    int framenumber,frametail;
+    int head,tail;
+    int *sizes;
+  }threadqueue;
+
+  struct
+  {
+    bool thread;
+    bool quit,done;
+    bool pause;
+    bool criticallock,criticalflag;
+  }threadflags;
+
+  pthread_t thread;
+
+public:
+  void threadedplayer(void);
+  bool makethreadedplayer(int framenumbers);
+  void freethreadedplayer(void);
+
+  void stopthreadedplayer(void);
+  void pausethreadedplayer(void);
+  void unpausethreadedplayer(void);
+
+  bool existthread(void);
+  int  getframesaved(void);
+#endif
 };
+
 
 
 /***********************/
@@ -631,10 +659,10 @@ private:
 class Fileplayer
 {
 public:
-  Fileplayer()           {__errorcode=SOUND_ERROR_OK;player=NULL;};
-  virtual ~Fileplayer()  {delete player;};
+  Fileplayer();
+  virtual ~Fileplayer();
 
-  int geterrorcode(void) {return __errorcode;};
+  int geterrorcode(void)        {return __errorcode;};
 
   virtual bool openfile(char *filename,char *device)=0;
   virtual void setforcetomono(bool flag)            =0;
@@ -653,15 +681,14 @@ private:
 class Wavefileplayer : public Fileplayer
 {
 public:
-  Wavefileplayer()  {loader=NULL;server=NULL;filehandle=0;};
-  ~Wavefileplayer() {close(filehandle);delete loader;delete server;};
+  Wavefileplayer();
+  ~Wavefileplayer();
 
   bool openfile(char *filename,char *device);
-  void setforcetomono(bool flag){server->setforcetomono(flag);};
+  void setforcetomono(bool flag);
   bool playing(int verbose);
   
 private:
-  int filehandle;
   Soundinputstream *loader;
   Wavetoraw *server;
 };
@@ -671,21 +698,23 @@ private:
 class Mpegfileplayer : public Fileplayer
 {
 public:
-  Mpegfileplayer()  {} ;
-  ~Mpegfileplayer() {delete loader; delete server;};
+  Mpegfileplayer();
+  ~Mpegfileplayer();
 
   bool openfile(char *filename,char *device);
-  void setforcetomono(bool flag){server->setforcetomono(flag);};
+  void setforcetomono(bool flag);
+  void setdownfrequency(int value);
   bool playing(int verbose);
-#if PTHREADEDMPEG
+#ifdef PTHREADEDMPEG
   bool playingwiththread(int verbose,int framenumbers);
 #endif
 
-private:
-  Soundinputbitstream *loader;
   Mpegtoraw *server;
 
-  void showverbose(void);
+private:
+  Soundinputstream *loader;
+
+  void showverbose(int verbose);
 };
 
 #endif
