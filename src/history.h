@@ -21,7 +21,7 @@ public:
 	const char *element();
 
 private:
-	vector<char *> v;
+	std::vector<char *> v;
 	unsigned int curpos;
 	std::vector<char *>::iterator it;
 };

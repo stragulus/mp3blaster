@@ -3945,7 +3945,7 @@ fw_search_next_char(char nxt)
 
 /* called when someone presses '/' in filemanager */
 void
-fw_start_search(int timeout=2)
+fw_start_search(int timeout)
 {
 	signal(SIGALRM, &fw_search_timeout);
 	fw_set_search_timeout(timeout);

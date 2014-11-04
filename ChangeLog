@@ -1,3 +1,12 @@
+V3.1.2 2002/09/03
+=================
+-Compiles on gcc-3.* without errors
+-Trailing slash in HTTP URLs is only appended after the hostname, not in 
+ URLs that contain a path following the hostname. This means that mp3's can
+ now be played straight from an URL again.
+-For HTTP streams, HTTP/1.1 is used instead of HTTP/1.0 (this, and previous
+ suggestion submitted by Markus Jerger. Thanks!)
+
 V3.1.1 2002/03/16
 =================
 -Applied a patch from Douglas Richard that introduces horizontal panning

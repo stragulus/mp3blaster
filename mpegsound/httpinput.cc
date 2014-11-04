@@ -128,46 +128,68 @@ unsigned int proxyport;
 
 FILE *Soundinputstreamfromhttp::http_open(char *urrel)
 {
-  char *purl=NULL,*host,*request,*sptr, *url;
+  char
+		*purl=NULL,
+		*host = NULL,
+		*request = NULL,
+		*sptr = NULL,
+		*url = NULL;
   char agent[50];
+	const char *url_part;
   int linelength;
-  unsigned long myip;
-  unsigned int myport;
   int sock;
   int relocate=0,numrelocs=0;
+	int slash_count = 0;
+  unsigned long myip;
+  unsigned int myport;
   struct sockaddr_in server;
   FILE *myfile;
 
 	url = new char[strlen(urrel) + 2];
 	strcpy(url, urrel);
-	if (strlen(url) > 0 && url[strlen(url)-1] != '/') //add missing trailing slash
+
+	//find hostname from URL
+	url_part = url;
+	while ( (url_part = strchr(url_part, '/')) != NULL)
 	{
+		url_part++;
+		slash_count++;
+	}
+
+	debug("#slashes in URL: %d\n", slash_count);
+	if (strlen(url) > 0 && url[strlen(url)-1] != '/' && slash_count == 2)
+	{
+		//add a trailing slash after the url's hostname
 		url[strlen(url)] = '/';
 		url[strlen(url)+1] = '\0';
 	}
 
-  if(!proxyip)
-  {
-    if(!proxyurl)
-      if(!(proxyurl=getenv("MP3_HTTP_PROXY")))
-	if(!(proxyurl=getenv("http_proxy")))
-	  proxyurl = getenv("HTTP_PROXY");
-    if (proxyurl && proxyurl[0] && strcmp(proxyurl, "none"))
-    {
-      if (!(url2hostport(proxyurl, &host, &proxyip, &proxyport)))
-      {
-	seterrorcode(SOUND_ERROR_UNKNOWNPROXY);
-	return NULL;
-      }
-      if(host)free(host);
-    }
-    else
-      proxyip = INADDR_NONE;
-  }
+	if (!proxyip)
+	{
+		if (!proxyurl && !(proxyurl=getenv("MP3_HTTP_PROXY")) && 
+			!(proxyurl=getenv("http_proxy")))
+		{
+			proxyurl = getenv("HTTP_PROXY");
+		}
+
+		if (proxyurl && proxyurl[0] && strcmp(proxyurl, "none"))
+		{
+			if (!(url2hostport(proxyurl, &host, &proxyip, &proxyport)))
+			{
+				seterrorcode(SOUND_ERROR_UNKNOWNPROXY);
+				return NULL;
+			}
+			if (host)
+			{
+				free(host);
+				host = NULL;
+			}
+		}
+		else
+			proxyip = INADDR_NONE;
+	}
   
-  if((linelength=strlen(url)+100)<1024)
-    linelength=1024;
-  if(!(request=(char *)malloc(linelength)) || !(purl=(char *)malloc(1024))) 
+  if (!(purl=(char *)malloc(1024))) 
   {
     seterrorcode(SOUND_ERROR_MEMORYNOTENOUGH);
 		delete[] url;
@@ -175,78 +197,136 @@ FILE *Soundinputstreamfromhttp::http_open(char *urrel)
   }
   strncpy(purl,url,1022);
   purl[1022]= purl[1023] = '\0';
-  do{
-    strcpy(request,"GET ");
-    if(proxyip!=INADDR_NONE) 
-    {
-      if(strncmp(url,httpstr,7))
-	strcat(request,httpstr);
-      strcat(request,purl);
-      myport=proxyport;
-      myip=proxyip;
-    }
-    else
-    {
-      if(!(sptr=url2hostport(purl,&host,&myip,&myport)))
-      {
-	seterrorcode(SOUND_ERROR_UNKNOWNHOST);
-	return NULL;
 	delete[] url;
-      }
-      if (host)
-	free (host);
-      strcat (request, sptr);
-    }
-		delete[] url; url = NULL;
+	url = NULL;
+	request = NULL;
 
-    sprintf (agent, " HTTP/1.0\r\nUser-Agent: %s/%s\r\n\r\n",
+	do
+	{
+		if (request)
+			free(request);
+
+  	if ((linelength = strlen(purl) * 2 + 100) < 1024)
+    	linelength=1024;
+		if (!(request=(char *)malloc(linelength)))
+  	{
+   		seterrorcode(SOUND_ERROR_MEMORYNOTENOUGH);
+			free(purl);
+			return NULL;
+		}
+		if (host)
+			free(host);
+		host = NULL;
+		strcpy(request,"GET ");
+		if (proxyip!=INADDR_NONE) 
+		{
+			if(strncmp(purl,httpstr,7))
+				strcat(request,httpstr);
+			strcat(request,purl);
+			myport=proxyport;
+			myip=proxyip;
+		}
+		else
+		{
+			if (!(sptr=url2hostport(purl,&host,&myip,&myport)))
+			{
+				seterrorcode(SOUND_ERROR_UNKNOWNHOST);
+				free(purl);
+				free(request);
+				return NULL;
+			}
+			strcat (request, sptr);
+		}
+
+		strcat(request, " HTTP/1.1\r\n");
+		if (host && proxyip == INADDR_NONE) 
+		{
+			strcat(request, "Host: ");
+			strcat(request, host);
+			strcat(request, "\r\n");
+			free(host);
+			host = NULL;
+		}
+    sprintf (agent, "User-Agent: %s/%s\r\n\r\n",
 	     "Mp3blaster",VERSION);
     strcat (request, agent);
+		debug("HTTP Request:\n\n%s", request);
     server.sin_family = AF_INET;
     server.sin_port = htons(myport);
     server.sin_addr.s_addr = myip;
-    if((sock=socket(PF_INET,SOCK_STREAM,6))<0)
+    if ((sock=socket(PF_INET,SOCK_STREAM,6))<0)
     {
       seterrorcode(SOUND_ERROR_SOCKET);
+			free(purl);
+			free(request);	
       return NULL;
     }
-    if(connect(sock,(struct sockaddr *)&server,sizeof(server)))
+    if (connect(sock,(struct sockaddr *)&server,sizeof(server)))
     {
       seterrorcode(SOUND_ERROR_CONNECT);
+			free(purl);
+			free(request);
       return NULL;
     }
-    if(!writestring(sock,request))return NULL;
-    if(!(myfile=fdopen(sock, "rb")))
+    if (!writestring(sock,request))
+		{
+			free(purl);
+			free(request);
+			return NULL;
+		}
+
+    if (!(myfile=fdopen(sock, "rb")))
     {
       seterrorcode(SOUND_ERROR_FDOPEN);
+			free(purl);
       return NULL;
     };
+
     relocate=false;
     purl[0]='\0';
-    if(!readstring(request,linelength-1,myfile))return NULL;
-    if((sptr=strchr(request,' ')))
+
+    if (!readstring(request,linelength-1,myfile))
+		{
+			free(purl);
+			free(request);
+			return NULL;
+		}
+
+    if ((sptr=strchr(request,' ')))
     {
       switch(sptr[1])
       {
         case '3':relocate=true;
         case '2':break;
         default: seterrorcode(SOUND_ERROR_HTTPFAIL);
-	         return NULL;
+				free(purl);
+				free(request);
+	      return NULL;
       }
     }
-    do{
-      if(!readstring(request,linelength-1,myfile))return NULL;
-      if(!strncmp(request,"Location:",9))
-	strncpy (purl,request+10,1023);
-    }while(request[0]!='\r' && request[0]!='n');
-  }while(relocate && purl[0] && numrelocs++<5);
-  if(relocate)
+
+    do
+		{
+      if (!readstring(request,linelength-1,myfile))
+			{
+				free(purl);
+				free(request);
+				return NULL;
+			}
+      if (!strncmp(request,"Location:",9))
+				strncpy (purl,request+10,1023);
+    } while (request[0]!='\r' && request[0]!='n');
+  } while (relocate && purl[0] && numrelocs++<5);
+
+  if (relocate)
   { 
     seterrorcode(SOUND_ERROR_TOOMANYRELOC);
     return NULL;
   }
+
   free(purl);
   free(request);
+
   return myfile;
 }
 
