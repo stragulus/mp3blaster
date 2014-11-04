@@ -21,13 +21,12 @@ Threads=250
 #using regexs!
 #This line would match any not-directory file:
 #AudiofileMatching = \\.*
-#And this (*.mp3,*.wav,http://*) is default:
-#AudiofileMatching = \\.[mM][pP][23]$, \\.[sS][iI][dD]$, \\.[wW][aA][vV]$, ^[hH][tT][tT][pP]://
+#And this (*.mp3,*.wav,*.ogg,http://*) is default:
+#AudiofileMatching = \\.[mM][pP][23]$, \\.[sS][iI][dD]$, \\.[wW][aA][vV]$, ^[hH][tT][tT][pP]://, \\.[oO][gG][gG]$
 
-#SkipFrames sets the number of frames that should be skipped when fast
-#forwarding or rewinding during mp3 playback. Range = 100..1000 (100=default).
-#More frames means larger skips. I like large skips (about 25 secs/keypress):
-SkipFrames = 500
+#SkipFrames sets the number of seconds that should be skipped when fast
+#forwarding or rewinding during mp3 playback (10=default).
+SkipFrames = 10
 
 #Use PlaylistMatching to specify which files are considered to be playlists.
 #Files that are considered playlists, can be loaded by pressing enter over the

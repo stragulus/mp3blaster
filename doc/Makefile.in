@@ -67,6 +67,8 @@ MAKEINFO = @MAKEINFO@
 MP3B_MODULES = @MP3B_MODULES@
 NAS_CFLAGS = @NAS_CFLAGS@
 NAS_LIBS = @NAS_LIBS@
+NCURSES_LIBS = @NCURSES_LIBS@
+OGG_LIBS = @OGG_LIBS@
 PACKAGE = @PACKAGE@
 RANLIB = @RANLIB@
 SID_LIBS = @SID_LIBS@
@@ -76,6 +78,7 @@ VERSION = @VERSION@
 pkgdata_DATA = commands.txt sample.mp3blasterrc_for_x sample.mp3blasterrc
 EXTRA_DIST = commands.txt sample.mp3blasterrc_for_x sample.mp3blasterrc
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
+CONFIG_HEADER = ../config.h
 CONFIG_CLEAN_FILES = 
 DATA =  $(pkgdata_DATA)
 

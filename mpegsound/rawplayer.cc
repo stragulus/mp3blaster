@@ -122,6 +122,7 @@ Rawplayer *Rawplayer::opendevice(char *filename)
 	if(audiobuffersize<4 || audiobuffersize>65536)
 		return NULL;
 
+	//maybe this will prevent sound hickups on some cards..
 	int fragsize = (16<<16) | 10;
 	ioctl(audiohandle, SNDCTL_DSP_SETFRAGMENT, &fragsize);
 
@@ -174,6 +175,7 @@ bool Rawplayer::resetsoundtype(void)
 	if(rawstereo!=ioctl(audiohandle,SNDCTL_DSP_STEREO,rawstereo))
 #endif
 	{
+		//TODO: Now setsoundtype will *always* call resetsoundtype....
 		rawstereo=MODE_MONO;
 		forcetomono=1;
 	}
@@ -186,7 +188,7 @@ bool Rawplayer::resetsoundtype(void)
 		if(rawsamplesize==16)
 		{
 			//rawsamplesize=8; 
-			rawsamplesize=AFMT_S8; //most soundcards used SIGNED for 8bits!
+			rawsamplesize=AFMT_S8; //most soundcards use SIGNED for 8bits!
 			IOCTL(audiohandle,SNDCTL_DSP_SAMPLESIZE,rawsamplesize);
 			if(rawsamplesize!=AFMT_S8)
 				return seterrorcode(SOUND_ERROR_DEVCTRLERROR);

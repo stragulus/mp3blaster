@@ -54,9 +54,6 @@
 #include "scrollwin.h"
 #include "mp3win.h"
 #include "fileman.h"
-#ifdef HAVE_SIDPLAYER
-#include "sidplayer.h"
-#endif
 #include <mpegsound.h>
 #include <nmixer.h>
 //load keybindings
@@ -2456,7 +2453,11 @@ start_song(short was_playing)
 		playopts.player = new Wavefileplayer();
 #ifdef HAVE_SIDPLAYER
 	else if (is_sid(song))
-		playopts.player = new SIDFileplayer();
+		playopts.player = new SIDfileplayer();
+#endif
+#ifdef INCLUDE_OGG
+	else if (is_ogg(song))
+		playopts.player = new Oggplayer();
 #endif
 	else if (is_audiofile(song))
 	{
@@ -2799,7 +2800,7 @@ handle_input(short no_delay)
 	}
 
 #ifndef TEMPIE
-	LOCK_NCURSES;
+	if (LOCK_NCURSES);
 
 	if (songinf.update)
 		update_ncurses();
@@ -3659,7 +3660,7 @@ set_warn_delay(unsigned int seconds)
 short
 set_skip_frames(unsigned int frames)
 {
-	if (frames > 1000 || frames < 100) /* get real */
+	if (frames > 1000 || frames < 1) /* get real */
 		return 0;
 	
 	globalopts.skipframes = frames;
@@ -4629,7 +4630,7 @@ end_program()
 	if (playopts.playing)
 		stop_song();
 	//prevent ncurses clash
-	LOCK_NCURSES;
+	if (LOCK_NCURSES);
 	endwin();
 	UNLOCK_NCURSES;
 	exit(0);

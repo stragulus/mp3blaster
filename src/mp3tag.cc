@@ -1,4 +1,6 @@
 //TODO: mp3tag with NEWTHREADS is quite inefficient!
+#include "mp3blaster.h"
+
 #include <stdlib.h>
 #include <errno.h>
 #include <stdio.h>
@@ -10,7 +12,6 @@
 #include MYSQL_H
 #endif
 #include "id3parse.h"
-#include "mp3blaster.h"
 
 extern char *genre_table[];
 _globalopts globalopts;

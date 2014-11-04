@@ -5,6 +5,8 @@
 #ifndef _MP3BLASTER_
 #define _MP3BLASTER_
 
+#include <config.h>
+
 /* NCURSES is the location of the ncurses headerfile 
  * I should use config.h that can be generated from autoconf for this
  * hassle, but it's just this ncurses-file that's a known bugger.

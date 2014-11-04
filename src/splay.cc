@@ -80,9 +80,15 @@ static void play(char *filename)
   if(strstr(filename,".mp") || strstr(filename,".MP"))
   {
     Mpegfileplayer *player;
+		bool didopen = false;
 
     player=new Mpegfileplayer;
-    if(!player->openfile(filename,splay_devicename))
+		if (!strcmp(splay_devicename, "-"))
+			didopen = player->openfile(filename, "/dev/stdout", WAV);
+		else
+			didopen = player->openfile(filename, splay_devicename);
+
+    if(!didopen)
     {
       error(player->geterrorcode());
       delete player;

@@ -4,6 +4,7 @@
 #ifndef _LIBMIXER_H
 #define _LIBMIXER_H
 
+#include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>

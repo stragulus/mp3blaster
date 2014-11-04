@@ -9,6 +9,7 @@
 /************************************/
 /* Inlcude default library packages */
 /************************************/
+#include <config.h>
 #include <stdio.h>
 #include <sys/types.h>
 #ifdef HAVE_BOOL_H
@@ -28,14 +29,6 @@
 
 #ifndef _L__SOUND__
 #define _L__SOUND__
-
-#ifdef HAVE_SYS_SOUNDCARD_H
-#define SOUNDCARD_HEADERFILE <sys/soundcard.h>
-#elif HAVE_MACHINE_SOUNDCARD_H
-#define SOUNDCARD_HEADERFILE <machine/soundcard.h>
-#else
-#define SOUNDCARD_HEADERFILE <soundcard.h>
-#endif
 
 /* Not all OSS implementations define an endian-independant samplesize. 
  * This code is taken from linux' <sys/soundcard.h, OSS version 0x030802
@@ -226,6 +219,7 @@ typedef struct
   const unsigned int (*val)[2];
 }HUFFMANCODETABLE;
 
+//TODO: remove mp3-specific stuff out of this struct
 struct song_info
 {
 	char songname[31];
@@ -476,7 +470,7 @@ public:
 
 private:
   int  __errorcode;
-  void seterrorcode(int errorcode) {__errorcode=errorcode;};
+  bool seterrorcode(int errorcode) {__errorcode=errorcode; return false; };
 
   short forcetomonoflag;
 
@@ -902,15 +896,15 @@ public:
   bool playing();
 	bool run(int);
 	bool initialize(void *);
-	bool forward(int frames) { return frames==frames; } //TODO: implement
-	bool rewind(int frames) { return frames==frames; } //TODO: implement
+	bool forward(int frames) { skip(frames); return true; }
+	bool rewind(int frames) { skip(-frames); return true; }
 	bool pause() { return true; }
 	bool ready() { return true; }
 	bool unpause() { return true; }
 	bool stop() { return true; }
-	int elapsed_time() { return 0; } //TODO: implement
-	int remaining_time() { return 0; } //TODO: implement
-	void skip(int) {} //TODO: implement
+	int elapsed_time();
+	int remaining_time();
+	void skip(int);
   
 private:
   Soundinputstream *loader;
@@ -966,6 +960,49 @@ protected:
   Mpegtoraw *server;
 };
 
+#ifdef INCLUDE_OGG
+#include "vorbis/vorbisfile.h"
+
+class Oggplayer : public Fileplayer
+{
+public:
+  Oggplayer();
+  ~Oggplayer();
+
+  bool openfile(char *filename,char *device, soundtype write2file=NONE);
+  void closefile(void);
+  void setforcetomono(short flag);
+  void set8bitmode();
+  void setdownfrequency(int value);
+  bool playing();
+	bool run(int);
+	void skip(int);
+	bool initialize(void *);
+	bool forward(int);
+	bool rewind(int);
+	bool pause();
+	bool unpause();
+	bool stop();
+	bool ready();
+	int elapsed_time();
+	int remaining_time();
+
+private:
+	short wordsize;
+	short mono;
+	short downfreq;
+	short bigendian;
+	short signeddata;
+	int   channels;
+	long  srate;
+
+protected:
+	OggVorbis_File *of;
+	char soundbuf[4096];
+};
+#endif /* INCLUDE_OGG */
+
+
 #ifdef HAVE_SIDPLAYER
 //This is broken due to lack of functions
 #include <sidplay/player.h>
@@ -979,6 +1016,7 @@ public:
 	~SIDfileplayer();
 
 	bool openfile(char *filename,char *device, soundtype write2file=NONE);
+	bool initialize(void *data) { if(data); return true; }
 	void closefile(void);
 	void setforcetomono(short flag);
 	void setdownfrequency(int value);
@@ -986,9 +1024,14 @@ public:
 	bool run(int frames);
 	bool playing();
 	bool ready() { return true; }
-	void skip(int) {}
-	int elapsed_time();
-	int remaining_time();
+	void skip(int) {} //TODO: implement
+	int elapsed_time() { return 0; }  //TODO: implement
+	int remaining_time() { return 0; }
+	bool forward(int sec) { skip(sec); return true; }
+	bool rewind(int sec) { skip(-sec); return true; }
+	bool pause() { return true; }
+	bool unpause() { return true; }
+	bool stop() { return true; }
 protected:
 	emuEngine emu;
 	struct emuConfig emuConf;

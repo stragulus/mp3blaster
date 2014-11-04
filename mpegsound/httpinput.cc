@@ -127,9 +127,9 @@ char *proxyurl=NULL;
 unsigned long proxyip=0;
 unsigned int proxyport;
 
-FILE *Soundinputstreamfromhttp::http_open(char *url)
+FILE *Soundinputstreamfromhttp::http_open(char *urrel)
 {
-  char *purl=NULL,*host,*request,*sptr;
+  char *purl=NULL,*host,*request,*sptr, *url;
   char agent[50];
   int linelength;
   unsigned long myip;
@@ -138,6 +138,14 @@ FILE *Soundinputstreamfromhttp::http_open(char *url)
   int relocate=0,numrelocs=0;
   struct sockaddr_in server;
   FILE *myfile;
+
+	url = new char[strlen(urrel) + 2];
+	strcpy(url, urrel);
+	if (strlen(url) > 0 && url[strlen(url)-1] != '/') //add missing trailing slash
+	{
+		url[strlen(url)] = '/';
+		url[strlen(url)+1] = '\0';
+	}
 
   if(!proxyip)
   {
@@ -163,10 +171,11 @@ FILE *Soundinputstreamfromhttp::http_open(char *url)
   if(!(request=(char *)malloc(linelength)) || !(purl=(char *)malloc(1024))) 
   {
     seterrorcode(SOUND_ERROR_MEMORYNOTENOUGH);
+		delete[] url;
     return NULL;
   }
-  strncpy(purl,url,1023);
-  purl[1023]='\0';
+  strncpy(purl,url,1022);
+  purl[1022]= purl[1023] = '\0';
   do{
     strcpy(request,"GET ");
     if(proxyip!=INADDR_NONE) 
@@ -183,11 +192,14 @@ FILE *Soundinputstreamfromhttp::http_open(char *url)
       {
 	seterrorcode(SOUND_ERROR_UNKNOWNHOST);
 	return NULL;
+	delete[] url;
       }
       if (host)
 	free (host);
       strcat (request, sptr);
     }
+		delete[] url; url = NULL;
+
     sprintf (agent, " HTTP/1.0\r\nUser-Agent: %s/%s\r\n\r\n",
 	     "Mp3blaster",VERSION);
     strcat (request, agent);

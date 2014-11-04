@@ -356,6 +356,20 @@ is_wav(const char *filename)
 }
 
 int
+is_ogg(const char *filename)
+{
+	int len;
+	
+	if (!filename || (len = strlen(filename)) < 5)
+		return 0;
+
+	if (fnmatch(".[oO][gG][gG]", (filename + (len - 4)), 0))
+		return 0;
+	
+	return 1;
+}
+
+int
 is_sid(const char *filename)
 {
 #ifdef HAVE_SIDPLAYER
@@ -400,7 +414,8 @@ is_audiofile(const char *filename)
 		}
 		return 0;
 	}
-	return (is_mp3(filename) || is_sid(filename) || is_httpstream(filename));
+	return (is_mp3(filename) || is_sid(filename) || is_httpstream(filename) ||
+		is_ogg(filename));
 }
 
 int

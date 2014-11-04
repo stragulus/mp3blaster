@@ -1,0 +1,124 @@
+/* config.h.in.  Generated automatically from configure.in by autoheader.  */
+/* Copyright (C) Bram Avontuur (bram@avontuur.org) */
+
+/* Define to empty if the keyword does not work.  */
+#undef const
+
+/* Define if you have the ANSI C header files.  */
+#undef STDC_HEADERS
+
+/* Define if the X Window System is missing or not being used.  */
+#undef X_DISPLAY_MISSING
+
+/* A non-blocking implementation of writing to the audio device. On some 
+ * systems (not many!) with threads, this will lower hickups in sound 
+ */
+#undef AUDIO_NONBLOCKING
+
+/* Include the OggVorbis sound format */
+#undef INCLUDE_OGG
+
+/* MySQL support for mp3tag. Probably only useful for the author :) */
+#undef WANT_MYSQL
+#undef MYSQL_H
+
+/* Use libpth as threads */
+#undef LIBPTH
+
+/* alternative threaded playback system - requires libpth */
+#undef NEWTHREAD
+
+/* sid support (broken) */
+#undef HAVE_SIDPLAYER
+
+/* nas support (broken) */
+#undef HAVE_NASPLAYER
+
+/* what's your sound device? */
+#undef SOUND_DEVICE
+
+/* _THREAD_SAFE is for FreeBSD threaded programs (although I think it's 
+ * predefined already nowadays) 
+ * _REENTRANT is needed for threaded programs.
+ */
+#undef _THREAD_SAFE
+#undef _REENTRANT
+
+/* use pthreads for threading */
+#undef PTHREADEDMPEG
+
+#undef SOUNDCARD_HEADERFILE
+
+/* Define if you have the strdup function.  */
+#undef HAVE_STRDUP
+
+/* Define if you have the strstr function.  */
+#undef HAVE_STRSTR
+
+/* Define if you have the <bool.h> header file.  */
+#undef HAVE_BOOL_H
+
+/* Define if you have the <curses.h> header file.  */
+#undef HAVE_CURSES_H
+
+/* Define if you have the <errno.h> header file.  */
+#undef HAVE_ERRNO_H
+
+/* Define if you have the <fcntl.h> header file.  */
+#undef HAVE_FCNTL_H
+
+/* Define if you have the <getopt.h> header file.  */
+#undef HAVE_GETOPT_H
+
+/* Define if you have the <machine/soundcard.h> header file.  */
+#undef HAVE_MACHINE_SOUNDCARD_H
+
+/* Define if you have the <malloc.h> header file.  */
+#undef HAVE_MALLOC_H
+
+/* Define if you have the <ncurses.h> header file.  */
+#undef HAVE_NCURSES_H
+
+/* Define if you have the <ncurses/curses.h> header file.  */
+#undef HAVE_NCURSES_CURSES_H
+
+/* Define if you have the <ncurses/ncurses.h> header file.  */
+#undef HAVE_NCURSES_NCURSES_H
+
+/* Define if you have the <pth.h> header file.  */
+#undef HAVE_PTH_H
+
+/* Define if you have the <pthread.h> header file.  */
+#undef HAVE_PTHREAD_H
+
+/* Define if you have the <pthread/mit/pthread.h> header file.  */
+#undef HAVE_PTHREAD_MIT_PTHREAD_H
+
+/* Define if you have the <soundcard.h> header file.  */
+#undef HAVE_SOUNDCARD_H
+
+/* Define if you have the <sys/ioctl.h> header file.  */
+#undef HAVE_SYS_IOCTL_H
+
+/* Define if you have the <sys/soundcard.h> header file.  */
+#undef HAVE_SYS_SOUNDCARD_H
+
+/* Define if you have the <unistd.h> header file.  */
+#undef HAVE_UNISTD_H
+
+/* Define if you have the m library (-lm).  */
+#undef HAVE_LIBM
+
+/* Define if you have the ossaudio library (-lossaudio).  */
+#undef HAVE_LIBOSSAUDIO
+
+/* Define if you have the pthread library (-lpthread).  */
+#undef HAVE_LIBPTHREAD
+
+/* Name of package */
+#undef PACKAGE
+
+/* Version number of package */
+#undef VERSION
+
+/* Copyright (C) Bram Avontuur (bram@avontuur.org) */

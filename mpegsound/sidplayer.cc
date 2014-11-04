@@ -4,6 +4,7 @@
 
 #include <mpegsound.h>
 
+#ifdef HAVE_SIDPLAYER
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -14,13 +15,13 @@ extern "C" {
 }
 #endif
 
-#ifdef HAVE_SIDPLAYER
 SIDfileplayer::SIDfileplayer()
 {
 	bufSize = 0;
 	buffer = 0;
 	tune = 0;
 	emu.getConfig(emuConf);
+#if 0
 	emuConf.frequency = 32000;
 	emuConf.channels = SIDEMU_MONO;
 	/*\
@@ -29,6 +30,7 @@ SIDfileplayer::SIDfileplayer()
 	\*/
 	emuConf.bitsPerSample = SIDEMU_8BIT;
 	emuConf.sampleFormat = SIDEMU_SIGNED_PCM;
+#endif
 }
 
 SIDfileplayer::~SIDfileplayer()
@@ -48,9 +50,9 @@ bool SIDfileplayer::openfile(char *filename, char *device, soundtype write2file)
 	if ((!tune) || (!*tune))
 		return seterrorcode(SOUND_ERROR_FILEOPENFAIL);
 	
-	ssize = (emuConf.bitsPerSample == 16 ? AFMT_S16_NE : AFMT_U8);
+	ssize = (emuConf.bitsPerSample == SIDEMU_16BIT ? AFMT_S16_NE : AFMT_S8);
 
-	player->setsoundtype((emuConf.channels == SIDEMU_STEREO),
+	player->setsoundtype((emuConf.channels == SIDEMU_STEREO?1:0),
 				ssize, emuConf.frequency);
 	emu.setConfig(emuConf);
 	if (bufSize != player->getblocksize()) {

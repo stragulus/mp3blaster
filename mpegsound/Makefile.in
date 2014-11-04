@@ -67,6 +67,8 @@ MAKEINFO = @MAKEINFO@
 MP3B_MODULES = @MP3B_MODULES@
 NAS_CFLAGS = @NAS_CFLAGS@
 NAS_LIBS = @NAS_LIBS@
+NCURSES_LIBS = @NCURSES_LIBS@
+OGG_LIBS = @OGG_LIBS@
 PACKAGE = @PACKAGE@
 RANLIB = @RANLIB@
 SID_LIBS = @SID_LIBS@
@@ -75,7 +77,7 @@ VERSION = @VERSION@
 
 noinst_LIBRARIES = libmpegsound.a
 
-libmpegsound_a_SOURCES = soundinputstream.cc fileinput.cc httpinput.cc 			  soundplayer.cc rawplayer.cc rawtofile.cc 			  mpegtable.cc filter.cc filter_2.cc 			  mpegtoraw.cc mpeglayer1.cc mpeglayer2.cc 			  mpeglayer3.cc bitwindow.cc huffmantable.cc 			  wavetoraw.cc sidplayer.cc 			  fileplayer.cc nasplayer.cc
+libmpegsound_a_SOURCES = soundinputstream.cc fileinput.cc httpinput.cc 			  soundplayer.cc rawplayer.cc rawtofile.cc 			  mpegtable.cc filter.cc filter_2.cc 			  mpegtoraw.cc mpeglayer1.cc mpeglayer2.cc 			  mpeglayer3.cc bitwindow.cc huffmantable.cc 			  wavetoraw.cc sidplayer.cc 			  fileplayer.cc nasplayer.cc oggplayer.cc
 
 
 noinst_HEADERS = mpegsound.h mpegsound_locals.h
@@ -83,11 +85,12 @@ noinst_HEADERS = mpegsound.h mpegsound_locals.h
 INCLUDES = -I$(srcdir) -I$(includedir)
 CXXFLAGS = @CXXFLAGS@ @NAS_CFLAGS@
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
+CONFIG_HEADER = ../config.h
 CONFIG_CLEAN_FILES = 
 LIBRARIES =  $(noinst_LIBRARIES)
 
 
-DEFS = @DEFS@ -I. -I$(srcdir) 
+DEFS = @DEFS@ -I. -I$(srcdir) -I..
 CPPFLAGS = @CPPFLAGS@
 LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@
@@ -99,7 +102,8 @@ libmpegsound_a_LIBADD =
 libmpegsound_a_OBJECTS =  soundinputstream.o fileinput.o httpinput.o \
 soundplayer.o rawplayer.o rawtofile.o mpegtable.o filter.o filter_2.o \
 mpegtoraw.o mpeglayer1.o mpeglayer2.o mpeglayer3.o bitwindow.o \
-huffmantable.o wavetoraw.o sidplayer.o fileplayer.o nasplayer.o
+huffmantable.o wavetoraw.o sidplayer.o fileplayer.o nasplayer.o \
+oggplayer.o
 AR = ar
 CXXCOMPILE = $(CXX) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 CXXLD = $(CXX)

@@ -309,15 +309,12 @@ fileManager::readDir()
 
 			bla[3] = NULL;
 
-			if (!clr)
-			{
-				if (is_audiofile(entries[i]))
-					clr = CP_FILE_MP3;
-				else if (is_playlist(entries[i]))
-					clr = CP_FILE_LST;
-				else
-					clr = CP_DEFAULT;
-			}
+			if (is_audiofile(entries[i]))
+				clr = CP_FILE_MP3;
+			else if (is_playlist(entries[i]))
+				clr = CP_FILE_LST;
+			else
+				clr = CP_DEFAULT;
 			addItem(bla, foo, clr);
 
 			delete[] fdesc;

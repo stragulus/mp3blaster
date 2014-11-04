@@ -21,6 +21,18 @@ Fileplayer::Fileplayer()
 {
   __errorcode=SOUND_ERROR_OK;
   player=NULL;
+	info.songname[0] = '\0';
+	info.artist[0] = '\0';
+	info.comment[0] = '\0';
+	info.year[0] = '\0';
+	info.album[0] = '\0';
+	info.genre = 0;
+	info.mode[0] = '\0';
+	info.bitrate=0;
+	info.mp3_layer = 0;
+	info.mp3_version = 0;
+	info.samplerate = 0;
+	info.totaltime = 0;
 };
 
 Fileplayer::~Fileplayer()
@@ -78,7 +90,10 @@ bool Wavefileplayer::openfile(char *filename,char *device, soundtype write2file)
   	delete server;
   if((server=new Wavetoraw(loader,player))==NULL)
     return seterrorcode(SOUND_ERROR_MEMORYNOTENOUGH);
-  return server->initialize();
+  if (!server->initialize())
+		return seterrorcode(server->geterrorcode());
+	
+	return true;
 }
 
 void Wavefileplayer::closefile(void)
@@ -113,6 +128,22 @@ bool Wavefileplayer::run(int)
 	return true;
 }
 
+int Wavefileplayer::elapsed_time()
+{
+	return server->getcurrentpoint() / server->getfrequency();
+}
+
+int Wavefileplayer::remaining_time()
+{
+	return info.totaltime - elapsed_time();
+}
+
+void Wavefileplayer::skip(int sec)
+{
+	int nrsamples = sec * server->getfrequency();
+	server->setcurrentpoint(server->getcurrentpoint() + nrsamples);
+}
+
 bool Wavefileplayer::initialize(void *init_args)
 {
 	if (init_args); //prevent warning
@@ -132,7 +163,10 @@ bool Wavefileplayer::initialize(void *init_args)
 	info.mp3_layer = 0;
 	info.mp3_version = 0;
 	info.samplerate = server->getfrequency();
-	info.totaltime = server->gettotallength();
+	if (server->getfrequency())
+		info.totaltime = server->gettotallength() / server->getfrequency();
+	else
+		info.totaltime = 0;
 	if (server->isstereo())
 		strcpy(info.mode, "stereo");
 	else
@@ -280,6 +314,9 @@ bool Mpegfileplayer::forward(int skipframes)
 		maxframe = server->gettotalframe(),
 		curframe = server->getcurrentframe();
 	
+	//since skipframes resembles seconds, multiply it by 75 to match #frames
+	skipframes *= 38;
+
 	if (skipframes < 0) //jump to end of file
 		curframe = maxframe + skipframes;
 	else
@@ -295,7 +332,8 @@ bool Mpegfileplayer::rewind(int skipframes)
 {
 	int
 		curframe = server->getcurrentframe();
-	curframe -= skipframes;
+	
+	curframe -= (skipframes * 38);
 	if (curframe < 0)
 		curframe = 0;
 

@@ -176,7 +176,6 @@ id3Parse::writeID3(struct id3header *newID3)
 {
 	int success = 0;
 	FILE *fp = fopen(flnam, "r+");
-	int genre_size = 30;
 
 	if (!fp)
 		return success;

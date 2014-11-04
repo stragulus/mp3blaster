@@ -27,6 +27,8 @@ extern "C" {
 }
 #endif
 
+extern void debug(const char *);
+
 Wavetoraw::Wavetoraw(Soundinputstream *loader,Soundplayer *player)
 {
   __errorcode=SOUND_ERROR_OK;
@@ -43,55 +45,50 @@ Wavetoraw::~Wavetoraw()
 // Convert wave format to raw format class
 bool Wavetoraw::initialize(void)
 {
+	int c;	
+
   if(!buffer)
   {
     buffersize=player->getblocksize();
     if((buffer=(char *)malloc(buffersize))==NULL)
     {
-      seterrorcode(SOUND_ERROR_MEMORYNOTENOUGH);
-      return false;
+      return seterrorcode(SOUND_ERROR_MEMORYNOTENOUGH);
     }
   }
+
+	if( !(c=loader->getblock(buffer,sizeof(WAVEHEADER))) )
+	{
+		return seterrorcode(SOUND_ERROR_FILEREADFAIL);
+	}
+
+	if (!testwave(buffer))
+		return false;
+	int ssize = (samplesize == 16 ? AFMT_S16_NE : AFMT_S8);
+	if (!(player->setsoundtype(stereo, ssize, speed)))
+		return false;
+	currentpoint=0;
+	initialized=true;
   return true;
 }
 
 bool Wavetoraw::run(void)
 {
   int c;
-	int ssize = (samplesize == 16 ? AFMT_S16_NE : AFMT_U8);
 
-  if(initialized)
-  {
-    c=loader->getblock(buffer,buffersize);
-    if(c==0)
-    {
-      seterrorcode(SOUND_ERROR_FILEREADFAIL);
-      return false;
-    }
+	c=loader->getblock(buffer,buffersize);
+	if(c==0)
+	{
+		return seterrorcode(SOUND_ERROR_FILEREADFAIL);
+	}
 
-    currentpoint+=c;
-    if(player->putblock(buffer,buffersize)==false)return false;
+	currentpoint+=c;
+	if(player->putblock(buffer,buffersize)==false)return false;
 
-    if(currentpoint>=size)
-    {
-      seterrorcode(SOUND_ERROR_FINISH);
-      return false;
-    }
-  }
-  else
-  {
-    c=loader->getblock(buffer,sizeof(WAVEHEADER));
-    if(c==0)
-    {
-      seterrorcode(SOUND_ERROR_FILEREADFAIL);
-      return false;
-    }
+	if(currentpoint>=size)
+	{
+		return seterrorcode(SOUND_ERROR_FINISH);
+	}
 
-    if(!testwave(buffer))return false;
-    if(player->setsoundtype(stereo,ssize,speed)==false)return false;
-    currentpoint=0;
-    initialized=true;
-  }
   return true;
 }
 
@@ -121,7 +118,6 @@ bool Wavetoraw::testwave(char *buffer)
       return true;
     }
 
-  seterrorcode(SOUND_ERROR_BAD);
-  return false;
+  return seterrorcode(SOUND_ERROR_BAD);
 }
 

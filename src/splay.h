@@ -4,14 +4,15 @@
 
 // Header files
 
+#include <config.h>
+
 #define MAXLISTSIZE        1000     // Too many?
 #define MAXFILENAMELENGTH   300     // Too long?
 
-#undef VERSION
 #undef PACKAGE
-//splay is not maintained anymore, so I just hardcoded the version..hehe.
-#define VERSION "0.8.2"
-#define PACKAGE "splay"
+//splay is not maintained anymore, I'll rename the packagename to make clear 
+//this is not the stand-alone (old) splay
+#define PACKAGE "splay-mp3blaster"
 extern int  splay_verbose;
 extern char *splay_progname;
 extern char *splay_devicename;

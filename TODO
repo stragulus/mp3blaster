@@ -1,27 +1,39 @@
 IMPORTANT
--fix broken mp3tag when using --enable-newthreads!
+-disable default id3-scan in filemanager
+-give audio-feeding thread max priority to prevent sound-hickups on sblive
+ boxes
+-add patch from Dmity Sergienko to change charsets (it's in my mailbox.)
+-fix time display for songs > 99:99 mins to display hh:mm instead.
 -working 'previous track'
 -implement ID3v2 tag parsing
 -'next group' keybinding
+-save shuffle mode for main group, and playback mode for entire group in
+ playlist
+
+SMALL & SIMPLE
+-file search with '/' optionally case-insensitive
+-mp3 search in normal mode with '/' too
+-jump to dir-entry one came from after going to '..'
 
 INTERESTING
--update autoconf scripts to use config.h.
+-fix information display so that it will display information relevant to the
+ format being played.
+-read/write playlist +save tmp.playlist to continue it later. (partly done)
+-'enqueue' mp3's from filemanager (implement as another playlist, do 'previous
+ played tracks' in the same way) (aka 'hotkey' playlist)
 -when directories are given as final cmdline args, assume recursive search of
  mp3's in that dir.
 -F5/F3 in filemanager mode: instead of using currently highlighted dir, check
  if multiple dirs have been selected and use all those dirs to add mp3's instd.
 -check existence of files on playlistload (and report status)
 -'skip to next mp3 and delete this one from list'
--Shout/IceCast .pls support.
+-Shout/IceCast .pls support (HTTP streaming works).
 -show files as their id3 tag info, not filenames (optional)
  =>done, but now allow for a default viewmode too!
--save shuffle mode for main group, and playback mode for entire group in
- playlist
--read/write playlist +save tmp.playlist to continue it later. (partly done)
--import/export playlist (compatible met o.a. winamp) (fixed? might work :))
 -make 'next song' skippable (could be tough, it's not a pointer to a group
  member, but just a const char *..)
 -Total playlist time displayed somewhere
+-optionally replace all '\''s with '/''s in playlist (to read DOS playlists)
 
 WHEN I'M BORED
 -move all selected files in filemanager to current dir (m) (!)

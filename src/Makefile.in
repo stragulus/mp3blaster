@@ -67,6 +67,8 @@ MAKEINFO = @MAKEINFO@
 MP3B_MODULES = @MP3B_MODULES@
 NAS_CFLAGS = @NAS_CFLAGS@
 NAS_LIBS = @NAS_LIBS@
+NCURSES_LIBS = @NCURSES_LIBS@
+OGG_LIBS = @OGG_LIBS@
 PACKAGE = @PACKAGE@
 RANLIB = @RANLIB@
 SID_LIBS = @SID_LIBS@
@@ -85,16 +87,16 @@ mp3tag_DEPENDENCIES = ../mpegsound/libmpegsound.a ../nmixer/libnmixer.a
 mp3tag_LDADD = @LIBMPEGSOUND@ @LIBMYSQL@
 mp3blaster_DEPENDENCIES = ../mpegsound/libmpegsound.a ../nmixer/libnmixer.a
 INCLUDES = -I$(top_srcdir)/mpegsound -I/usr/include/ncurses -I$(top_srcdir)/nmixer -I$(includedir)
-mp3blaster_LDADD = @LIBMPEGSOUND@ @LIBNMIXER@ @NAS_LIBS@ @SID_LIBS@
-mp3blaster_LIBS = @LIBS@ @NAS_LIBS@ @SID_LIBS@
+mp3blaster_LDADD = @LIBMPEGSOUND@ @LIBNMIXER@ @NAS_LIBS@ @SID_LIBS@ @OGG_LIBS@ @NCURSES_LIBS@
 EXTRA_DIST = FILES
 CXXFLAGS = @CXXFLAGS@ @NAS_CFLAGS@ -DMP3BLASTER_DOCDIR=\"${pkgdatadir}\"
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
+CONFIG_HEADER = ../config.h
 CONFIG_CLEAN_FILES = 
 PROGRAMS =  $(bin_PROGRAMS)
 
 
-DEFS = @DEFS@ -I. -I$(srcdir) 
+DEFS = @DEFS@ -I. -I$(srcdir) -I..
 CPPFLAGS = @CPPFLAGS@
 LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@

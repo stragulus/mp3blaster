@@ -1,3 +1,19 @@
+V3.0pre8 2001/06/17
+===================
+-OggVorbis support! 99% of the player's functionality works with this format.
+ More info on this free codec: http://www.xiph.org/ogg/vorbis/
+-Fixed wav playback
+-sid files can be played back again - though no seeking/time display yet.
+-SkipFrames keyword has changed; instead of skipping a number of frames,
+ it now skips a number of seconds. Therefore, you have to lower your current
+ setting a lot (divide by 100). The number of seconds it skips in an mp3 is
+ not very accurate.
+-Splay's '-d -' produces a WAV-file on stdout.
+-missing trailing slashes in HTTP stream URL's are automagically added
+-fixed colour highlighting of files in filemanager
+-cleaned up autoconf/automake files to make better use of it; as a result,
+ some configure options have been renamed.
+
 V3.0pre7 2001/04/11
 ===================
 -Finally, the correct time is displayed for VBR mp3's (thanks to Thomas
