@@ -1,0 +1,293 @@
+This file contains an explanation for most commands in
+mp3blaster. Please note that mp3blaster features 2 modes:
+Normal Mode and File Mode. In Normal Mode you control the
+playlist displayed in the main window. In File Mode, you can
+browse and add files using a file manager in the main
+window. You can switch between these two modes using F1
+(this is the default keybinding, you can alter it in the
+config file, see the mp3blasterrc manpage).
+To see which command is mapped to which key, check the help
+window on top of the screen in mp3blaster; you can browse
+through this window using '-' and '+'. For most commands the
+keybinding can be configured - read the mp3blasterrc
+manpage.
+
+Commands specific to Normal Mode:
+=================================
+
+SELECT FILES (F1)
+  Enters File Mode.
+
+ADD GROUP
+  Add a group to the playlist. A group can be thought of as
+  an album, or a music category. Groups can be nested
+  indefinitely.
+
+SET GROUP TITLE
+  Changes the name of the group that's currently
+  highlighted. You will be prompted to enter a name.
+
+CLEAR PLAYLIST
+  Whipes your entire playlist (without asking!). This will
+  only work when no song is being played at invocation time.
+
+MOVE FILES AFTER
+  This will move songs that you have selected (using the
+  spacebar) after the currently highlighted song in the
+  playlist. You can't move songs from one group to another
+  this way. Songs will be added after the song in the order
+  in which you selected them.
+
+MOVE FILES BEFORE
+  As in MOVE FILES AFTER, only now songs will be added
+  before the currently highlighted song.
+
+SELECT FILE
+  This will select the currently highlighted file. Selected
+  items are displayed in bold (on terminals that support
+  this). Selections are useful in combination with MOVE
+  FILES BEFORE / AFTER, DELETE (AND MARK).
+
+ENTER
+  Depending on what your selection bar in the main window is
+  highlighting, this will do:
+  -If a song is highlighted:
+   It will immediately play this song. If a playlist was
+   being played at the time you pressed enter, it will
+   continue with the next song after the selected song is
+   finished.
+  -If a group is highlighted:
+   It will dive into the group. The special group '..' will
+   take you up one group (its parent group). The 'root'
+   group (the empty one at startup) has no parent group.
+
+PREVIOUS PAGE and NEXT PAGE
+  Scrolls the content of the main window resp. up or down.
+
+MOVE SCROLLBAR UP and MOVE SCROLLBAR DOWN
+  Moves the selection bar (the inverted row in the main
+  window) resp. up or down one item.
+
+Commands specific to File Mode:
+===============================
+
+ADD FILES TO LIST:
+  This will exit File Mode and enter Normal Mode. All
+  selected songs will be added to the playlist. Please note
+  that you can select songs from multiple directories
+  without having to switch back and forth between File Mode
+  and Normal Mode; simply select the songs you want, change
+  directories, select more songs etc. All songs will be
+  added in the order in which you selected them. Songs will
+  be added to the group you were in before entering File
+  Mode.
+
+INVERT SELECTION:
+  All files that are selected will be unselected, and vice
+  versa. Use this if you want all songs from one directory
+  except for a few, by selecting the unwanted songs and then
+  use this command.
+
+RECURS. SELECT ALL
+  This will search for songs in the current directory and in
+  all its subdirectories, and add them to the playlist.
+  After all songs have been added, mp3blaster will switch to
+  Normal Mode.
+  Please be careful when using this command, because it
+  might take a long time if there are many subdirs (e.g.
+  when the current directory is the root-directory, "/").
+
+ADD DIRS AS GROUPS
+  This is the most powerful command in mp3blaster; It works
+  similar to RECURS. SELECT ALL, only in this case songs
+  will be put into a group in the playlist with the same
+  name as the directory they are in. Groups will not be
+  nested though; all dirs that contain songs are added as a
+  group in the one group you were in before entering File
+  Mode. (Perhaps this might change in a future release)
+
+ENTER NEW PATH
+  This command will prompt you to enter a new directory, to
+  which it will then change.
+
+CONVERT MP3 TO WAV
+  This will convert the currently highlighted mp3, or all
+  selected mp3's, to *.wav files in the directory that you
+  will be prompted for. The *.wav files are not zero-padded
+  to be a multiple of 2352 bytes (sector-size on a cd). If
+  you want to burn them to an audio-cd using cdrecord, add
+  the option '-pad' (most other recording programs supply
+  similar options).
+
+ADD URL (SHOUTCAST)
+  Add an URL to the playlist. This URL should be an url to a
+  shoutcast server. 
+  !!! Doesn't work in 3.0 prerelease..
+
+START FILE SEARCH
+  Starts search mode: In this mode, the scrollbar in the
+  main window will jump to the first song it finds starting
+  with the characters that you enter after starting file
+  search. File search ends when you don't type any
+  characters for a few seconds, or when enter is pressed.
+  Please note that this search is case-sensitive.
+
+GO UP ONE DIR
+  For the lazy people amongst us: This command will simply
+  go up one dir (same as hitting enter over the '..' dir).
+
+SELECT FILE
+  This will select the file under the scrollbar in the main
+  window. This can be used in combination with INVERT
+  SELECTION, ADD FILES TO LIST, CONVERT MP3 TO WAV.
+
+Commands that work in any mode:
+===============================
+
+LOAD/ADD PLAYLIST
+  This will put mp3blaster in File Mode (if it isn't
+  already), and change to the directory where your playlists
+  are stored. Playlists (*.lst by default) can be loaded
+  simply by highlighting and selecting one (using enter).
+  The location where your playlists are stoed is 
+  the homedir of the user running it. It can be
+  overridden using the keyword 'PlaylistDir' in the config
+  file (man mp3blasterrc).
+
+WRITE PLAYLIST
+  This will save your current playlist to a file. You will
+  be prompted to enter a filename. Read the description for
+  LOAD/ADD PLAYLIST to see where playlists are stored.
+
+TOGGLE REPEAT
+  Toggles between repeat and no-repeat mode. In repeat mode,
+  the playlist will be played again after it has been
+  finished.
+
+TOGGLE GROUPSHUFFLE
+  Toggles shuffling on and off for the current group. Please
+  note that this will only toggle the shuffle mode for the
+  current group, and not for all groups in your playlist!
+  Using this function, you can create very flexible
+  playlists where some groups are always played in the order
+  in which you added songs to it (e.g. albums from one
+  artist), while others are shuffled (e.g. compilation
+  albums where you don't want to hear the same sequence over
+  and over again). If there are groups in the group for
+  which you enabled shuffle mode, the order in which these
+  groups are played is shuffled as well! 
+
+TOGGLE PLAY MODE
+  This toggles the global playback mode, which is shown
+  directly underneath the help window with the commands.
+  Possible modes are:
+  -Play all songs from all groups without shuffle:
+   This will play all groups and songs in the playlist in
+   the order that they are shown.
+  -Play all subgroups in this group:
+   This will only play the groups that exist in the
+   currently selected group. The order in which they are
+   played is shuffled when shuffle mode is enabled for the
+   current group.
+  -Play all songs from all groups in random order:
+   This mode ignores all shuffle settings for all groups,
+   and will randomly shuffle all the songs in all the
+   groups. Putting all songs in one group and enable shuffle
+   mode for that group would have the same effect.
+  -Only play songs from the current group:
+   In this mode, only the songs (and not groups!) from the
+   current group will be played. The order depends on the
+   shuffle mode for this group.
+
+START/STOP PLAYLIST
+  This will start playing the playlist if it's not playing,
+  and vice versa. The playback order is determined by the
+  global playback mode and/or the individual shuffle
+  settings for each group.
+
+CHANGE #THREADS
+  Increases the number of threads used for playback. Threads
+  are used as a buffer, e.g. sound playback will be less
+  likely interrupted when your machine is temporarily busy.
+  The used buffering method is far from perfect though, so
+  you dont' want to hog your machine much during playback..
+
+TOGGLE MIXER DEVICE
+  If your system supports the OSS mixer (or NAS mixer), it
+  will be displayed on the bottom-right of the mp3blaster
+  screen. This command will cycle between all the available
+  mixer devices on your primary sound device. You can
+  back-cycle using capital-T (these keybindings are
+  currently hardcoded..)
+
+MIXERVOLUME DOWN
+  Turns down the currently selected mixer device.
+
+MIXERVOLUME UP
+  Turns up the currently selected mixed device.
+
+QUIT MP3BLASTER
+  Quits mp3blaster (Caught you by surprise, didn't it?)
+
+SHOW HELP
+  Shows this text.
+
+DELETE
+  Deletes currently highlighted or selected song(s) (or
+  group) from the playlist. If you try to delete a group in
+  which a song is currently being played, it will silently
+  fail. Please note that this command will not try to delete
+  the file, only its reference in the playlist. It will not
+  save your playlist either, you have to do this yourself.
+
+DELETE AND MARK
+  This is similar to DELETE, only it will also (try to) mark
+  the associated file(s) as bad, by moving them into a
+  subdirectory 'baditems', located in the same directory as
+  the song. 
+  **********=========== BEWARE =============*************
+  In contrast to the DELETE command, this command
+  *will* save your playlist using as playlist file the last
+  loaded playlist in this mp3blaster session.
+
+REFRESH SCREEN
+  Tries to refresh mp3blaster's layout. It likely won't
+  always work for 100%, YMMV.
+
+PREVIOUS SONG
+  If playing a playlist, this will play the previous song
+  (CURRENTLY NOT IMPLEMENTED!)
+
+PLAY SONG
+  If playing a playlist, this will either:
+  -If a song is currently being played, it will be paused.
+  -continue playing a paused song
+  -If playback was stopped using the stop button, play will
+   restart playback.
+  If not playing a playlist, this will start the playlist.
+
+NEXT SONG
+  If playing in a playlist, this will stop the current song
+  and move to the next song.
+
+REWIND SONG
+  If a song is being played, this command will jump back one
+  step in the song. The size of this step can be configured
+  in the config file using the keyword 'SkipFrames' (the
+  larger this number is, the bigger the step).
+
+FORWARD SONG
+  Same as for REWIND SONG, only now you will jump ahead in
+  the song.
+
+STOP SONG
+  If a song is being played, it will be stopped. If a
+  playlist is being played, this will not reset the
+  playlist, it will only mark the current song as played. If
+  play is pressed after stop, the playlist will continue
+  with the next song.
+
+SCROLL UP / DOWN HELPTEXT
+  Scroll the help window in the top of the screen
+  (containing the keyboard shortcuts for all commands) up or
+  down.

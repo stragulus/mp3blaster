@@ -12,11 +12,14 @@ char *readline(FILE *);
 char *crop_whitespace(const char*);
 short is_dir(const char*);
 const char *chop_path(const char*);
+char *chop_file(const char *a);
 int is_mp3(const char*);
+int is_wav(const char*);
 int is_sid(const char*);
 int is_httpstream(const char*);
 int is_audiofile(const char *);
 int is_playlist(const char *);
 char *crunch_string(const char*, unsigned int);
+short read_file(const char *filename, char ***lines, int *linecount);
 
 #endif /* _MP3B_GLOBAL_ */

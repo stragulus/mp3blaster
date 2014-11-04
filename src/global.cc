@@ -17,7 +17,9 @@
  * This file contains global functions that are globally useful for the
  * mp3blaster binary
  */
-
+/* Change history
+ * 29 oct 2000: Added is_wav()
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -298,6 +300,28 @@ chop_path(const char *a)
 	return a + begin;
 }
 
+/* delete[] string after use */
+char *
+chop_file(const char *a)
+{
+	const char
+		*last_slash = strrchr(a, '/');
+	char 
+		*new_path = NULL;
+
+	if (!last_slash) /* no '/' in this->items[item_index] */
+	{
+		new_path = new char[1];
+		new_path[0] = '\0';
+		return new_path;
+	}
+
+	new_path = new char[strlen(a) + 1];
+	strcpy(new_path, a);
+	new_path[(strlen(new_path) - strlen(last_slash)) + 1] = '\0';
+	return new_path;
+}
+
 int
 is_mp3(const char *filename)
 {
@@ -307,6 +331,22 @@ is_mp3(const char *filename)
 		return 0;
 
 	if (fnmatch(".[mM][pP][23]", (filename + (len - 4)), 0))
+		return 0;
+	//if (strcasecmp(filename + (len - 4), ".mp3"))
+	//	return 0;
+	
+	return 1;
+}
+
+int
+is_wav(const char *filename)
+{
+	int len;
+	
+	if (!filename || (len = strlen(filename)) < 5)
+		return 0;
+
+	if (fnmatch(".[wW][aA][vV]", (filename + (len - 4)), 0))
 		return 0;
 	//if (strcasecmp(filename + (len - 4), ".mp3"))
 	//	return 0;
@@ -418,4 +458,28 @@ crunch_string(const char *flname, unsigned int length)
 		strcpy(filename,flname);
 	}
 	return filename;
+}
+
+short
+read_file(const char *filename, char ***lines, int *linecount)
+{
+	char *line = NULL;
+	FILE *f = fopen(filename, "r");
+
+	if (!f)
+		return 0;
+
+	*lines = NULL;
+	*linecount = 0;
+
+	while ( (line = readline(f)) )
+	{
+		*lines = (char**)realloc(*lines, (*linecount + 1) * sizeof(char**));
+		if (!lines)
+			return 0;
+
+		(*lines)[(*linecount)++] = line;
+	}
+
+	return 1;
 }

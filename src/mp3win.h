@@ -39,7 +39,7 @@ public:
 private:
 	int getUnplayedItems(short type=0,short recursive=1);
 
-	short playmode;
+	short playmode; //0: normal playmode, 1: shuffle playmode
 	short played; //1 if this group has been playing in group-mode
 	short playing; //1 if this group is currently being played in group-mode
 };

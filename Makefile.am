@@ -1,4 +1,4 @@
-SUBDIRS = mpegsound nmixer src
+SUBDIRS = mpegsound nmixer src doc
 man_MANS = mp3blaster.1 nmixer.1
 EXTRA_DIST = CREDITS TODO id3scripts/id3name.sh mp3blaster.1 nmixer.1 \
 	winnt/AUTHORS winnt/README.txt winnt/getopt.c winnt/getopt.h \

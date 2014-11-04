@@ -26,7 +26,7 @@
 /* --------------------------------------- */
 
 enum playstatus { PS_NORMAL, PS_PLAYING, PS_STOPPED, PS_PAUSED };
-enum program_mode { PM_NORMAL, PM_FILESELECTION, PM_ANY };
+enum program_mode { PM_NORMAL, PM_FILESELECTION, PM_HELP, PM_ANY };
 enum command_t { 
 	CMD_SELECT_FILES, CMD_ADD_GROUP, CMD_LOAD_PLAYLIST, CMD_WRITE_PLAYLIST,
 	CMD_SET_GROUP_TITLE, CMD_TOGGLE_REPEAT, CMD_TOGGLE_SHUFFLE, CMD_ENTER,
@@ -37,9 +37,11 @@ enum command_t {
 	CMD_FILE_RECURSIVE_SELECT, CMD_FILE_SET_PATH, CMD_FILE_DIRS_AS_GROUPS,
 	CMD_FILE_MP3_TO_WAV, CMD_FILE_ADD_URL, CMD_FILE_START_SEARCH, CMD_FILE_ENTER,
 	CMD_FILE_UP_DIR, CMD_PLAY_PREVIOUS, CMD_PLAY_PLAY, CMD_PLAY_NEXT,
-	CMD_PLAY_REWIND, CMD_PLAY_STOP, CMD_PLAY_FORWARD, CMD_NONE, CMD_FILE_UP,
-	CMD_FILE_DOWN, CMD_FILE_NEXT_PAGE, CMD_FILE_PREV_PAGE, CMD_FILE_SELECT,
-	CMD_HELP_PREV, CMD_HELP_NEXT };
+	CMD_PLAY_REWIND, CMD_PLAY_STOP, CMD_PLAY_FORWARD, CMD_NONE,
+	CMD_FILE_SELECT, CMD_HELP_PREV, CMD_HELP_NEXT, CMD_FILE_MARK_BAD,
+	CMD_CLEAR_PLAYLIST, CMD_DEL_MARK
+};
+
 enum playmode {
 	PLAY_NONE, 	
 	PLAY_GROUP,           /* play songs from displayed group in given order */
@@ -92,6 +94,7 @@ struct _globalopts /* global options, exported for other classes */
 	short display_mode;
 	char **extensions; /* list of regexps that match audiofilenames */
 	char **plist_exts; /* list of regexps that list playlistfilenames */
+	char *playlist_dir;
 #if defined(PTHREADEDMPEG)
 	int threads;
 #endif

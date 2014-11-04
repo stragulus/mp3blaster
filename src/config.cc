@@ -34,6 +34,7 @@ extern void set_sound_device(const char*);
 extern short set_skip_frames(unsigned int);
 extern short set_mini_mixer(short);
 extern short set_playlist_matching(const char**, int);
+extern short set_playlist_dir(const char*);
 extern void bindkey(command_t,int);
 #ifdef PTHREADEDMPEG
 extern short set_threads(int);
@@ -110,10 +111,10 @@ struct _confopts
 { "Key.NextPage", 2 },
 { "Key.Up", 2 },
 { "Key.Down", 2 },              //55
-{ "Key.File.Down", 2 },
-{ "Key.File.Up", 2 },
-{ "Key.File.PrevPage", 2 },
-{ "Key.File.NextPage", 2 },
+{ "Key.File.Down", 2 }, //TODO: Deprecated
+{ "Key.File.Up", 2 }, //TODO: Deprecated
+{ "Key.File.PrevPage", 2 }, //TODO: Deprecated
+{ "Key.File.NextPage", 2 }, //TODO: Deprecated
 { "Key.File.Enter", 2 },        //60
 { "Key.File.Select", 2 },
 { "Key.File.AddFiles", 2 },
@@ -133,12 +134,16 @@ struct _confopts
 { "Key.Play.Forward", 2 },
 { "Key.HelpPrev", 2 },
 { "Key.HelpNext", 2 },
+{ "Key.File.MarkBad", 2 },
+{ "PlaylistDir", 15 },          //80
+{ "Key.ClearPlaylist", 2 },
+{ "Key,DeleteMark", 2 },
 { NULL, 0 }, /* last entry's keyword MUST be NULL */
 };
 
 /* This array is used to check if the value[s] for a keyword are syntactically
  * correct.
- * bit 0-3(1..8): allowed types of a value: 
+ * bit 0-3(1..15): allowed types of a value: 
  *                00=NUMBER, 01=YESNO, 10=KEY, 11=COLOUR, 1111=ANYTHING
  *                (see below)
  * bit   4(16): 0: only 1 value allowed. 1: multiple values allowed.
@@ -447,10 +452,14 @@ cf_add_keyword(int keyword, const char **values, int nrvals)
 	case 53: bindkey(CMD_NEXT_PAGE, cf_type_key(v)); break;
 	case 54: bindkey(CMD_UP, cf_type_key(v)); break;
 	case 55: bindkey(CMD_DOWN, cf_type_key(v)); break;
-	case 56: bindkey(CMD_FILE_DOWN, cf_type_key(v)); break;
-	case 57: bindkey(CMD_FILE_UP, cf_type_key(v)); break;
-	case 58: bindkey(CMD_FILE_PREV_PAGE, cf_type_key(v)); break;
-	case 59: bindkey(CMD_FILE_NEXT_PAGE, cf_type_key(v)); break;
+	//case 56: bindkey(CMD_FILE_DOWN, cf_type_key(v)); break;
+	//case 57: bindkey(CMD_FILE_UP, cf_type_key(v)); break;
+	//case 58: bindkey(CMD_FILE_PREV_PAGE, cf_type_key(v)); break;
+	//case 59: bindkey(CMD_FILE_NEXT_PAGE, cf_type_key(v)); break;
+	case 56:
+	case 57:
+	case 58: 
+	case 59: error = BADKEYWORD; return 0;
 	case 60: bindkey(CMD_FILE_ENTER, cf_type_key(v)); break;
 	case 61: bindkey(CMD_FILE_SELECT, cf_type_key(v)); break;
 	case 62: bindkey(CMD_FILE_ADD_FILES, cf_type_key(v)); break;
@@ -470,6 +479,16 @@ cf_add_keyword(int keyword, const char **values, int nrvals)
 	case 76: bindkey(CMD_PLAY_FORWARD, cf_type_key(v)); break;
 	case 77: bindkey(CMD_HELP_PREV, cf_type_key(v)); break;
 	case 78: bindkey(CMD_HELP_NEXT, cf_type_key(v)); break;
+	case 79: bindkey(CMD_FILE_MARK_BAD, cf_type_key(v)); break;
+	case 80: //PlaylistDir
+		if (!set_playlist_dir(values[0]))
+		{
+			error = BADVALUE;
+			return 0;
+		}
+	break;
+	case 81: bindkey(CMD_CLEAR_PLAYLIST, cf_type_key(v)); break;
+	case 82: bindkey(CMD_DEL_MARK, cf_type_key(v)); break;
 	}
 
 	return 1;

@@ -1,4 +1,16 @@
-V3.0b1 2000/08/28
+V3.0pre2 2000/10/29
+===================
+-Repeat of playlist now works
+-wav-playback fixed (did it ever work?)
+-reading/writing playlists works. The structure of the playlists has changed 
+ significantly though, it uses HTML-like tags. A script to convert old-style
+ playlists is provided.
+-Files can be marked bad from within mp3blaster (they'll be moved to a 'baddir'
+ subdirectory)
+-One-key clear playlist
+-Added scrollable help screen.
+
+V3.0pre1 2000/08/28
 ===================
 -By popular demand, simultaneous playlist editing and sound playback.
  You can even play a playlist while occasionally listening to

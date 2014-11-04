@@ -3,8 +3,12 @@ scrollWin class: Use a global variable to determine for each function if
 								 userfriendly for the end user of this class!
 mp3blaster: 
 Basic features:
+-move all selected files in filemanager to current dir (m) (!)
+-clear playlist
+-CMD_FILE_MARK_BAD: implement
 -'next group' knop
 -playlist herstarten => pas na een keer of 3..
+-import/export playlist (compatible met o.a. winamp)
 -set_action(AC_NONE) altijd in play_list() ?? (denk het wel)
 -fix warning()
 -sort order of files in groups!
@@ -22,7 +26,8 @@ Basic features:
 Enhanced functionality:
 -'skip to next mp3 and delete this one from list'
 -pulldown menus instead of space-consuming help window!
--filesize in filemanager f/each file
+-filesize in filemanager f/each file:
+ -<10Kb: 9999 B, < 10M: 9999 KB, < 10G: 9999 MB, 9999 GB
 
 DONE:
 -configurable keys

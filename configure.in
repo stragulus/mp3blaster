@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(src/main.cc)
-AM_INIT_AUTOMAKE(mp3blaster, 3.0p1)
+AM_INIT_AUTOMAKE(mp3blaster, 3.0p2)
 
 dnl Checks for programs.
 AC_PROG_CC
@@ -198,9 +198,9 @@ AC_SUBST(LIBMPEGSOUND)
 AC_SUBST(LIBNMIXER)
 
 CXXFLAGS="$CXXFLAGS -g -Wall -Wstrict-prototypes -W -fno-strength-reduce "
-SRCDIRS="mpegsound nmixer src"
+SRCDIRS="mpegsound nmixer src doc"
 AC_SUBST(SRCDIRS)
-AC_OUTPUT(src/Makefile mpegsound/Makefile Makefile nmixer/Makefile)
+AC_OUTPUT(src/Makefile mpegsound/Makefile Makefile nmixer/Makefile doc/Makefile)
 
 cat << EOF
 If configure can't find certain libraries or include files, you can specify them on the commandline like:

@@ -19,6 +19,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <dirent.h>
@@ -55,9 +56,8 @@ fileManager::fileManager(const char *ourpath, int lines, int ncols, int begin_y,
 	readDir();
 }
 
-/* Returns the path used by the file-manager. Don't forget to delete[] it when
- * it's no longer used.
- * TODO: return const char* undeep copu
+/* Returns the path used by the file-manager.
+ * TODO: return const char* undeep copy
  */
 const char*
 fileManager::getPath()
@@ -182,14 +182,58 @@ fileManager::readDir()
 	{
 		if (entries[i])
 		{
-			short clr;
+			const char
+				*bla[3],
+				*fsizedescs[] = { "B", "K", "M", "G" },
+				*fsizedesc = NULL;
+			char
+				*fdesc = NULL;
+			short
+				foo[2] = { 0, 1 },
+				fsize,
+				clr;
+			struct stat
+				buffy;
+	
+			if (stat(entries[i], &buffy) == -1)
+				continue;
+
+			if (buffy.st_size < (10 * 1024)) //10 Kb
+			{
+				fsize = buffy.st_size;
+				fsizedesc = fsizedescs[0]; //bytes
+			}
+			else if (buffy.st_size < (10 * 1024 * 1024)) //10 Mb
+			{
+				fsize = buffy.st_size / 1024;
+				fsizedesc = fsizedescs[1]; //kbytes
+			}
+			else if (buffy.st_size < (2147483647)) //2 Gb
+			{
+				fsize = buffy.st_size / (1024 * 1024);
+				fsizedesc = fsizedescs[2]; //mbytes
+			}
+			else //this is past the 2Gb barrier.. YMMV.
+			{
+				fsize = buffy.st_size / (1024 * 1024 * 1024);
+				fsizedesc = fsizedescs[3];
+			}
+
+			fdesc = new char[strlen(entries[i]) + 10];
+			sprintf(fdesc, "[%4d%s] %s", fsize, fsizedesc, entries[i]);
+
+			bla[0] = entries[i];
+			bla[1] = fdesc;
+			bla[2] = NULL;
+
 			if (is_audiofile(entries[i]))
 				clr = CP_FILE_MP3;
 			else if (is_playlist(entries[i]))
 				clr = CP_FILE_LST;
 			else
 				clr = CP_DEFAULT;
-			addItem(entries[i], 0, clr);
+			addItem(bla, foo, clr);
+			delete[] fdesc;
 		}
 	}
 
