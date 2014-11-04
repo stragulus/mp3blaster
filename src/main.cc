@@ -41,6 +41,7 @@
 #include <fnmatch.h>
 #include <time.h>
 #include <sys/time.h>
+#include <regex.h>
 #include <signal.h>
 #ifdef HAVE_GETOPT_H
 #include <getopt.h>
@@ -120,6 +121,8 @@ short set_fpl(int);
 #define OPT_SOUNDDEV 256
 #define OPT_PLAYMODE 512
 #define OPT_FPL 1024
+#define OPT_8BITS 2048
+#define OPT_THREADS 4096
 
 /* global vars */
 
@@ -151,7 +154,8 @@ char
 	},
 	**selected_files = NULL,
 	*startup_path = NULL,
-	*fw_searchstring;
+	*fw_searchstring,
+	**extensions = NULL;
 
 int
 main(int argc, char *argv[])
@@ -175,6 +179,9 @@ main(int argc, char *argv[])
 		char *play_mode;
 		char *sound_device;
 		int fpl;
+#ifdef PTHREADEDMPEG
+		int threads;
+#endif
 	} tmp;
 	tmp.sound_device = NULL;
 	tmp.play_mode = NULL;
@@ -184,6 +191,7 @@ main(int argc, char *argv[])
 	globalopts.fpl = 5; /* 5 frames are played between input handling */
 	globalopts.sound_device = NULL; /* default sound device */
 	globalopts.downsample = 0; /* no downsampling */
+	globalopts.eightbits = 0; /* 8bits audio off by default */
 	globalopts.fw_sortingmode = 0; /* case insensitive dirlist */
 	globalopts.play_mode = PLAY_GROUPS;
 #ifdef PTHREADEDMPEG
@@ -196,6 +204,7 @@ main(int argc, char *argv[])
 #if 1
 		static struct option long_options[] = 
 		{
+			{ "8bits", 0, 0, '8'},
 			{ "autolist", 1, 0, 'a'},
 			{ "chroot", 1, 0, 'c'},
 			{ "debug", 0, 0, 'd'},
@@ -207,10 +216,11 @@ main(int argc, char *argv[])
 			{ "no-quit", 0, 0, 'q'},
 			{ "runframes", 1, 0, 'r'},
 			{ "sound-device", 1, 0, 's'},
+			{ "threads", 1, 0, 't'},
 			{ 0, 0, 0, 0}
 		};
 		
-		c = getopt_long_only(argc, argv, "2a:c:dhl:np:qr:s:", long_options,
+		c = getopt_long_only(argc, argv, "28a:c:dhl:np:qr:s:t:", long_options,
 			&long_index);
 #else
 		c = getopt(argc, argv, "a:c:dhl:np:qr:s:");
@@ -227,6 +237,9 @@ main(int argc, char *argv[])
 			break;
 		case '2': /* downsample */
 			options |= OPT_DOWNSAMPLE;
+			break;
+		case '8': /* 8bit audio */
+			options |= OPT_8BITS;
 			break;
 		case 'd':
 			options |= OPT_DEBUG;
@@ -276,6 +289,12 @@ main(int argc, char *argv[])
 			break;
 		case 'h': /* help */
 			usage();
+			break;
+		case 't': /* threads */
+			options |= OPT_THREADS;
+#ifdef PTHREADEDMPEG
+			tmp.threads = atoi(optarg);
+#endif
 			break;
 		default:
 			usage();
@@ -332,12 +351,14 @@ main(int argc, char *argv[])
 		}
 	}
 
+#if 0
 	//read .mp3blasterrc
 	if (!cf_parse_config_file(NULL) && cf_get_error() != NOSUCHFILE)
 	{
 			fprintf(stderr, "%s\n", cf_get_error_string());
 			exit(1);
 	}
+#endif
 
 	signal(SIGALRM, SIG_IGN);
 	initscr();
@@ -444,6 +465,20 @@ main(int argc, char *argv[])
 			usage();
 		}
 	}
+
+	if (options & OPT_THREADS)
+	{
+#ifdef PTHREADEDMPEG
+		if (!set_threads(tmp.threads))
+#else
+		if (1) //threading is not enabled..
+#endif
+		{
+			endwin();
+			usage();
+		}
+	}
+
 	if (options & OPT_CHROOT)
 	{
 		if (chroot(chroot_dir) < 0)
@@ -460,11 +495,13 @@ main(int argc, char *argv[])
 
 	if (options & OPT_DOWNSAMPLE)
 		globalopts.downsample = 1;
+	if (options & OPT_8BITS)
+		globalopts.eightbits = 1;
 
 /*\
 |*|  very rude hack caused by nasplayer lib that outputs rubbish to stderr
 \*/
-	fclose(stderr);
+	//fclose(stderr);
 /*\
 |*|  EORH
 \*/
@@ -531,16 +568,17 @@ usage()
 		"\t--no-mixer/-n: Don't start the built-in mixer.\n"\
 		"\t--debug/-d: Log debug-info in $HOME/.mp3blaster.\n"\
 		"\t--downsample/-2: Downsample (44->22Khz etc)\n"\
+		"\t--8bits/-8: 8bit audio (autodetected if your card can't handle 16 bits)\n"\
 		"\t--chroot/-c=<rootdir>: Set <rootdir> as mp3blaster's root dir.\n"\
 		"\t\tThis affects *ALL* file operations in mp3blaster!!(including\n"\
 		"\t\tplaylist reading&writing!) Note that only users with uid 0\n"\
 		"\t\tcan use this option (yet?). This feature will change soon.\n"\
-		"\t--quit/-q: Don't quit after playing mp3[s] (only makes sense in \n"\
-		"\t\tcombination with --autolist or files from command-line)\n"\
 		"\t--playmode/-p={onegroup,allgroups,groupsrandom,allrandom}\n"\
 		"\t\tDefault playing mode is resp. Play first group only, Play\n"\
 		"\t\tall groups in given order(default), Play all groups in random\n"\
 		"\t\torder, Play all songs in random order.\n"\
+		"\t--quit/-q: Don't quit after playing mp3[s] (only makes sense in \n"\
+		"\t\tcombination with --autolist or files from command-line)\n"\
 		"\t--runframes/-r=<number>: Number of frames to decode in one loop.\n"\
 		"\t\tRange: 1 to 10 (default=5). A low value means that the\n"\
 		"\t\tinterface (while playing) reacts faster but slow CPU's might\n"\
@@ -551,6 +589,9 @@ usage()
 		"\t\tIf you want to use NAS (Network Audio System) as playback\n"\
 		"\t\tdevice, then enter the nasserver's address as device (e.g.\n"\
 		"\t\thost.name.com:0; it *must* contain a colon)\n"\
+		"\t--threads/-t=<amount>: Numbers of threads to use for buffering\n"\
+		"\t\t(only works if mp3blaster was compiled with threads). Range is \n"\
+		"\t\t0..500 in increments of 50 only.\n"\
 		"");
 
 	exit(1);
@@ -607,7 +648,7 @@ fw_end()
 	
 	for ( i = 0; i < nselected; i++)
 	{
-		if (!is_audiofile(selitems[i]))
+		if (!is_audiofile(selitems[i]) || is_dir(selitems[i]))
 			continue;
 
 		char *path = file_window->getPath();
@@ -905,6 +946,22 @@ is_httpstream(const char *filename)
 int
 is_audiofile(const char *filename)
 {
+	if (extensions)
+	{
+		int i = 0;
+		while (extensions[i] != NULL)
+		{
+			int doesmatch = 0;
+			regex_t dum;
+			regcomp(&dum, extensions[i], 0);
+			doesmatch = regexec(&dum, filename, 0, 0, 0);
+			regfree(&dum);
+			if (!doesmatch) //regexec returns 0 for a match.
+				return 1;
+			i++;
+		}
+		return 0;
+	}
 	return (is_mp3(filename) || is_sid(filename) || is_httpstream(filename));
 }
 
@@ -2293,7 +2350,36 @@ set_threads(int t)
 		return 0;
 	else
 		globalopts.threads = t;
-	t = 0; //prevent compile warning
+	//t = 0; //prevent compile warning
 	return 1;
 }
 #endif
+
+short
+set_audiofile_matching(const char **matches, int nmatches)
+{
+	if (!matches || nmatches < 1)
+		return 0;
+	if (extensions)
+	{
+		int i=0;
+
+		while (extensions[i])
+		{
+			delete[] extensions[i];
+			i++;
+		}
+		delete[] extensions;
+	}
+
+	extensions = new char*[nmatches+1];
+	for (int i=0; i < nmatches; i++)
+	{
+		extensions[i] = new char[strlen(matches[i])+1];
+		strcpy(extensions[i], matches[i]);
+	}
+	extensions[nmatches] = NULL;
+
+	return 1;
+}
+

@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(src/main.cc)
-AM_INIT_AUTOMAKE(mp3blaster, 2.0b14)
+AM_INIT_AUTOMAKE(mp3blaster, 2.0b15)
 
 dnl CPLUS_INCLUDE_PATH=$C_INCLUDE_PATH:/usr/local/lib/qt/include
 
@@ -10,6 +10,15 @@ AC_PROG_CXX
 AC_PROG_LN_S
 AC_PROG_INSTALL
 AC_PROG_RANLIB
+
+#For FreeBSD, look in /usr/local/(lib,include) first, since ncurses4
+#must be installed as an add-on on these systems in /usr/local
+FRIET="`uname -sr|cut -d'.' -f1`"
+if test "$FRIET" = "FreeBSD 3" -o "$FRIET" = "FreeBSD 4" ; then
+  echo "FreeBSD 3/4 detected."
+  LDFLAGS="-L/usr/local/lib $LDFLAGS"
+  CPPFLAGS="-I/usr/local/include $CPPFLAGS"
+fi
 
 dnl Checks for libraries.
 AC_CHECK_LIB(m,main,,AC_MSG_ERROR("No libm or no cos"))

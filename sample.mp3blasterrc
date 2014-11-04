@@ -1,0 +1,24 @@
+#With DownFrequency, sound is downsampled to 22Khz.
+DownFrequency = No
+
+#The #threads determine the amount of buffering i/o to prevent hickups.
+#On my system, I don't want buffering 
+Threads=0
+
+#FramesPerLoop Range: 1 to 10 (default=5). A low value means that the
+#interface (while playing) reacts faster but slow CPU's might
+#hick. A higher number implies a slow interface but less
+#hicks on slow CPU's.
+FramesPerLoop = 1
+
+#SoundDevice is the digital sound device in your system. Usually /dev/dsp
+SoundDevice = /dev/dsp1
+
+#AudiofileMatching is a list of regular expressions that determine which file
+#is considered a valid audiofile. matching is done using default settings and
+#regexec(3). Beware that case-insensitiveness does not apply by default when
+#using regexs!
+#This line would match any not-directory file:
+#AudiofileMatching = \\.*
+#And this is default:
+AudiofileMatching = \\.[mM][pP][23]$, \\.[sS][iI][dD]$, \\.[wW][aA][vV]$, ^[hH][tT][tT][pP]://

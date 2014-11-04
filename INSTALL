@@ -10,6 +10,9 @@ Installation is a piece of cake, thanks to autoconf & automake.
 make
 make install
 
+cp sample.mp3blasterrc ~/.mp3blasterrc and tweak it to your likings
+(if you don' have one yet)
+
 This should suffice on most systems. If you experience problems running
 mp3blaster, read these TIPS:
 

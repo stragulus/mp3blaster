@@ -1,3 +1,14 @@
+V2.0b15: 1999/12/13
+===================
+-Fixed a bug causing sigsegv for configfile lines with a list of values.
+-Added AudiofileMatching keyword to configfile: You can specify a list of
+ regular expressions here that match valid audio files if you're not happy
+ with the default filename matching (this triggered a bug in the filemanager
+ that would add dirs with '.*' regexps..fixed)
+-The bugfix that prevented leaving files open introduced another feature.
+ Fixed.
+-#threads can be set with command-line option too.
+
 V2.0b14: 1999/12/12
 ===================
 -fixed bug preventing mp3blaster from running w/o a .mp3blasterrc in your 

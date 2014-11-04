@@ -21,6 +21,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <sys/types.h>
+#include <dirent.h>
 #include <unistd.h>
 #include <pwd.h>
 #include <sys/types.h>
@@ -239,4 +241,22 @@ crop_whitespace(const char *string)
 	strcpy(newstring, tmpstring);
 	free(orgstring);
 	return newstring;
+}
+
+/* checks if a path is a dir we can access. (hence diff. from fstat, which
+ * doesn't check access)
+ */
+short
+is_dir(const char *path)
+{
+	DIR 
+		*dir2 = opendir(path);
+	
+	if (dir2)
+	{
+		closedir(dir2);
+		return 1;
+	}
+
+	return 0;
 }

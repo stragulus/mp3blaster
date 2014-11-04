@@ -200,6 +200,8 @@ int mp3Play::playMp3List()
 		{
 			interface->setFileName(filename);
 			player->setdownfrequency(globalopts.downsample);
+			if (globalopts.eightbits)
+				player->set8bitmode();
 
 
 #ifdef PTHREADEDMPEG
@@ -211,7 +213,8 @@ int mp3Play::playMp3List()
 #endif
 			interface->setStatus(PS_NORMAL);
 
-			player->closefile(); //don't leave files open (oops)
+			if (action != AC_QUIT)
+				player->closefile(); //don't leave files open (oops)
 			if (action == AC_QUIT) /* leave playing interface */
 				play = 0;
 			else if (action == AC_NEXT) /* that's like, default :) */

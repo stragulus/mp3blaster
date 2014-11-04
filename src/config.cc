@@ -36,13 +36,15 @@
  * on global variables (in globalopts), other then its syntactical type,
  * are put in main.cc and not here!
  */
-enum _kwdlabel { Threads, DownFrequency, FramesPerLoop, SoundDevice };
+enum _kwdlabel { Threads, DownFrequency, FramesPerLoop, SoundDevice,
+                 AudiofileMatching };
 
 const char *keywords[] = {
 	"Threads",
 	"DownFrequency",
 	"FramesPerLoop",
 	"SoundDevice",
+	"AudiofileMatching",
 	NULL
 	};
 
@@ -57,6 +59,7 @@ const unsigned short keyword_opts[] = {
 	1, /* downfrequency: 1 yesno */
 	0, /* framesperloop: 1 number */
 	15, /* 1 * anything */
+	31, /* multiple * anything */
 	};
 
 
@@ -230,6 +233,13 @@ cf_add_keyword(_kwdlabel keyword, const char **values, int nrvals)
 	case SoundDevice:
 		set_sound_device(values[0]);
 		break;
+	case AudiofileMatching:
+		if (!set_audiofile_matching(values, nrvals))
+		{
+			error = BADVALUE;
+			return 0;
+		}
+		break;
 	}
 	return 1;
 }
@@ -359,7 +369,7 @@ cf_parse_config_line(const char *line)
 			free(values[val_index]);
 			values[val_index] = tmpval2;
 			curval_pos = 0;
-			values = (char**)realloc(values, (++val_index) * sizeof(char*));
+			values = (char**)realloc(values, ((++val_index)+1) * sizeof(char*));
 			values[val_index] = (char*)calloc(strlen(tmpvals)+1, sizeof(char));
 			prev = ',';
 		}

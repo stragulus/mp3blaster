@@ -74,7 +74,7 @@ Rawplayer::Rawplayer(int audiohandle, int audiobuffersize)
 	this->audiobuffersize = audiobuffersize;
 	//need to do this when object of this class is used for more than one
 	//mp3.
-	rawstereo = rawsamplesize = rawspeed = 0;
+	rawstereo = rawsamplesize = rawspeed = want8bit = 0;
 	rawbuffersize = 0;
 	quota = 0;
 }
@@ -133,7 +133,7 @@ bool Rawplayer::setsoundtype(int stereo,int samplesize,int speed)
   if (rawstereo != stereo) { rawstereo = stereo; changed++; }
   if (rawsamplesize != samplesize) { rawsamplesize = samplesize; changed++; }
   if (rawspeed != speed) { rawspeed = speed; changed++; }
-  forceto8 = false;
+  forceto8 = (want8bit ? true : false);
   forcetomono = 0;
   if (changed)
   	return resetsoundtype();
@@ -157,18 +157,25 @@ bool Rawplayer::resetsoundtype(void)
     forcetomono=1;
   }
 
-  tmp=rawsamplesize;
+  tmp = ( want8bit ? 8 : rawsamplesize);
+
   IOCTL(audiohandle,SNDCTL_DSP_SAMPLESIZE,tmp);
-  if(tmp!=rawsamplesize)
+  if(!want8bit && tmp!=rawsamplesize)
     if(rawsamplesize==16)
     {
-      rawsamplesize=8;
+      //rawsamplesize=8; 
+	  rawsamplesize=AFMT_S8; //most soundcards used SIGNED for 8bits!
       IOCTL(audiohandle,SNDCTL_DSP_SAMPLESIZE,rawsamplesize);
-      if(rawsamplesize!=8)
+      if(rawsamplesize!=AFMT_S8)
 	return seterrorcode(SOUND_ERROR_DEVCTRLERROR);
 
       forceto8=true;
     }
+  else if (want8bit && tmp != 8)
+  	return seterrorcode(SOUND_ERROR_DEVCTRLERROR);
+
+  if (want8bit)
+    forceto8 = true;
 
   if(IOCTL(audiohandle,SNDCTL_DSP_SPEED,rawspeed)<0)
     return seterrorcode(SOUND_ERROR_DEVCTRLERROR);
@@ -189,7 +196,7 @@ bool Rawplayer::putblock(void *buffer,int size)
     source=dest=(unsigned char *)buffer;
 
     if(forcetomono)increment++;
-    if(forceto8)increment++,source++;
+    if(forceto8)increment++,source++,modify=128;
 
     c=modifiedsize=size>>increment;
     increment<<=1;

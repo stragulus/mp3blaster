@@ -21,6 +21,7 @@ public:
 	void closefile(void) { return SIDfileplayer::closefile(); }
 	void setdownfrequency(int value) {
 		SIDfileplayer::setdownfrequency(value); }
+	void set8bitemode() { SIDfileplayer::set8bitmode(); }
 
 private:
 	int nthreads;

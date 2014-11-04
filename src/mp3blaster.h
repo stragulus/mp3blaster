@@ -64,6 +64,7 @@ struct _globalopts /* global options, exported for other classes */
               */
 	int current_group; /* selected group (group_stack[current_group - 1]) */
 	short downsample; /* non-zero => downsampling */
+	short eightbits;
 	char *sound_device;
 	short fw_sortingmode; /* 0: case-insensitive (default), 1: case sensitive */
 	playmode play_mode;
@@ -71,6 +72,14 @@ struct _globalopts /* global options, exported for other classes */
 #ifdef PTHREADEDMPEG
 	int threads;
 #endif
+};
+
+enum keydescs { Main_SelectFiles, Fileman_AddFiles, Playwin_Previous };
+//a key is a struct with a keycode(int) and a description-string.
+struct key
+{
+	int code;
+	char desc[4]; //maxlen of desc = 3
 };
 
 inline int MIN(int x, int y)

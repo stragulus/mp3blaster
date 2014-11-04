@@ -117,7 +117,7 @@ NMixer::DrawScrollbar(short i, int spos)
 	my_y = yoffset + 2 + (3 * spos);
 	
 	//clear 2x58 positions on window
-	mvwprintw(mixwin, my_y - 1, my_x, empty_scrollbar);
+	mvwprintw(mixwin, my_y - 1, my_x, (char*)empty_scrollbar);
 	mvwprintw(mixwin, my_y, my_x, empty_scrollbar);
 	mvwprintw(mixwin, my_y + 1, my_x, empty_scrollbar);
 

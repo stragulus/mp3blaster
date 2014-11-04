@@ -25,6 +25,7 @@ public:
 	void closefile(void) { return Mpegfileplayer::closefile(); }
 	void setdownfrequency(int value) {
 		Mpegfileplayer::setdownfrequency(value); }
+	void set8bitmode() { Mpegfileplayer::set8bitmode(); }
 
 private:
 	int nthreads;

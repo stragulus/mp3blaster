@@ -279,6 +279,7 @@ public:
   virtual int  getprocessed(void);
 
   virtual bool setsoundtype(int stereo,int samplesize,int speed)=0;
+  virtual void set8bitmode()=0;
   virtual bool resetsoundtype(void);
 
   virtual bool putblock(void *buffer,int size)                  =0;
@@ -301,13 +302,13 @@ public:
 
   static Rawtofile *opendevice(char *filename);
   bool setsoundtype(int stereo,int samplesize,int speed);
+  void set8bitmode() { want8bit = 1; }
   bool setfiletype(enum soundtype);
   bool putblock(void *buffer,int size);
-
 private:
   Rawtofile(int filehandle);
   int filehandle, init_putblock;
-  int rawstereo,rawsamplesize,rawspeed;
+  int rawstereo,rawsamplesize,rawspeed,want8bit;
   soundtype filetype;
   WAVEHEADER hdr;
 };
@@ -323,6 +324,7 @@ public:
   int  getprocessed(void);
 
   bool setsoundtype(int stereo,int samplesize,int speed);
+  void set8bitmode() { want8bit = 1; }
   bool resetsoundtype(void);
 
   bool putblock(void *buffer,int size);
@@ -340,7 +342,7 @@ private:
   short int rawbuffer[RAWDATASIZE];
   int  rawbuffersize;
   int  audiohandle,audiobuffersize;
-  int  rawstereo,rawsamplesize,rawspeed;
+  int  rawstereo,rawsamplesize,rawspeed,want8bit;
   short forcetomono,forceto8;
   int  quota;
 };
@@ -360,6 +362,7 @@ public:
 	void abort(void);
 
 	bool setsoundtype(int stereo, int samplesize, int speed);
+	void set8bitmode() { want8bit = 1; }
 	bool resetsoundtype(void);
 
 	bool putblock(void *buffer, int size);
@@ -378,6 +381,7 @@ private:
 	AuEventHandlerRec *evhnd;
 	unsigned char format;
 	int samplerate, channels;
+	int want8bit;
 	int buffer_ms;
 	int req_size;
 };
@@ -515,6 +519,7 @@ private:
 
 public:
   void setforcetomono(short flag);
+  void set8bitmode() { if(player) player->set8bitmode(); }
   void setdownfrequency(int value);
 
   /******************************************/
@@ -748,6 +753,7 @@ public:
   virtual bool openfile(char *filename,char *device, soundtype write2file=NONE)=0;
   virtual void closefile(void)                       =0;
   virtual void setforcetomono(short flag)            =0;
+  virtual void set8bitmode()                         =0;
   virtual bool playing(int verbose)                  =0;
 
 protected:
@@ -770,6 +776,7 @@ public:
   bool openfile(char *filename,char *device, soundtype write2file=NONE);
   void closefile(void); 
   void setforcetomono(short flag);
+  void set8bitmode() {}
   bool playing(int verbose);
   
 private:
@@ -790,6 +797,7 @@ public:
   bool openfile(char *filename,char *device, soundtype write2file=NONE);
   void closefile(void);
   void setforcetomono(short flag);
+  void set8bitmode() { if (server) server->set8bitmode(); }
   void setdownfrequency(int value);
   bool playing(int verbose);
 #if PTHREADEDMPEG
@@ -821,6 +829,7 @@ public:
 	void closefile(void);
 	void setforcetomono(short flag);
 	void setdownfrequency(int value);
+	void set8bitmode() {}
 	bool run(int frames);
 	bool playing(int verbose);
 protected:

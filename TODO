@@ -1,3 +1,4 @@
+-fix sigsegv which occurs after a few attempts to play non-audio files.
 -dir as argument recursively adds all files in it
 -make interface control independant of physical interface 
 -loop playback
