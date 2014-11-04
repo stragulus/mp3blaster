@@ -111,6 +111,7 @@ void draw_extra_stuff(int file_mode=0);
 void draw_settings(int cleanit=0);
 char *gettext(const char *label, short display_path=0);
 short fw_getpath();
+void fw_convmp3();
 
 #define OPT_LOADLIST 1
 #define OPT_DEBUG 2
@@ -829,11 +830,11 @@ cw_set_fkey(short fkey, const char *desc)
 	
 	fkeydesc = (char *)malloc((5 + strlen(desc) + 1) * sizeof(char));
 	sprintf(fkeydesc, "F%2d: %s", fkey, desc);
-	free(fkeydesc); /* thanks to Steven Kemp for pointing out I forgot this */
 	mvwaddnstr(command_window, fkey, 1, "                              ",
 		(maxx - 1));
 	if (strlen(desc))
 		mvwaddnstr(command_window, fkey, 1, fkeydesc, maxx - 1);
+	free(fkeydesc); /* thanks to Steven Kemp for pointing out I forgot this */
 	touchwin(command_window);
 	wrefresh(command_window);
 }
@@ -1518,7 +1519,7 @@ set_default_fkeys(program_mode peem)
 		cw_set_fkey(3, "Recurs. select all");
 		cw_set_fkey(4, "Enter pathname");
 		cw_set_fkey(5, "Add dirs as groups");
-		cw_set_fkey(6, "");
+		cw_set_fkey(6, "Convert MP3 to WAV");
 		cw_set_fkey(7, "");
 		cw_set_fkey(8, "");
 		cw_set_fkey(9, "");
@@ -1646,7 +1647,7 @@ recsel_files(const char *path, short d2g=0, int d2g_init=0)
 			{
 				if (!mp3_found)
 				{
-					char *npath = 0;
+					char const *npath = 0;
 					npath = strrchr(path, '/');
 					if (!npath)
 						npath = path;
@@ -1888,12 +1889,17 @@ handle_input(short no_delay)
 				fw_getpath();
 				break;
 			case KEY_F(5): case '5':
+			{
 				mw_settxt("Adding groups..");
 				char *tmppwd = get_current_working_path();
 				recsel_files(tmppwd, 1, 1);
 				free(tmppwd);
 				fw_end();
 				mw_settxt("Added dirs as  groups.");
+			}
+				break;
+			case KEY_F(6): case '6': /* Convert mp3 to wav */
+				fw_convmp3();
 				break;
 		}
 	}
@@ -1987,4 +1993,69 @@ draw_settings(int cleanit)
 #endif
 	}
 	wrefresh(command_window);		
+}
+
+void
+fw_convmp3()
+{
+	char **selitems;
+	int nselected;
+
+	if  (progmode != PM_FILESELECTION)
+		return;
+
+	selitems = file_window->getSelectedItems(&nselected);
+
+	if (!nselected)
+	{
+		warning("No files have been selected.");
+		refresh_screen();
+		return;
+	}
+
+	for (int i = 0; i < nselected; i++)
+	{
+		char
+			*pwd = file_window->getPath(),
+			*file = (char *)malloc((strlen(pwd) + strlen(selitems[i]) +
+				2) * sizeof(char));
+
+		strcpy(file, pwd);
+		if (pwd[strlen(pwd) - 1] != '/')
+			strcat(file, "/");
+		strcat(file, selitems[i]);
+
+		if (is_mp3(file))
+		{
+			char bla[strlen(file)+80];
+			Mpegfileplayer *decoder;
+			char file2write[strlen(file)+5];
+
+			strcpy(file2write, file);
+			strcat(file2write, ".wav");
+
+			if (!(decoder = new Mpegfileplayer) || !decoder->openfile(file,
+				file2write, WAV))
+			{
+				sprintf(bla, "Decoding of %s failed.", file, file2write);
+				warning(bla);
+				refresh_screen();
+				if (decoder)
+					delete decoder;
+			}
+			else
+			{
+				sprintf(bla, "Converting to wavefile, please wait.", file);
+				mw_settxt(bla);
+				decoder->playing(0);
+				delete decoder;
+			}
+		}
+
+		mw_settxt("Conversion(s) done!");
+		free(file);
+		delete[] pwd;
+		delete[] selitems[i];
+	}
+	delete[] selitems;
 }

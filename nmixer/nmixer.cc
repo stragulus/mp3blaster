@@ -5,8 +5,6 @@
 #define RIGHT_CHANNEL 0x10
 #define LEFT_CHANNEL  0x01
 
-#define MYVERSION "<<NMixer 2.0b9>>"
-
 NMixer::NMixer(WINDOW *mixwin, int yoffset, int nrlines, int *pairs,
 	int bgcolor)
 {

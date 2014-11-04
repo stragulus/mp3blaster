@@ -110,6 +110,8 @@
 /********************/
 typedef float REAL;
 
+enum soundtype { NONE, RAW, WAV };
+
 typedef struct _waveheader {
   u_int32_t     main_chunk;  // 'RIFF'
   u_int32_t     length;      // filelen
@@ -286,15 +288,19 @@ private:
 class Rawtofile : public Soundplayer
 {
 public:
+  Rawtofile():Soundplayer() { filetype = RAW; }
   ~Rawtofile();
 
   bool initialize(char *filename);
   bool setsoundtype(int stereo,int samplesize,int speed);
+  bool setfiletype(enum soundtype);
   bool putblock(void *buffer,int size);
 
 private:
-  int filehandle;
+  int filehandle, init_putblock;
   int rawstereo,rawsamplesize,rawspeed;
+  soundtype filetype;
+  WAVEHEADER hdr;
 };
 
 // Class for playing raw data
@@ -507,7 +513,7 @@ private:
     char album  [30+1];
     char year   [ 4+1];
     char comment[30+1];
-    //    char type         ;
+    char genre        ;
   }songinfo;
   int totaltime;
 
@@ -518,6 +524,7 @@ public:
   const char *getalbum   (void) const { return (const char *)songinfo.album;  };
   const char *getyear    (void) const { return (const char *)songinfo.year;   };
   const char *getcomment (void) const { return (const char *)songinfo.comment;};
+  const char  getgenre   (void) const { return (const char)songinfo.genre;    };
   int gettotaltime() { return totaltime; }
 
   /*******************/
@@ -689,7 +696,7 @@ public:
 
   int geterrorcode(void)        {return __errorcode;};
 
-  virtual bool openfile(char *filename,char *device)=0;
+  virtual bool openfile(char *filename,char *device, soundtype write2file=NONE)=0;
   virtual void setforcetomono(short flag)            =0;
   virtual bool playing(int verbose)                 =0;
 
@@ -709,7 +716,7 @@ public:
   Wavefileplayer();
   ~Wavefileplayer();
 
-  bool openfile(char *filename,char *device);
+  bool openfile(char *filename,char *device, soundtype write2file=NONE);
   void setforcetomono(short flag);
   bool playing(int verbose);
   
@@ -728,7 +735,7 @@ public:
   Mpegfileplayer();
   ~Mpegfileplayer();
 
-  bool openfile(char *filename,char *device);
+  bool openfile(char *filename,char *device, soundtype write2file=NONE);
   void setforcetomono(short flag);
   void setdownfrequency(int value);
   bool playing(int verbose);

@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(src/main.cc)
-AM_INIT_AUTOMAKE(mp3blaster, 2.0b10)
+AM_INIT_AUTOMAKE(mp3blaster, 2.0b11)
 
 dnl CPLUS_INCLUDE_PATH=$C_INCLUDE_PATH:/usr/local/lib/qt/include
 
@@ -82,7 +82,7 @@ fi
 CXXFLAGS="$CXXFLAGS -Wall -Wstrict-prototypes -W -fno-strength-reduce "
 
 PACKAGE=mp3blaster
-VERSION=2.0b10
+VERSION=2.0b11
 dnl PACKAGE_VERSION="$PACKAGE-$VERSION"
 dnl AC_DEFINE_UNQUOTED(PACKAGE, "$PACKAGE")
 dnl AC_DEFINE_UNQUOTED(VERSION, "$VERSION")

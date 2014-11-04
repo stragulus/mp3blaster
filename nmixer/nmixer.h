@@ -45,12 +45,11 @@ extern "C" {
 
 #define MIXER_DEVICE "/dev/mixer"
 #define MYMIN(x, y) ((x) < (y) ? (x) : (y))
+#define MYVERSION "<<NMixer "VERSION">>"
 
 #define BOTH_CHANNELS 0x11
 #define RIGHT_CHANNEL 0x10
 #define LEFT_CHANNEL  0x01
-
-#define MYVERSION "<<MixIt 2.0>>"
 
 struct volume
 {

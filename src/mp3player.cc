@@ -82,6 +82,8 @@ bool mp3Player::playing(int verbose)
 		interface->setSongYear(server->getyear());
 	if (server->getcomment())
 		interface->setSongInfo(server->getcomment());
+//	if (server->getgenre())
+		interface->setSongGenre(server->getgenre());
 #ifdef DEBUG
 	interface->setFrames(server->gettotalframe());
 #endif
@@ -110,7 +112,7 @@ bool mp3Player::playing(int verbose)
 				close(mixer); mixer = -1;
 			}
 		}
-		else 
+		else
 			usleep(100); //cause a little delay to reduce system overhead
 
 		if (!should_play)
@@ -172,7 +174,7 @@ bool mp3Player::playing(int verbose)
 				curframe += 100;
 				if (curframe > maxframe)
 					curframe = maxframe - 1;
-					
+
 				server->setframe(curframe);
 			}
 			break;
@@ -213,7 +215,7 @@ bool mp3Player::playing(int verbose)
 
 	seterrorcode(server->geterrorcode());
 	interface->setStatus( (status = PS_NORMAL) );
-  
+
 	return ( (geterrorcode() == SOUND_ERROR_FINISH) || (geterrorcode() ==
 		SOUND_ERROR_OK));
 }
@@ -260,6 +262,8 @@ bool mp3Player::playingwiththread(int verbose)
 		interface->setSongYear(server->getyear());
 	if (server->getcomment())
 		interface->setSongInfo(server->getcomment());
+//	if (server->getgenre())
+		interface->setSongGenre(server->getgenre());
 #ifdef DEBUG
 	interface->setFrames(server->gettotalframe());
 #endif

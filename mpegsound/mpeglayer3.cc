@@ -57,7 +57,8 @@ inline int Mpegbitwindow::getbits9(int bits)
   }
 #else
   //  a=((unsigned short *)(buffer+((bixindex>>3)&(WINDOWSIZE-1))));
-  a=((unsigned short *)(buffer+((bixindex>>3))));
+  //a=((unsigned short *)(buffer+((bitindex>>3))));
+  a=((unsigned short *)(buffer+((bitindex>>3))));
 #endif
 
   a<<=(bitindex&7);

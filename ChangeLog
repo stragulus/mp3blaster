@@ -1,5 +1,12 @@
-V3.0.4: 1999/07/20
-================
+V2.0b11: 1999/07/21
+===================
+-Fixed a bug that caused a layout error (or sigsegv).
+-Added genre support to the ID3Tag code. Thank you Petr Cech!
+ (I falsely put this in 2.0b10's ChangeLog, oops)
+-Added very basic (and simple) conversion from mp3 to wav.
+
+V2.0b10: 1999/07/20
+===================
 -Minor bugfixes (MYINT)
 -Hopefully fixed the problem where mp3blaster interrupted playing mp3's while
  waiting for a key to be pressed on certain configurations. If you *still*
@@ -23,7 +30,6 @@ V3.0.4: 1999/07/20
  weird ID3-tags.
 -Fixed a major memory leak. There's still some loss but it's heavily reduced.
  Also some minor ones; thanks to Steve Kemp for pointing those out.
--Added genre support to the ID3Tag code. Thank you Petr Cech!
 
 V2.0b9: 1999/04/XX
 ==================

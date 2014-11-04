@@ -38,7 +38,7 @@ Wavefileplayer::~Wavefileplayer()
   if(server)delete server;
 }
 
-bool Wavefileplayer::openfile(char *filename,char *device)
+bool Wavefileplayer::openfile(char *filename,char *device, soundtype write2file)
 {
 // Player
   if(device==NULL)device=Rawplayer::defaultdevice;
@@ -112,19 +112,28 @@ Mpegfileplayer::~Mpegfileplayer()
   if(server)delete server;
 }
 
-bool Mpegfileplayer::openfile(char *filename,char *device)
+/* if device[0] == '-' output will be written to stdout.
+ * if write2file != 0, output will be written to file `device'
+ */
+bool Mpegfileplayer::openfile(char *filename,char *device, soundtype write2file)
 {
 // Player
   if (!player)
   {
     if(device==NULL)device=Rawplayer::defaultdevice;
-
-    if(device[0]=='/')player=new Rawplayer;
-    else 
-    {
-      if(device[0]=='-')device=NULL;
-     player=new Rawtofile;
-    }
+    else if(write2file == NONE && device[0] == '/')
+		player= new Rawplayer;
+	else if (write2file != NONE)
+	{	
+		player = new Rawtofile;
+		((Rawtofile*)player)->setfiletype(write2file);
+	}
+	else 
+	{
+		if(device[0]=='-')
+			device=NULL;
+		player = new Rawtofile;
+	}
 
     if(player==NULL)
       return seterrorcode(SOUND_ERROR_MEMORYNOTENOUGH);

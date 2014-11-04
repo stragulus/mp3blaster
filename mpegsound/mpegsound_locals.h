@@ -27,7 +27,8 @@ inline int Mpegtoraw::getbits9(int bits)
     a=(((unsigned char)buffer[offset])<<8) | ((unsigned char)buffer[offset+1]);
   }
 #else
-  a=((unsigned short *)(buffer+((bixindex>>3))));
+  //a=((unsigned short *)(buffer+((bixindex>>3))));
+  a=((unsigned short *)(buffer+((bitindex>>3))));
 #endif
 
   a<<=(bitindex&7);
@@ -46,7 +47,8 @@ inline int Mpegtoraw::getbits8(void)
     a=(((unsigned char)buffer[offset])<<8) | ((unsigned char)buffer[offset+1]);
   }
 #else
-  a=((unsigned short *)(buffer+((bixindex>>3))));
+  //a=((unsigned short *)(buffer+((bixindex>>3))));
+  a=((unsigned short *)(buffer+((bitindex>>3))));
 #endif
 
   a<<=(bitindex&7);

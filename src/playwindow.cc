@@ -19,6 +19,7 @@
 #include NCURSES
 #include <string.h>
 #include "playwindow.h"
+#include "genretab.h"
 
 extern int no_mixer; /* from main.cc */
 
@@ -183,7 +184,7 @@ playWindow::setProgressBar(int percentage)
 	progress[1] = percentage/2; /* 50 chars represent 100%.. */
 	if (progress[1] > 50)
 		progress[1] = 50;
-		
+
 	if (progress[1] == progress[0]) /* no change... continue! */
 		return;
 	if (progress[1] > progress[0])
@@ -242,6 +243,7 @@ playWindow::setSongYear(const char *yr)
 	mvwaddstr(interface, 3, 43, "Year  : ");
 	mvwaddnstr(interface, 3, 51, "       ", 4);
 	mvwaddnstr(interface, 3, 51, yr, 4);
+	wrefresh(interface);
 }
 
 void
@@ -250,6 +252,38 @@ playWindow::setSongInfo(const char *inf)
 	mvwaddstr(interface, 6, 2, "Info    :");
 	mvwaddnstr(interface, 6, 12, "                              ", 30);
 	mvwaddnstr(interface, 6, 12, inf, 30);
+	wrefresh(interface);
+}
+
+char *
+playWindow::getGenre(const char genre)
+{
+	return genre_table[genre];
+#if 0
+	int i;
+	struct _genre_table *tmp=&genre_table[0];
+
+	for (i = 0; tmp[i].text != NULL; i++)
+	{
+		if (tmp[i].genre == genre)
+			return tmp[i].text;
+	}
+
+	return "Unknown type";
+#endif
+}
+
+void
+playWindow::setSongGenre(const char inf)
+{
+//	char temp[20]; // this is the genre numbe (for debug)
+//	sprintf(temp, "%02d", inf);
+//	mvwaddstr(interface, 4, 41, temp);
+	mvwaddstr(interface, 4, 43, "Genre : ");
+//                                   |         1         2         3         4
+	mvwaddnstr(interface, 4, 51, "                                        ",
+		MIN((COLS - 52), 40));
+	mvwaddnstr(interface, 4, 51, getGenre(inf), COLS - 52);
 	wrefresh(interface);
 }
 

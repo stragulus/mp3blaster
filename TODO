@@ -1,10 +1,10 @@
+-add record enable/disable to nmixer
 -mp3blasterrc file (with support for adjustable keybindings)
 -esd (enlightenment sound daemon) support
 -playlist loading/storing from a scrollable menu (by using one default
  directory where all playlists are stored)
 -When a directory is selected (with spacebar) in the filemanager, add this
  as a separate group to the playlist
--emulate popular commandline mp3 players (like mpg123/splay)
 -'/' to search in scrollwin
 -(downmix to 22Khz)
 -(compatible with WinAmp playlist)

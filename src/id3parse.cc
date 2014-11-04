@@ -1,4 +1,5 @@
 #include "id3parse.h"
+#include "genretab.h"
 #include <string.h>
 #include <errno.h>
 
@@ -14,6 +15,8 @@ id3Parse::id3Parse(const char *filename)
 	memset(song->year, 0, 5 * sizeof (char));
 	memset(song->etc, 0, 31 * sizeof (char));
 	song->genre = '\0';
+	//memset(song->genre_txt, 0, 41 * sizeof (char));
+	//strncpy(song->genre_txt, "Not supported yet!",40);
 }
 
 id3Parse::~id3Parse()
@@ -51,6 +54,23 @@ id3Parse::search_header(FILE *fp)
 	}
 
 	return success;
+}
+
+char *
+id3Parse::getGenre(const char genre)
+{
+#if 0
+  int i;
+  struct _genre_table *tmp=&genre_table[0];
+
+  for(i=0;tmp[i].text != NULL;i++) {
+    if(tmp[i].genre == genre)
+      return tmp[i].text;
+  }
+
+  return "Unknown type";
+#endif
+	return genre_table[genre];
 }
 
 struct id3header *
@@ -97,6 +117,8 @@ id3Parse::parseID3()
 	if (fread(buf, 1, sizeof(char), fp) == sizeof(char))
 	{
 		strncpy(&(song->genre), buf, 1);
+		//strncpy(song->genre_txt, getGenre(song->genre),40);
+		//song->genre_txt[40] = '\0';
 		success++;
 	}
 	fclose(fp);

@@ -170,6 +170,7 @@ typedef struct
   char *album;
   char *year;
   char *comment;
+  char *genre;
 }ID3;
 
 static void strman(char *str,int max)
@@ -191,6 +192,7 @@ inline void parseID3(Soundinputstream *fp,ID3 *data)
   data->album   [0]=0;
   data->year    [0]=0;
   data->comment [0]=0;
+  data->genre   [0]=255;
 
   fp->setposition(fp->getsize()-128);
 
@@ -205,6 +207,7 @@ inline void parseID3(Soundinputstream *fp,ID3 *data)
 	  fp->_readbuffer(data->album   ,30);strman(data->album,   30);
 	  fp->_readbuffer(data->year    , 4);strman(data->year,     4);
 	  fp->_readbuffer(data->comment ,30);strman(data->comment, 30);
+	  fp->_readbuffer(data->genre,1);
           break;
         }
 
@@ -314,6 +317,7 @@ bool Mpegtoraw::initialize(char *filename)
       data.album   =songinfo.album;
       data.year    =songinfo.year;
       data.comment =songinfo.comment;
+      data.genre   =&songinfo.genre;
       parseID3(loader,&data);
     }
   }

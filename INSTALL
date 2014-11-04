@@ -7,27 +7,8 @@ I know what's going on.
 INSTALL
 
 Installation is a piece of cake, thanks to autoconf & automake.
-
-HOWEVER!!!
-
-!!! Some systems using libc6 might need their /usr/include/__math.h patched.
-!!! If mp3blaster compiles, but gives a segmentation fault on all mp3's you
-!!! try to play with it, apply the file named 'patch' in this directory
-!!! in the /usr/include-directory as root like this:
-!!! 
-!!! cp patch /tmp ; cd /usr/include ; patch -p0 < /tmp/patch
-!!! 
-!!! This patch changes one line in __math.h (line 297 for the curious amongst
-!!! us, it appears the cast on this line is buggy)
-!!! If someone can explain what exactly causes this bug (I can't reproduce
-!!! it in any other code), please tell me!!!!
-!!! Don't forget to recompile mp3blaster after this patch ;)
-
-ALSO, upgrade to libncurses-4.0 or better. Version 3.* of ncurses is 
-no good and will probably mess up the layout *and* some functionality (3.4 on
-my stock debian 2.0 setup does not understand the nodelay for keyboard
-input so the interface will always wait for a keypress, causing the playback
-to be halted when no key's pressed)
+Tip: First upgrade to libncurses-4.0 or better. Version 3.* of ncurses is 
+no good and will probably mess up the layout *and* perhaps some functionality.
 
 Now on with the show..
 
@@ -61,3 +42,6 @@ FreeBSD (2.2.8) (NOTE: You might need to install or upgrade ncurses since
  this appears not to be installed by many people using FreeBSD)
 OpenBSD/Alpha (compiled, didn't test playing cuz sounddevice wasn't working)
 Linux/Alpha
+
+If you have an SGI Indy eating dust and you don't have a use for it; I'm 
+interested in one!
