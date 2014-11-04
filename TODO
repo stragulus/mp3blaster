@@ -1,7 +1,7 @@
+-mp3blasterrc file (with support for adjustable keybindings)
+-esd (enlightenment sound daemon) support
 -playlist loading/storing from a scrollable menu (by using one default
  directory where all playlists are stored)
--find out why 2.0b6's nodelay() does work with certain older versions of
- ncurses while later versions don't. (seems to be a timing problem)
 -When a directory is selected (with spacebar) in the filemanager, add this
  as a separate group to the playlist
 -emulate popular commandline mp3 players (like mpg123/splay)

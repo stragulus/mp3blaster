@@ -142,6 +142,10 @@ playWindow::getInput()
 	chtype
 		ch;
 
+	//this useless usleep seems to fix a timing problem causing the program
+	//to wait for a keypress.
+	usleep(1);
+
 	if (status == PS_PLAYING || status == PS_PAUSED)
 	{
 		nodelay(interface, TRUE);

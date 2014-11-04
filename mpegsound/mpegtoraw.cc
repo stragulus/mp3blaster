@@ -4,6 +4,8 @@
 
 // Mpegtoraw.cc
 // Server which get mpeg format and put raw format.
+// Patched by Bram Avontuur to support more mp3 formats and to play mp3's
+// with bogus (?) headers.
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -233,7 +235,7 @@ inline void stripfilename(char *dtr,char *str,int max)
 
 // Convert mpeg to raw
 // Mpeg header class
-void Mpegtoraw::initialize(char *filename)
+bool Mpegtoraw::initialize(char *filename)
 {
   static bool initialized=false;
 
@@ -264,14 +266,30 @@ void Mpegtoraw::initialize(char *filename)
   layer3initialize();
 
   currentframe=decodeframe=0;
+  is_vbr = 0;
   first_header = 1;
-  if(loadheader())
+  int lhcount = 0, foundheader = 0, first_offset = 0;
+  sync();
+  while (!foundheader && lhcount < 10)
+  {
+  	first_offset = loader->getposition();
+  	if (!loadheader())
+	{
+		loader->setposition((loader->getposition())-1);
+		lhcount++;
+	}
+	else
+	{
+		debug("Found valid header.\n");
+		foundheader = 1;
+	}
+  }
+
+  if(foundheader)
   {
     totalframe=(loader->getsize()+framesize-1)/framesize;
-    loader->setposition(0);
   }
   else totalframe=0;
-
 
   if(frameoffsets)delete [] frameoffsets;
 
@@ -281,6 +299,12 @@ void Mpegtoraw::initialize(char *filename)
     frameoffsets=new int[totalframe];
     for(i=totalframe-1;i>=0;i--)
       frameoffsets[i]=0;
+
+    //Bram Avontuur: I added this. The original author figured an mp3
+    //would always start with a valid header (which is false if  there's a
+    //sequence of 3 0xf's that's not part of a valid header)
+    frameoffsets[0] = first_offset;
+    //till here. And a loader->setposition later in this function.
 
     {
       ID3 data;
@@ -304,7 +328,13 @@ void Mpegtoraw::initialize(char *filename)
   threadqueue.buffer=NULL;
   threadqueue.sizes=NULL;
 #endif
-};
+
+  if (totalframe)
+    loader->setposition(first_offset);
+
+  seterrorcode(SOUND_ERROR_OK);
+  return (totalframe != 0);
+}
 
 void Mpegtoraw::setframe(int framenumber)
 {
@@ -356,11 +386,48 @@ void Mpegtoraw::clearbuffer(void)
   player->resetsoundtype();
 }
 
+bool Mpegtoraw::isvalidheader(int mpeg, int mylayer, int brindex, int sfreq)
+{
+	if (first_header)
+	{
+		char blep[1000];
+		sprintf(blep, "(brindex %d) Mpeg-%d layer %d %dkbps, freq=%d\n",
+			brindex, mpeg, mylayer,
+			bitrate[mpeg-1][mylayer-1][brindex], sfreq);
+		debug(blep);
+	}
+	/* check if mpeg, layer, bitrateindex are valid first */
+	if ( (mylayer < 1 || mylayer > 3) || (mpeg < 1 || mpeg > 2) ||
+		(brindex < 0 || brindex > 15) || (sfreq < 0 || sfreq > 2))
+		return false;
+
+	/* check mpeg/sampling frequency combination */
+
+#if 0 /*sfreq just must be between 0 and 2.*/
+	for (i = 0; i < 3; i++)
+	{
+		if (frequencies[mpeg - 1][i] == sfreq)
+		{
+			found = true ; break;
+		}
+	}
+#endif
+
+	if (!brindex || brindex == 15)  /*Variable Bitrate MP3?? Supported, but
+				 *this frame must be skipped !!! */
+	{
+		debug("Possible VBR mp3!\n");
+		return false;
+	}
+
+	return true;
+}
+
 bool Mpegtoraw::loadheader(void)
 {
   register int c;
   bool flag;
-  sync();
+  if (!first_header) sync();
 
 // Synchronize
   flag=false;
@@ -395,28 +462,36 @@ bool Mpegtoraw::loadheader(void)
 // sampling frequencies.
   c&=0xf; /* c = 0 0 0 0 bit13 bit14 bit15 bit16 */
   protection=c&1;
-  layer=4-((c>>1)&3);
+  layer=4-((c>>1)&3); /* 1..4, 4=invalid */
   version=(_mpegversion)((c>>3)^1);
 
   c=((loader->getbytedirect()))>>1; /* c = 0 bit17 .. bit23 */
   padding=(c&1);             c>>=1;
   //frequency=(_frequency)(c&2); c>>=2; this is wrong.
   frequency=(_frequency)(c&3); c>>=2;
+#if 0 /* isvalidheader() checks this now */
   if (first_header && ((frequency&0x3) == 0x3))
   {
     debug("Invalid frequency (probably a corrupt " \
 	"mp3).\n");
-    return false;
+    return seterrorcode(SOUND_ERROR_BAD);
   }
+#endif
 
   bitrateindex=(int)c;
-  if(first_header && bitrateindex==15)
-    return seterrorcode(SOUND_ERROR_BAD);
+  //if(first_header && bitrateindex==15)
+  //  return seterrorcode(SOUND_ERROR_BAD);
 
   c=((unsigned int)(loader->getbytedirect()))>>4;
   /* c = 0 0 0 0 bit25 bit26 bit27 bit27 bit28 */
   extendedmode=c&3;
   mode=(_mode)(c>>2);
+
+  if (first_header && !(isvalidheader(version + 1, layer, bitrateindex,
+    frequency)))
+  {
+    return seterrorcode(SOUND_ERROR_BAD);
+  }
 
   if (first_header)
   {
@@ -428,12 +503,13 @@ bool Mpegtoraw::loadheader(void)
     header_one.version = version;
     header_one.mode = mode;
     header_one.frequency = frequency;
-	first_header = 0;
+    first_header = 0;
   }
   else
   {
-    unsigned short bla = 0;
+	unsigned short bla = 0;
 
+	isvalidheader(version + 1, layer, bitrateindex, frequency);
   	if (layer != header_one.layer)
 	{
 	  bla |= 1;
@@ -444,8 +520,9 @@ bool Mpegtoraw::loadheader(void)
 	if (bitrateindex != header_one.bitrateindex)
 	{
 	  bla |= 4;
-	  bitrateindex = header_one.bitrateindex;
-    }
+	  //this broke VBR support.
+	  //bitrateindex = header_one.bitrateindex;
+    	}
 	//if (padding != header_one.padding)
 	//  bla |= 8;
 	//if (extendedmode != header_one.extendedmode)
@@ -466,13 +543,23 @@ bool Mpegtoraw::loadheader(void)
 	  frequency = header_one.frequency;
 	}
 
-	if (bla)
+	if (bla && bla != 4)
 	{
 	  char blub[100];
 	  sprintf(blub, "Bumped into a bad header: %d\n", bla);
 	  debug(blub);
+	  if (bla & 4) /* assume this is not a VBR mp3... if it is, 
+	                * we'll probably crash. */
+	  {
+	    char zopie[100];
+	    sprintf(zopie, "bitrateindex=%d\n", bitrateindex);
+	    debug(zopie);
+	    bitrateindex = header_one.bitrateindex;
+	  }
 	  //return seterrorcode(SOUND_ERROR_BADHEADER);
 	}
+	else if (bla == 4)
+		is_vbr = 1;
   }
 // Making information
   inputstereo= (mode==single)?0:1;
@@ -533,7 +620,6 @@ bool Mpegtoraw::loadheader(void)
 	                     -4;
     }
   }
-
   if(!fillbuffer(framesize-4))seterrorcode(SOUND_ERROR_FILEREADFAIL);
 
   if(!protection)
@@ -662,6 +748,7 @@ int  Mpegtoraw::getframesaved(void)
 // Convert mpeg to raw
 bool Mpegtoraw::run(int frames)
 {
+
   clearrawdata();
   if(frames<0)lastfrequency=0;
 

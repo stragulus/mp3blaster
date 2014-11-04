@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(src/main.cc)
-AM_INIT_AUTOMAKE(mp3blaster, 2.0b9)
+AM_INIT_AUTOMAKE(mp3blaster, 2.0b10)
 
 dnl CPLUS_INCLUDE_PATH=$C_INCLUDE_PATH:/usr/local/lib/qt/include
 
@@ -73,20 +73,16 @@ else
   exit 1
 fi
 
-dnl A check for a particular __math.h file that causes sigsegv's
-if test -f /usr/include/__math.h ; then
-  if test "`grep 'long long int __p = (long long int) __y' /usr/include/__math.h`" != "" ; then
-    echo "Your /usr/include/__math.h will cause mp3blaster to crash on "\
-      "any attempt to play an mp3 file. Please read INSTALL on how to "\
-      "patch it!"
-    exit 1
-  fi
+dnl A check for a particular __math.h file that causes sigsegv's in combination
+dnl with gcc 2.7.*  / egcs-1.1.1 or older versions
+if test -f /usr/include/__math.h -a "`grep 'long long int __p = (long long int) __y' /usr/include/__math.h 2>/dev/null`" != "" -a \( "`$CXX -v 2>&1|grep 'gcc version 2.[[567]]'`" != "" -o "`$CXX -v 2>&1|tail -1|grep egcs|cut -d'(' -f2|egrep 'egcs-(0|1.(0|1.[[01]]))'`" != "" \) ; then
+    CXXFLAGS="$CXXFLAGS -D__NO_MATH_INLINES"
 fi
 
 CXXFLAGS="$CXXFLAGS -Wall -Wstrict-prototypes -W -fno-strength-reduce "
 
 PACKAGE=mp3blaster
-VERSION=2.0b9
+VERSION=2.0b10
 dnl PACKAGE_VERSION="$PACKAGE-$VERSION"
 dnl AC_DEFINE_UNQUOTED(PACKAGE, "$PACKAGE")
 dnl AC_DEFINE_UNQUOTED(VERSION, "$VERSION")

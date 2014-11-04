@@ -1,6 +1,5 @@
 #include <nmixer.h>
 #define MIXER_DEVICE "/dev/mixer"
-#define MIN(x, y) ((x) < (y) ? (x) : (y))
 
 #define BOTH_CHANNELS 0x11
 #define RIGHT_CHANNEL 0x10
@@ -106,7 +105,7 @@ NMixer::NMixerInit()
 	minbar = 0;
 	currentbar = 0; /* current bar (index) */
 
-	for ( i = 0; i < MIN(nrbars, (maxspos + 1)); i++)
+	for ( i = 0; i < MYMIN(nrbars, (maxspos + 1)); i++)
 	{
 		mvwprintw(mixwin, yoffset + 1 + 3 * i, 65, "L");
 		mvwprintw(mixwin, yoffset + 2 + 3 * i, 65, "R");
@@ -158,8 +157,8 @@ NMixer::DrawScrollbar(short i, int spos)
 	
 	volumes[0] = setting & 0x000000FF;
 	volumes[1] = (setting & 0x0000FF00)>>8;
-	volumes[0] = MIN(100, volumes[0]);
-	volumes[1] = MIN(100, volumes[1]);
+	volumes[0] = MYMIN(100, volumes[0]);
+	volumes[1] = MYMIN(100, volumes[1]);
 	volumes[0] /= 2;
 	volumes[1] /= 2;
 

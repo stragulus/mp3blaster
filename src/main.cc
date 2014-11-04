@@ -395,6 +395,7 @@ main(int argc, char *argv[])
 		if (!(debug_info = fopen(to_open, "a")))
 			warning("Couldn't open debuginfo-file!");
 		free(to_open);
+		debug("Debugging messages enabled. Hang on to yer helmet!\n");
 	}
 
 	if (options & OPT_NOMIXER)
@@ -828,6 +829,7 @@ cw_set_fkey(short fkey, const char *desc)
 	
 	fkeydesc = (char *)malloc((5 + strlen(desc) + 1) * sizeof(char));
 	sprintf(fkeydesc, "F%2d: %s", fkey, desc);
+	free(fkeydesc); /* thanks to Steven Kemp for pointing out I forgot this */
 	mvwaddnstr(command_window, fkey, 1, "                              ",
 		(maxx - 1));
 	if (strlen(desc))
@@ -1565,14 +1567,15 @@ is_symlink(const char *path)
 {
 	struct stat
 		*buf = (struct stat*)malloc( 1 * sizeof(struct stat) );
+	int retval = 1;
 	
-	if (lstat(path, buf) < 0)
-		return 0;
-	
-	if ( ((buf->st_mode) & S_IFMT) != S_IFLNK) /* not a symlink. Yippee */
-		return 0;
-	
-	return 1;
+	if (lstat(path, buf) < 0 || ((buf->st_mode) & S_IFMT) != S_IFLNK)
+		retval = 0;
+
+	/* forgot to free this. Thanks to Steve Kemp for pointing it out. */
+	free(buf);
+
+	return retval;
 }
 
 /* This function adds all mp3s recursively found in ``path'' to the current

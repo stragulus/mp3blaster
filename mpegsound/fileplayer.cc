@@ -139,11 +139,16 @@ bool Mpegfileplayer::openfile(char *filename,char *device)
   }
 
 // Server
+  if (server)
+  	delete server;
+
   if((server=new Mpegtoraw(loader,player))==NULL)
     return seterrorcode(SOUND_ERROR_MEMORYNOTENOUGH);
 
 // Initialize server
-  server->initialize(filename);
+  if (!server->initialize(filename))
+    return seterrorcode(SOUND_ERROR_BAD);
+
   return true;
 }
 

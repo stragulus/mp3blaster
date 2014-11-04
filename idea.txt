@@ -1,0 +1,14 @@
+presorten zoals nu het geval is. De lijst met alle nummers als een window
+tijdens playen laten zien. Presorted lijst verdelen in groepen, zodat
+tijdens het spelen een 'pulldown' menu van groepen gezien kan laten worden.
+(indien random order, dan groepnaam is "<randomly mixed>")
+
+Layout:
+
++-----------------------------------+
+|[ <Groepnaam>               ] [+/-]|
++-----------------------------------+
+|<nummer>			    |
+|...			            |
++-----------------------------------+
+ 

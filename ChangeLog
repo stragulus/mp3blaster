@@ -1,3 +1,30 @@
+V3.0.4: 1999/07/20
+================
+-Minor bugfixes (MYINT)
+-Hopefully fixed the problem where mp3blaster interrupted playing mp3's while
+ waiting for a key to be pressed on certain configurations. If you *still*
+ suffer from this, edit src/playwin.cc, search for usleep(1) and try to
+ put it somewhere else before the getch() function call until it works and
+ mail me about your change. Thanks to Martijn van Buul for pointing it out
+ and several other people for confirming that it actually works.
+-Enhanced the check for a __math.h that crashes mp3blaster: It's due to 
+ gcc 2.7.* or older. Setups with this compiler will compile with
+ -D__NO_MATH_INLINES
+-Fixed a 'major bug' in mpegtoraw.cc that caused mp3blaster to crash on
+ certain mp3's: Some mp3's have garbage, produced by some encoders, prepended
+ that contains 0xfff, the start of a synchronization header. The original
+ author of mpegsound figured that the first occurence of 0xfff must be the
+ first header, and therefore didn't check for the header's validity. I've
+ added validity checking for each sync.header, so if this breaks some mp3
+ that played before: tough luck, it's _really_ damaged then.
+ Basically mp3blaster will assume the first header that can possibly be a
+ valid sync.header is the start of an mp3. This might prove wrong in rare
+ cases, but there's no better solution as long as I don't know the format of
+ weird ID3-tags.
+-Fixed a major memory leak. There's still some loss but it's heavily reduced.
+ Also some minor ones; thanks to Steve Kemp for pointing those out.
+-Added genre support to the ID3Tag code. Thank you Petr Cech!
+
 V2.0b9: 1999/04/XX
 ==================
 -Added command option for output device

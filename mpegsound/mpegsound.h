@@ -416,7 +416,7 @@ private:
   /* MPEG header variables */
   /*************************/
 private:
-  int layer,protection,bitrateindex,padding,extendedmode;
+  int layer,protection,bitrateindex,padding,extendedmode, is_vbr;
   enum _mpegversion  {mpeg1,mpeg2}                               version;
   enum _mode    {fullstereo,joint,dual,single}                   mode;
   enum _frequency {frequency44100,frequency48000,frequency32000} frequency;
@@ -526,7 +526,7 @@ public:
 public:
   Mpegtoraw(Soundinputstream *loader,Soundplayer *player);
   ~Mpegtoraw();
-  void initialize(char *filename);
+  bool initialize(char *filename);
   bool run(int frames);
   int  geterrorcode(void) {return __errorcode;};
   void clearbuffer(void);
@@ -579,6 +579,7 @@ private:
   /* Decoding functions for each layer */
   /*************************************/
 private:
+  bool isvalidheader(int,int,int,int);
   bool loadheader(void);
 
   //

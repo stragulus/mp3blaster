@@ -44,7 +44,7 @@ extern "C" {
 #endif
 
 #define MIXER_DEVICE "/dev/mixer"
-#define MIN(x, y) ((x) < (y) ? (x) : (y))
+#define MYMIN(x, y) ((x) < (y) ? (x) : (y))
 
 #define BOTH_CHANNELS 0x11
 #define RIGHT_CHANNEL 0x10

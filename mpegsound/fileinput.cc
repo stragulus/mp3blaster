@@ -82,12 +82,12 @@ int Soundinputstreamfromfile::getsize(void)
 void Soundinputstreamfromfile::setposition(int pos)
 {
   if(fp==stdin)return;
-  fseek(fp,pos,SEEK_SET);
+  fseek(fp,(long)pos,SEEK_SET);
 }
 
 int  Soundinputstreamfromfile::getposition(void)
 {
   if(fp==stdin)return 0;
-  return ftell(fp);
+  return (int)ftell(fp);
 }
 
