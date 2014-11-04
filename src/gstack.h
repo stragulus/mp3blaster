@@ -20,7 +20,10 @@ public:
 	scrollWin* current();
 	scrollWin* last();
 	unsigned int stackSize();
-	
+
+protected:
+	unsigned int ssize;
+
 private:
 	//short del(); no longer wanted function.
 
@@ -31,8 +34,6 @@ private:
 		struct stack *prev;
 		unsigned int index;
 	} *cstack;
-
-	unsigned int ssize;
 };
 
 #endif /* _GSTACK_CLASS_ */

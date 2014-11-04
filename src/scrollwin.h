@@ -1,3 +1,6 @@
+/* Changes:
+ * April 18, 1999: Added changeItem() function.
+ */
 #ifndef _SCROLLWIN_CLASS_
 #define _SCROLLWIN_CLASS_
 
@@ -9,7 +12,7 @@ class scrollWin
 {
 public:
 	scrollWin(int, int, int, int, char **, int, short, short);
-	~scrollWin();
+	virtual ~scrollWin();
 
 	void changeSelection(int);
 	void invertSelection();
@@ -19,6 +22,7 @@ public:
 	char *getTitle();
 	void swRefresh(short);
 	void addItem(const char*);
+	void changeItem(int, const char *);
 	void setItem(int);
 	void delItem(int);
 	void delItems(); 
@@ -27,12 +31,12 @@ public:
 	void pageDown();
 	void pageUp();
 	int isSelected(int);
-	int writeToFile(FILE *);
 	int getNitems();
 	char *getSelectedItem();
 	char **getSelectedItems(int *itemcount);
 	char *getItem(int index);
 	char **getItems();
+	int writeToFile(FILE *);
 
 	WINDOW *sw_win;
 	int sw_playmode;
@@ -41,9 +45,11 @@ public:
 protected:
 	void init(int, int, int, int, short, short);
 	scrollWin() {};
+
 private:
-	char **items;
 	int nitems;
+	char **items;
+	char *sw_title;
 	int nselected;
 	int width;
 	int height;
@@ -52,7 +58,6 @@ private:
 	int shown_range[2];
 	char *sw_emptyline;
 	int *sw_selected_items;
-	char *sw_title;
 	short xoffset;
 	short want_border;
 };

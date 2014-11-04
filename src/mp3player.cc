@@ -47,8 +47,23 @@ mp3Player::mp3Player(mp3Play *calling, playWindow *interface, int threads)
 
 bool mp3Player::playing(int verbose)
 {
+	/* To avoid ``snap''s, turn down the volume for the first 5 frames */
+	int volume, mixer = -1;
+	if ( (mixer = open(MIXER_DEVICE, O_RDWR)) >= 0)
+	{
+		ioctl(mixer, MIXER_READ(SOUND_MIXER_VOLUME), &volume);
+		ioctl(mixer, MIXER_WRITE(SOUND_MIXER_VOLUME), 0);
+	}
+
 	if ( !server->run(-1) )
+	{
+		if (mixer > -1)
+		{
+			ioctl(mixer, MIXER_WRITE(SOUND_MIXER_VOLUME), &volume);
+			close(mixer); mixer = -1;
+		}
 		return false; // Initialize MPEG Layer 3
+	}
 
 	/* dummy code to get rid of warning of curr. unused var :) */
 	if (verbose)
@@ -76,18 +91,11 @@ bool mp3Player::playing(int verbose)
 		init_count = 0;
 
 	interface->setProgressBar(0);
+	interface->setTotalTime(server->gettotaltime());
 
 	time_t
 		tyd, newtyd;
 	time(&tyd);
-
-	/* To avoid ``snap''s, turn down the volume for the first 5 frames */
-	int volume, mixer = -1;
-	if ( (mixer = open(MIXER_DEVICE, O_RDWR)) >= 0)
-	{
-		ioctl(mixer, MIXER_READ(SOUND_MIXER_VOLUME), &volume);
-		ioctl(mixer, MIXER_WRITE(SOUND_MIXER_VOLUME), 0);
-	}
 
 	while(should_play)
 	{
@@ -112,10 +120,14 @@ bool mp3Player::playing(int verbose)
 		if (difftime(newtyd, tyd) >= 1)
 		{
 			int
-				progress = (server->getcurrentframe() * 100) /
-					server->gettotalframe();
+				curr = server->getcurrentframe(),
+				total = server->gettotalframe(),
+				progress = ((curr * 100) / total),
+				playtime = ((int)(curr * server->gettotaltime()) / total);
+
 			tyd = newtyd;
 			interface->setProgressBar(progress);
+			interface->updateTime(playtime);
 		}
 
 		chtype ch = interface->getInput();
@@ -212,12 +224,29 @@ bool mp3Player::playingwiththread(int verbose)
 	if ( nthreads < 20 )
 		return playing(verbose);
 
+	/* To avoid ``snap''s, turn down the volume for the first 5 frames */
+	int volume, mixer = -1;
+	if ( (mixer = open(MIXER_DEVICE, O_RDWR)) >= 0)
+	{
+		ioctl(mixer, MIXER_READ(SOUND_MIXER_VOLUME), &volume);
+		ioctl(mixer, MIXER_WRITE(SOUND_MIXER_VOLUME), 0);
+	}
+
 	server->makethreadedplayer(nthreads);
 
 	if ( !server->run(-1) )
-		return false;       // Initialize MPEG Layer 3
+	{
+		if (mixer > -1)
+		{
+			ioctl(mixer, MIXER_WRITE(SOUND_MIXER_VOLUME), &volume);
+			close(mixer); mixer = -1;
+		}
+		return false; // Initialize MPEG Layer 3
+	}
 
 	interface->setProgressBar(0);
+	interface->setTotalTime(server->gettotaltime());
+
 	interface->setStatus( (status = PS_PLAYING) );
 	interface->setProperties( server->getversion()+1, server->getlayer(),
 		server->getfrequency(), server->getbitrate(), server->isstereo() );
@@ -249,14 +278,6 @@ bool mp3Player::playingwiththread(int verbose)
 		server->run(1);
 	server->unpausethreadedplayer();
 		
-	/* To avoid ``snap''s, turn down the volume for the first 5 frames */
-	int volume, mixer = -1;
-	if ( (mixer = open(MIXER_DEVICE, O_RDWR)) >= 0)
-	{
-		ioctl(mixer, MIXER_READ(SOUND_MIXER_VOLUME), &volume);
-		ioctl(mixer, MIXER_WRITE(SOUND_MIXER_VOLUME), 0);
-	}
-
 	while(should_play)
 	{
 		if (status == PS_PLAYING)
@@ -285,13 +306,14 @@ bool mp3Player::playingwiththread(int verbose)
 		if (difftime(newtyd, tyd) >= 1)
 		{
 			int
-				progress = (server->getcurrentframe() * 100) / 
-					server->gettotalframe();
+				curr = server->getcurrentframe(),
+				total = server->gettotalframe(),
+				progress = ((curr * 100) / total),
+				playtime = ((int)(curr * server->gettotaltime()) / total);
 
-			if (progress > 100)
-				progress = 100;
 			tyd = newtyd;
 			interface->setProgressBar(progress);
+			interface->updateTime(playtime);
 		}
 
 		chtype ch = interface->getInput();

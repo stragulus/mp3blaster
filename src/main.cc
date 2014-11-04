@@ -41,9 +41,13 @@
  * C++ classes. It's not yet as object-oriented as I want it, but it's a
  * start..
  * KNOWN BUGS:
+ * -Layout and/or functionality is screwed up on several stock distributions
+ *  of ncurses. Notably the distributions on RedHat-5.2 and debian-2.0 are
+ *  horrible. To be sure everything works as it should, UPGRADE to at least
+ *  ncurses-4.2. (lib *and* headerfiles)
  * -Might coredump when an attempt to play an unsupported mp3 is made..
  *  although I think it plays all mp3's now. If you can reproduce a bug,
- *  PLEASE email me.
+ *  PLEASE e-mail me.
  */
 #include "mp3blaster.h"
 #include NCURSES
@@ -103,6 +107,9 @@ char *get_current_working_path();
 void play_one_mp3(const char*);
 void usage();
 void show_help();
+void draw_extra_stuff(int file_mode=0);
+char *gettext(const char *label, short display_path=0);
+short fw_getpath();
 
 #define OPT_LOADLIST 1
 #define OPT_DEBUG 2
@@ -317,7 +324,7 @@ main(int argc, char *argv[])
 	/* initialize selection window */
 	sw = new scrollWin(LINES - 4, COLS - 27, 2, 24, NULL, 0, 0, 1);
 	wbkgd(sw->sw_win, ' '|COLOR_PAIR(1)|A_BOLD);
-	sw->setBorder(0, 0, 0, 0, ACS_LTEE, ACS_RTEE, ACS_BTEE, ACS_BTEE);
+	sw->setBorder(0, 0, 0, 0, ACS_LTEE, ACS_PLUS, ACS_BTEE, ACS_PLUS);
 	sw->swRefresh(0);
 	sw->setTitle("Default");
 	dummy = new char[11];
@@ -330,16 +337,19 @@ main(int argc, char *argv[])
 	group_stack->add(sw); /* add default group */
 	current_group = 1; /* == group_stack->entry(current_group - 1) */
 
-	group_window = new scrollWin(LINES - 2, 3, 0, COLS - 3, grps, 1, 0, 0);
+	group_window = new scrollWin(LINES - 4, 3, 2, COLS - 3, grps, 1, 0, 0);
 	wbkgd(group_window->sw_win, ' '|COLOR_PAIR(1)|A_BOLD);
-	group_window->setBorder(' ', 0, 0, 0, ACS_HLINE, 0, ACS_HLINE, ACS_RTEE);
+	group_window->setBorder(' ', 0, 0, 0, ACS_HLINE, ACS_RTEE, ACS_HLINE,
+		ACS_RTEE);
 	group_window->swRefresh(0);
 
+	draw_extra_stuff();
+
 	/* initialize message window */
-	message_window = newwin(2, COLS, LINES - 2, 0);
+	message_window = newwin(2, COLS - 3, LINES - 2, 0);
 	wbkgd(message_window, ' '|COLOR_PAIR(1)|A_BOLD);
 	leaveok(message_window, TRUE);
-	wborder(message_window, 0, 0, ' ', 0, ACS_VLINE, ACS_VLINE, 0, 0);
+	wborder(message_window, 0, 0, ' ', 0, ACS_VLINE, ACS_VLINE, 0, ACS_BTEE);
 	mw_settxt("Press 'h' to get a screen with key functions.");
 	wrefresh(message_window);
 
@@ -410,7 +420,6 @@ main(int argc, char *argv[])
 			}
 		}
 	}
-	//{ char bla[100]; sprintf(bla, "optind=%d", optind); debug(bla); }
 
 	/* read input from keyboard */
 	while ( (key = handle_input(0)) >= 0);
@@ -467,6 +476,7 @@ usage()
 		"\tmp3blaster [options] -a <playlist.lst>\n"\
 		"\t\tLoad a playlist and start playing.\n"\
 		"\nOptions:\n"\
+		"\t-h: This help screen.\n"\
 		"\t-n: Don't start the built-in mixer.\n"\
 		"\t-d: Log debug-info in $HOME/.mp3blaster.\n"\
 		"\t-c <rootdir>: Set <rootdir> as mp3blaster's root dir.\n"\
@@ -502,16 +512,19 @@ set_header_title(const char *title)
 	int i, y, x, middle;
 
 	getmaxyx(header_window, y, x);
-	middle = (x - strlen(title)) / 2;
-	if (middle < 1)
+	if ((int)strlen(title) > (x-2))
 		middle = 1;
+	else
+		middle = (x - strlen(title)) / 2;
 
 	for (i = 1; i < x - 1; i++)
 		mvwaddch(header_window, 1, i, ' ');
-	mvwaddnstr(header_window, 1, middle, title, x - 2);
+	char *temp = new char[strlen(title)+1];
+	strcpy(temp, title);
+	mvwaddnstr(header_window, 1, middle, temp, x - 2);
+	delete temp;
 	wrefresh(header_window);
 }
-
 
 /* fw_end closes the file_window if it's on-screen, and moves all selected
  * files into the currently used group. Finally, the selection-window of the
@@ -587,10 +600,11 @@ fw_end()
 	delete[] title;
 
 	set_default_fkeys(progmode);
+	draw_extra_stuff();
 }
 
 void
-fw_changedir()
+fw_changedir(const char *newpath = 0)
 {
 	if (progmode != PM_FILESELECTION)
 		return;
@@ -598,9 +612,19 @@ fw_changedir()
 	int
 		nselected = 0;
 	char 
-		*path = file_window->getSelectedItem(),
-		**selitems = file_window->getSelectedItems(&nselected);
-	
+		*path,
+		**selitems;
+
+	if (!newpath)
+		path = file_window->getSelectedItem();
+	else
+	{
+		path = new char[strlen(newpath) + 1];
+		strcpy(path, newpath);
+	}
+
+	selitems = file_window->getSelectedItems(&nselected);
+
 	/* if not changed to current dir and files have been selected add them to
 	 * the selection list 
 	 */
@@ -632,13 +656,63 @@ fw_changedir()
 	
 	file_window->changeDir(path);
 	wbkgdset(file_window->sw_win, ' '|COLOR_PAIR(1)|A_BOLD);
-	file_window->setBorder(0, 0, 0, 0, ACS_LTEE, ACS_RTEE,
-		ACS_BTEE, ACS_BTEE);
+	file_window->setBorder(0, 0, 0, 0, ACS_LTEE, ACS_PLUS,
+		ACS_BTEE, ACS_PLUS);
 	wbkgdset(file_window->sw_win, ' '|COLOR_PAIR(6));
 	char *pruts = file_window->getPath();
 	set_header_title(pruts);
 	delete[] pruts;
 	delete[] path;
+}
+
+/* PRE: Be in PM_FILESELECTION
+ * POST: Returns 1 if path was succesfully changed into.
+ */
+short
+fw_getpath()
+{
+	DIR
+		*dir = NULL;
+	char
+		*newpath = gettext("Enter absolute path:");
+	
+	if (!newpath || !(dir = opendir(newpath)))
+		return 0;
+	closedir(dir);
+	fw_changedir(newpath);
+	free(newpath);
+	return 1;
+}
+
+void
+draw_extra_stuff(int file_mode)
+{
+	WINDOW *extra = newwin(2, 3, 0, COLS-3);
+	wbkgd(extra, ' '|COLOR_PAIR(1)|A_BOLD);
+	mvwaddch(extra, 0, 0, ACS_HLINE);
+	mvwaddch(extra, 0, 1, ACS_HLINE);
+	mvwaddch(extra, 0, 2, ACS_URCORNER);
+	if (!file_mode)
+		mvwaddch(extra, 1, 1, '-');
+	else
+		mvwaddch(extra, 1, 1, ' ');
+	mvwaddch(extra, 1, 2, ACS_VLINE);
+	leaveok(extra, TRUE);
+	wrefresh(extra);
+	delwin(extra);
+	WINDOW *ex2 = newwin(2, 3, (LINES-2), (COLS-3));
+	wbkgd(ex2, ' '|COLOR_PAIR(1)|A_BOLD);
+	if (!file_mode)
+		mvwaddch(ex2, 0, 1, '+');
+	else
+		mvwaddch(ex2, 0, 1, ' ');
+	mvwaddch(ex2, 0, 2, ACS_VLINE);
+	mvwaddch(ex2, 1, 0, ACS_HLINE);
+	mvwaddch(ex2, 1, 1, ACS_HLINE);
+	mvwaddch(ex2, 1, 2, ACS_LRCORNER);
+	leaveok(ex2, TRUE);
+	wrefresh(ex2);
+	delwin(ex2);
 }
 
 void
@@ -658,6 +732,7 @@ refresh_screen()
 	{
 		touchwin(file_window->sw_win);
 		wnoutrefresh(file_window->sw_win);
+		draw_extra_stuff(1);
 	}
 	else if (progmode == PM_NORMAL)
 	{
@@ -665,6 +740,7 @@ refresh_screen()
 			*sw = group_stack->entry(current_group - 1);
 		touchwin(sw->sw_win);
 		wnoutrefresh(sw->sw_win);
+		draw_extra_stuff();
 	}
 	doupdate();
 }
@@ -674,9 +750,12 @@ void
 Error(const char *txt)
 {
 	int
-		offset = (COLS - 2 - strlen(txt)),
-		i;
+		offset,
+		i, x, y;
 
+	getmaxyx(message_window, y, x);
+
+	offset = (x - 2 - strlen(txt));
 	if (offset <= 1)
 		offset = 1;
 	else
@@ -692,7 +771,7 @@ Error(const char *txt)
 		offset = 0;
 	} */
 
-	for (i = 1; i < COLS - 1; i++)
+	for (i = 1; i < x - 1; i++)
 	{
 		chtype tmp = '<';
 		
@@ -700,11 +779,16 @@ Error(const char *txt)
 			tmp = '>';
 		mvwaddch(message_window, 0, i, tmp);
 	}
-	mvwaddnstr(message_window, 0, offset, txt, COLS - offset - 1);
-	mvwchgat(message_window, 0, 1, COLS - 2, A_BOLD, 3, NULL);
+
+	char *temp = new char[strlen(txt)+1];
+	strcpy(temp, txt);
+	mvwaddnstr(message_window, 0, offset, temp, x - offset - 1);
+	delete temp;
+
+	mvwchgat(message_window, 0, 1, x - 2, A_BOLD, 3, NULL);
 	wrefresh(message_window);
 	wgetch(message_window);
-	for (i = 1; i < COLS - 1; i++)
+	for (i = 1; i < x - 1; i++)
 		mvwaddch(message_window, 0, i, ' ');
 	
 	wrefresh(message_window);
@@ -718,7 +802,7 @@ is_mp3(const char *filename)
 	if (!filename || (len = strlen(filename)) < 5)
 		return 0;
 
-	if (fnmatch(".mp[23]", (filename + (len - 4)), 0))
+	if (fnmatch(".[mM][pP][23]", (filename + (len - 4)), 0))
 		return 0;
 	//if (strcasecmp(filename + (len - 4), ".mp3"))
 	//	return 0;
@@ -788,9 +872,11 @@ select_group(int groupnr)
 	cw_toggle_group_mode(1); /* display this group's playmode */
 }
 
-/* Adds a new group to the end of the list. */
-void
-add_group()
+/* Adds a new group to the end of the list, and returns the group's nr
+ * (where group_stack[index] == group_stack[group's nr - 1])
+ */
+int
+add_group(const char *newgroupname=0)
 {
 	char
 		gnr[10];
@@ -800,9 +886,12 @@ add_group()
 		*sw;
 
 	sw = new scrollWin(LINES - 4, COLS - 27, 2, 24, NULL, 0, 0, 1);
-	sw->setBorder(0, 0, 0, 0, ACS_LTEE, ACS_RTEE, ACS_BTEE, ACS_BTEE);
+	sw->setBorder(0, 0, 0, 0, ACS_LTEE, ACS_PLUS, ACS_BTEE, ACS_PLUS);
 	wbkgd(sw->sw_win, ' '|COLOR_PAIR(1)|A_BOLD);
-	sw->setTitle("Default");
+	if (newgroupname)
+		sw->setTitle(newgroupname);
+	else
+		sw->setTitle("Default");
 	group_stack->add(sw);
 
 	sprintf(gnr, "%02d", ngroups);
@@ -810,6 +899,39 @@ add_group()
 	group_window->swRefresh(1);
 
 	select_group(ngroups);
+	return ngroups;
+}
+
+/* This function deletes group_stack->entry(gnr-1);
+ */
+short
+del_group(int gnr)
+{
+	int
+		ngroups = group_window->getNitems();
+
+	if (ngroups < 2) /* 1 group is required to exist */
+		return 0;
+	if (!(group_stack->del(gnr - 1)))
+		return 0;
+
+	group_window->delItem(gnr - 1);
+	ngroups--;
+
+	//update group_window;
+	for (int i = gnr; i <= ngroups; i++)
+	{
+		char newtitle[10];
+		sprintf(newtitle, "%02d", i);
+		group_window->changeItem(i - 1, newtitle);
+	}
+
+	group_window->swRefresh(2);
+	if ((unsigned)current_group > group_stack->stackSize())
+		current_group--; /* last entry was deleted */
+	select_group(current_group);
+
+	return 1;	
 }
 
 void
@@ -847,9 +969,10 @@ set_group_name(scrollWin *sw)
 void
 mw_clear()
 {
-	int i;
-
-	for (i = 1; i < COLS - 1; i++)
+	int i, x, y;
+	getmaxyx(message_window, y, x);
+	
+	for (i = 1; i < (x-1); i++)
 		mvwaddch(message_window, 0, i, ' ');
 	wrefresh(message_window);
 }
@@ -857,9 +980,15 @@ mw_clear()
 void
 mw_settxt(const char *txt)
 {
+	int y, x;
 	mw_clear();
 
-	mvwaddnstr(message_window, 0, 1, txt, COLS - 2);
+	getmaxyx(message_window, y, x);
+	char *temp = new char[strlen(txt)+1];
+	strcpy(temp, txt);
+	mvwaddnstr(message_window, 0, 1, temp, x - 2);
+	delete temp;
+
 	wrefresh(message_window);
 }
 
@@ -943,9 +1072,7 @@ read_group_from_file(FILE *f)
 				success = sscanf(line, "GROUPNAME: %[^\n]s", tmp);	
 
 			if (success < 1) /* bad group-header! */
-			{
 				read_ok = 0;
-			}
 			else /* valid group - add it */
 			{
 				char
@@ -972,21 +1099,36 @@ read_group_from_file(FILE *f)
 
 			free(tmp);
 		}
+		else if (linecount == 1) /* read play order from file */
+		{
+			char
+				*tmp = new char[strlen(line) + 1];
+			int
+				success = sscanf(line, "PLAYMODE: %[^\n]s", tmp);	
+
+			if (success < 1) /* bad group-header! */
+			{
+				read_ok = 0; group_ok = 0;
+			}
+			else
+				sw->sw_playmode = (atoi(tmp) ? 1 : 0);
+
+			delete[] tmp;
+		}
 		else
 		{
 			if (!strcmp(line, "\n")) /* line is empty, great. */
 				read_ok = 0;
 			else
 			{
-				char *songname = (char*)malloc((strlen(line) + 1) *
-					sizeof(char));
+				char *songname = new char[strlen(line) + 1];
 					
 				sscanf(line, "%[^\n]s", songname);
 
 				if (is_mp3(songname))
 					sw->addItem(songname);
 
-				free(songname);
+				delete[] songname;
 			}
 			/* ignore non-mp3 entries.. */
 		}
@@ -1008,31 +1150,40 @@ read_group_from_file(FILE *f)
  * TODO: change it so question/max txt-length can be given as parameter
  */
 char *
-gettext()
+gettext(const char *label, short display_path)
 {
 	WINDOW
-		*gname = newwin(6, 69, (LINES - 6) / 2, (COLS - 69) / 2);
+		*gname;
 	char
 		name[53],
-		*txt = NULL,
-		*pstring;
-	
+		*txt = NULL;
+	short
+		y_offset = (display_path ? 1 : 0);
+
+	gname = newwin(5 + y_offset, 69, (LINES - 6) / 2, (COLS - 69) / 2);
+
 	leaveok(gname, TRUE);
-	pstring = (char*)malloc((strlen(startup_path) + 7) * sizeof(char));
-	strcpy(pstring, "Path: ");
-	strcat(pstring, startup_path);
 
 	keypad(gname, TRUE);
 	wbkgd(gname, COLOR_PAIR(4)|A_BOLD);
 	wborder(gname, 0, 0, 0, 0, 0, 0, 0, 0);
 
-	mvwaddnstr(gname, 2, 2, pstring, 65);
-	free(pstring);
-	mvwaddstr(gname, 3, 2, "Enter filename:");
-	mvwchgat(gname, 3, 19, 48, A_BOLD, 5, NULL);
+	if (display_path)
+	{
+		char
+			pstring[strlen(startup_path) + 7];
+
+		strcpy(pstring, "Path: ");
+		strcat(pstring, startup_path);
+		mvwaddnstr(gname, 2, 2, pstring, 65);
+	}
+
+	mvwaddstr(gname, 2 + y_offset, 2, label);
+	mvwchgat(gname, 2 + y_offset, 3 + strlen(label),
+		67 - (strlen(label)+3), A_BOLD, 5, NULL);
 	touchwin(gname);
 	wrefresh(gname);
-	wmove(gname, 3, 19);
+	wmove(gname, 2 + y_offset, 3 + strlen(label));
 	echo();
 	wattrset(gname, COLOR_PAIR(5)|A_BOLD);
 	wgetnstr(gname, name, 48);
@@ -1053,7 +1204,7 @@ read_playlist(const char *filename)
 		*name;
 		
 	if(!filename)
-		name = gettext();
+		name = gettext("Enter filename:", 1);
 	else
 	{	
 		name = (char*)malloc((strlen(filename)  + 1) * sizeof(char));
@@ -1081,9 +1232,55 @@ read_playlist(const char *filename)
 		refresh_screen();
 		return;
 	}
-	while (read_group_from_file(f))
-		;
+	
+	short header_ok = 1;
+	/* read global playmode from file */
+	{
+		char
+			*line = readline(f);
+		playmode
+			old_mode = play_mode;
 
+		if (!line)
+		{
+			fclose(f); return;
+		}
+
+		char tmp[strlen(line)+1];
+		if ( sscanf(line, "GLOBALMODE: %[^\n]s", tmp) == 1)
+		{
+			if (!strcmp(tmp, "onegroup"))
+				play_mode = PLAY_GROUP;
+			else if (!strcmp(tmp, "allgroups"))
+				play_mode = PLAY_GROUPS;
+			else if (!strcmp(tmp, "groupsrandom"))
+				play_mode = PLAY_GROUPS_RANDOMLY;
+			else if (!strcmp(tmp, "allrandom"))
+				play_mode = PLAY_SONGS;
+			else
+				header_ok = 0;
+		}
+		else
+			header_ok = 0;
+
+		if (header_ok && old_mode != play_mode)
+			cw_toggle_play_mode(1);
+		free(line);
+	}	
+		
+	if (header_ok)
+	{
+		while (read_group_from_file(f))
+			;
+		cw_toggle_group_mode(1);
+	}
+	else
+	{
+		warning("No global playmode in playlist found.");
+		refresh_screen();
+	}	
+
+	fclose(f);
 	//mw_settxt("Added playlist!");
 
 #if 0
@@ -1106,11 +1303,9 @@ read_playlist(const char *filename)
 void
 write_playlist()
 {
-	int i;
-	FILE *f;
 	char *name = NULL;
 	
-	name = gettext();
+	name = gettext("Enter filename", 1);
 	/*append startup path if filename does not start with a slash */
 	if (strlen(name) && name[0] != '/')
 	{
@@ -1123,6 +1318,10 @@ write_playlist()
 		//fprintf(stderr, "New path: %s\n", name);
 	}
 
+	if (!(group_stack->writePlaylist(name, play_mode)))
+		Error("Error writing playlist!");
+
+#if 0
 	f = fopen(name, "w");
 	free(name);
 
@@ -1144,6 +1343,7 @@ write_playlist()
 	}
 	
 	fclose(f);
+#endif
 }
 
 void
@@ -1295,7 +1495,7 @@ set_default_fkeys(program_mode peem)
 	case PM_NORMAL:
 		cw_set_fkey(1, "Select files");
 		cw_set_fkey(2, "Add group");
-		cw_set_fkey(3, "Select group");
+		cw_set_fkey(3, "Delete group");
 		cw_set_fkey(4, "Set group's title");
 		cw_set_fkey(5, "load/add playlist");
 		cw_set_fkey(6, "Write playlist");
@@ -1314,8 +1514,8 @@ set_default_fkeys(program_mode peem)
 		cw_set_fkey(1, "Add files to group");
 		cw_set_fkey(2, "Invert selection");
 		cw_set_fkey(3, "Recurs. select all");
-		cw_set_fkey(4, "");
-		cw_set_fkey(5, "");
+		cw_set_fkey(4, "Enter pathname");
+		cw_set_fkey(5, "Add dirs as groups");
 		cw_set_fkey(6, "");
 		cw_set_fkey(7, "");
 		cw_set_fkey(8, "");
@@ -1374,9 +1574,14 @@ is_symlink(const char *path)
 	
 	return 1;
 }
-	
+
+/* This function adds all mp3s recursively found in ``path'' to the current
+ * group when called by F3: recursively add mp3's. 
+ * When called by F4: Add dirs as groups, and d2g_init is not set, all mp3's
+ * found in this dir will be added to a group with the name of the dir.
+ */
 void
-recsel_files(const char *path)
+recsel_files(const char *path, short d2g=0, int d2g_init=0)
 {
 	struct dirent
 		*entry = NULL;
@@ -1385,6 +1590,10 @@ recsel_files(const char *path)
 	char
 		*txt = NULL,
 		header[] = "Recursively selecting in: ";
+	short 
+		mp3_found = 0;
+	int
+		d2g_groupindex = -1;
 
 	if (progmode != PM_FILESELECTION || !strcmp(path, "/dev") ||
 		is_symlink(path))
@@ -1426,11 +1635,49 @@ recsel_files(const char *path)
 			if (!strcmp(dummy, ".") || !strcmp(dummy, ".."))
 				continue; /* next while-loop */
 		
-			recsel_files(newpath);
+			recsel_files(newpath, d2g);
 		}
 		else if (is_mp3(newpath))
 		{
-			add_selected_file(newpath);
+			if (d2g && !d2g_init)
+			{
+				if (!mp3_found)
+				{
+					char *npath = 0;
+					npath = strrchr(path, '/');
+					if (!npath)
+						npath = path;
+					else
+					{
+						if (strlen(npath) > 1)
+							npath = npath + 1;
+						else
+							npath = path;
+					}
+					/* If there are no entries in the current group,
+					 * this group will be filled instead of skipping it
+					 */
+					scrollWin *sw = group_stack->entry(current_group - 1);
+					if (sw->getNitems())
+						d2g_groupindex = (add_group(npath) - 1);
+					else
+					{
+						d2g_groupindex = current_group - 1;
+						sw->setTitle(npath);
+					}
+					mp3_found = 1;
+				}
+				if (d2g_groupindex > -1 && group_stack->stackSize() >
+					(unsigned int)d2g_groupindex)
+					(group_stack->entry(d2g_groupindex))->addItem(newpath);
+				else
+				{
+					warning("Something's screwy with recsel_files");
+					refresh_screen();
+				}
+			}
+			if (!d2g)
+				add_selected_file(newpath);
 		}
 
 		free(newpath);
@@ -1522,6 +1769,10 @@ handle_input(short no_delay)
 			case KEY_NPAGE: sw->pageDown(); break;
 			case KEY_PPAGE: sw->pageUp(); break;
 			case ' ': sw->selectItem(); sw->changeSelection(1); break;
+			case '+':
+				select_group(current_group + 1); break; //select next group
+			case '-':
+				select_group(current_group - 1); break; //select prev. group
 			case 12: refresh_screen(); break; // C-l
 			case 13: // play 1 mp3
 				if (sw->getNitems() > 0)
@@ -1541,19 +1792,21 @@ handle_input(short no_delay)
 				file_window = new fileManager(NULL, LINES - 4, COLS - 27,
 					2, 24, 1, 1);
 				wbkgdset(file_window->sw_win, ' '|COLOR_PAIR(1)|A_BOLD);
-				file_window->setBorder(0, 0, 0, 0, ACS_LTEE, ACS_RTEE,
-					ACS_BTEE, ACS_BTEE);
+				file_window->setBorder(0, 0, 0, 0, ACS_LTEE, ACS_PLUS,
+					ACS_BTEE, ACS_PLUS);
 				wbkgdset(file_window->sw_win, ' '|COLOR_PAIR(6));
 				file_window->swRefresh(0);
 				char *pruts = file_window->getPath();
 				set_header_title(pruts);
+				draw_extra_stuff(1);
 				delete[] pruts;
 			}
 			break;
 			case KEY_F(2): case '2': 
 				add_group(); break; //add group
 			case KEY_F(3): case '3':
-				select_group(current_group + 1); break; //select another group
+				del_group(current_group); break; //del group
+				break;
 			case KEY_F(4): case '4':
 				set_group_name(sw); break; // change groupname
 			case KEY_F(5): case '5':
@@ -1606,6 +1859,7 @@ handle_input(short no_delay)
 			case KEY_F(2): case '2':
 				sw->invertSelection(); break;
 			case KEY_F(3): case '3':
+			{
 				mw_settxt("Recursively selecting files..");
 				char *tmppwd = get_current_working_path();
 				recsel_files(tmppwd);
@@ -1613,6 +1867,18 @@ handle_input(short no_delay)
 				fw_end();
 				mw_settxt("Added all mp3's in this dir and all subdirs " \
 					"to current group.");
+			}
+				break;
+			case KEY_F(4): case '4':
+				fw_getpath();
+				break;
+			case KEY_F(5): case '5':
+				mw_settxt("Adding groups..");
+				char *tmppwd = get_current_working_path();
+				recsel_files(tmppwd, 1, 1);
+				free(tmppwd);
+				fw_end();
+				mw_settxt("Added dirs as  groups.");
 				break;
 		}
 	}
@@ -1638,7 +1904,7 @@ show_help()
 	mvwaddstr(helpwin, 1, (COLS-15)/2, "Playlist Editor");
 	mvwaddstr(helpwin, 2,  1, "F1/1  : Enter file browser");
 	mvwaddstr(helpwin, 3,  1, "F2/2  : Add a group to playlist");
-	mvwaddstr(helpwin, 4,  1, "F3/3  : Select next group");
+	mvwaddstr(helpwin, 4,  1, "F3/3  : Delete group from playlist");
 	mvwaddstr(helpwin, 5,  1, "F4/4  : Set current group's title");
 	mvwaddstr(helpwin, 6,  1, "F5/5  : Load/Add playlist");
 	mvwaddstr(helpwin, 7,  1, "F6/6  : Write playlist");
@@ -1650,23 +1916,26 @@ show_help()
 	mvwaddstr(helpwin, 5,  h, "F10/0 : Change threads (buffering)");
 	mvwaddstr(helpwin, 6,  h, "Enter : Play only highlighted MP3");
 	mvwaddstr(helpwin, 7,  h, "Del/d : Remove hilited MP3 from group");
-	mvwaddstr(helpwin, 8,  h, "h     : This screen(exit by keypress)");
+	mvwaddstr(helpwin, 8,  h, "+/-   : Select Next/Previous group");
+	mvwaddstr(helpwin, 9,  h, "h     : This screen(exit by keypress)");
 	
 	/* File Browser keys */
 	mvwaddstr(helpwin, 11, (COLS-12)/2, "File Browser");
 	mvwaddstr(helpwin, 12,  1, "F1/1  : Add select files to group");
 	mvwaddstr(helpwin, 13,  1, "        and return to Playlist Editor");
 	mvwaddstr(helpwin, 14,  1, "F2/2  : Invert current selection");
-	mvwaddstr(helpwin, 12,  h, "F3/3  : Recursively select&add MP3's");
-	mvwaddstr(helpwin, 13,  h, "Enter : (if on dir) change directory");
-	mvwaddstr(helpwin, 14,  h, "q     : Exit Mp3blaster");
+	mvwaddstr(helpwin, 15,  1, "F3/3  : Recursively select&add MP3's");
+	mvwaddstr(helpwin, 12,  h, "F4/4  : Enter pathname to change to");
+	mvwaddstr(helpwin, 13,  h, "F5/5  : Add subdirs as groups");
+	mvwaddstr(helpwin, 14,  h, "Enter : (if on dir) change directory");
+	mvwaddstr(helpwin, 15,  h, "q     : Exit Mp3blaster");
 
 	/* Play Mode keys */
-	mvwaddstr(helpwin, 16, (COLS-12)/2, "Playing Mode");
-	mvwaddstr(helpwin, 17,  1, "1..6  : CD-Style playlist control");
-	mvwaddstr(helpwin, 18,  1, "Arrows: Operates Mixer (if enabled)");
-	mvwaddstr(helpwin, 19,  1, "Space : Play next MP3 (same as '5')");
-	mvwaddstr(helpwin, 17,  h, "q     : Return to Playlist Editor");
+	mvwaddstr(helpwin, 17, (COLS-12)/2, "Playing Mode");
+	mvwaddstr(helpwin, 18,  1, "1..6  : CD-Style playlist control");
+	mvwaddstr(helpwin, 19,  1, "Arrows: Operates Mixer (if enabled)");
+	mvwaddstr(helpwin, 20,  1, "Space : Play next MP3 (same as '5')");
+	mvwaddstr(helpwin, 18,  h, "q     : Return to Playlist Editor");
 
 	mvwaddstr(helpwin, LINES-2, (COLS-24)/2, "Press a key to exit help");
 

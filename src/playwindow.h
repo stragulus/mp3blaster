@@ -25,6 +25,9 @@ public:
 	void setAlbum(const char *tp);
 	void setSongYear(const char *yr);
 	void setSongInfo(const char *inf);
+	void setTotalTime(int time);
+	void updateTime(int time);
+
 	NMixer* getMixerHandle() { return mixer; }
 #ifdef DEBUG
 	void setFrames(int frames);
@@ -36,6 +39,7 @@ private:
 	playstatus status;
 	int progress[2];
 	NMixer *mixer;
+	int totaltime;
 };
 
 #endif /* _CLASS_PLAYWINDOW_ */

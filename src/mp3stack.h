@@ -8,6 +8,7 @@ class mp3Stack : public gStack
 {
 public:
 	char** getShuffledList(playmode pm, unsigned int *mp3list);
+	short writePlaylist(char *, playmode);
 
 private:
 	void compose_group(int, int*, int);

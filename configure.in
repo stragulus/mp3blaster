@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(src/main.cc)
-AM_INIT_AUTOMAKE(mp3blaster, 2.0b7)
+AM_INIT_AUTOMAKE(mp3blaster, 2.0b8)
 
 dnl CPLUS_INCLUDE_PATH=$C_INCLUDE_PATH:/usr/local/lib/qt/include
 
@@ -52,11 +52,11 @@ AC_SUBST(LIBMPEGSOUND)
 AC_SUBST(LIBNMIXER)
 
 if test "`uname -s`" = "OpenBSD" ; then
-  SOUND_DEVICE="/dev/audio"
+  SOUNDDEV="/dev/audio"
 else
-  SOUND_DEVICE="/dev/dsp"
+  SOUNDDEV="/dev/dsp"
 fi
-AC_SUBST(SOUND_DEVICE)
+AC_DEFINE_UNQUOTED(SOUND_DEVICE, "$SOUNDDEV")
 
 if test "$INCLUDEPTHREAD" = 1 ; then
   LIBS="$LIBS -lpthread"
@@ -86,7 +86,7 @@ fi
 CXXFLAGS="$CXXFLAGS -Wall -Wstrict-prototypes -W -fno-strength-reduce "
 
 PACKAGE=mp3blaster
-VERSION=2.0b7
+VERSION=2.0b8
 dnl PACKAGE_VERSION="$PACKAGE-$VERSION"
 dnl AC_DEFINE_UNQUOTED(PACKAGE, "$PACKAGE")
 dnl AC_DEFINE_UNQUOTED(VERSION, "$VERSION")
@@ -95,3 +95,9 @@ dnl AC_SUBST(VERSION)
 
 
 AC_OUTPUT(src/Makefile mpegsound/Makefile Makefile nmixer/Makefile)
+
+echo 
+echo "******************************************************************"
+echo "If mp3blaster's layout  is incorrect, or if  mp3blaster only plays "
+echo "while holding a key, UPGRADE your ncurses library and includefiles"
+echo "to  version 4.0  or better. This  is generally a GOOD IDEA anyway."

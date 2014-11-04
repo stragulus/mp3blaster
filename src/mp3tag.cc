@@ -134,6 +134,8 @@ main(int argc, char *argv[])
 			"Genre     : %-40s\n", hdr->artist, hdr->songname, hdr->type,
 			hdr->year, hdr->etc, "Not supported yet!");
 	}
+	else
+		printf("This file does not contain an ID3 tag.\n");
 	
 	delete mp3tje;
 

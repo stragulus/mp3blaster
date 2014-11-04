@@ -19,7 +19,7 @@
 #define MY_PI 3.14159265358979323846
 #undef DEBUG
 
-extern void debug(const char *);
+extern void debug(const char*);
 
 Mpegtoraw::Mpegtoraw(Soundinputstream *loader,Soundplayer *player)
 {
@@ -158,7 +158,7 @@ inline void Mpegtoraw::flushrawdata(void)
   player->putblock((char *)rawdata,rawdataoffset<<1);
   currentframe++;
   rawdataoffset=0;
-};
+}
 #endif
 
 typedef struct
@@ -665,16 +665,8 @@ bool Mpegtoraw::run(int frames)
     if(frequency!=lastfrequency)
     {
       if(lastfrequency>0) {
-	  seterrorcode(SOUND_ERROR_BAD);
-	  //fprintf(stderr, "frequency/last: %d/%d", frequency, lastfrequency);
-	  //fflush(stderr);
-	  /* assume buggy mp3: reset frequency to last known frequency 
-	   * Note that this loses support for variable (free) bitrate
-	   * mp3's, but I have never seen one of those anyway.
-	   */
-      //frequency=lastfrequency;
-	  lastfrequency = frequency;
-	  //break;
+	    seterrorcode(SOUND_ERROR_BAD);
+	    lastfrequency = frequency;
       }
       else
       	lastfrequency=frequency;
@@ -683,7 +675,8 @@ bool Mpegtoraw::run(int frames)
     {
       frames=-frames;
       player->setsoundtype(outputstereo,16,
-			   frequencies[version][frequency]>>downfrequency);
+	frequencies[version][frequency]>>downfrequency);
+      totaltime = (totalframe * framesize) / (getbitrate() * 125);
     }
 
     decodeframe++;

@@ -491,6 +491,7 @@ private:
     char comment[30+1];
     //    char type         ;
   }songinfo;
+  int totaltime;
 
   /* Song information functions */
 public:
@@ -499,6 +500,7 @@ public:
   const char *getalbum   (void) const { return (const char *)songinfo.album;  };
   const char *getyear    (void) const { return (const char *)songinfo.year;   };
   const char *getcomment (void) const { return (const char *)songinfo.comment;};
+  int gettotaltime() { return totaltime; }
 
   /*******************/
   /* Mpegtoraw class */

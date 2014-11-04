@@ -22,6 +22,8 @@
 #include <stdio.h>
 #include "scrollwin.h"
 
+extern void debug(const char *);
+
 /* Function Name: scrollWin::scrollWin
  * Description  : Creates a new selection-window, setting width and
  *              : height, items in this window, and whether or not the 
@@ -438,6 +440,22 @@ void scrollWin::addItem(const char *item)
 		++(this->shown_range[1]);
 }
 
+/* changeItem changes an item.
+ * It is advised to call swRefresh after [a series of] changeItem[s].
+ */
+void scrollWin::changeItem(int item_index, const char *item)
+{
+	if ( !this->items || (item_index + 1) > this->nitems || item_index < 0 ||
+		!item || !strlen(item))
+		return;
+	
+	if (this->items[item_index])
+		free(this->items[item_index]);
+
+	this->items[item_index] = (char *)malloc(strlen(item) + 1);
+	strcpy(this->items[item_index], item);
+}
+
 /* delItem removes this->sw_items[item_index] and redraws selection window
  * 1997.09.07: Now also updates sw_selected_items.
  */
@@ -631,45 +649,6 @@ void scrollWin::pageUp()
 	swRefresh(2);
 }
 
-/* write the contents of sw to a file (f, which must be opened for writing).
- * This is how the contents are written to the file:
- * GROUPNAME: <name>
- * <file1>
- * ...
- * <fileN>
- * <empty line>
- * Note: f is not closed. When an error while writing occurs 0 will be 
- * returned (non-zero otherwise)
- */
-/* This should be part of a special mp3-class that inherits the standard
- * scrollWin class!! (some day, that is ... :-)
- */
-int scrollWin::writeToFile(FILE *f)
-{
-	char
-		header[] = "GROUPNAME: ",
-		*group_header = (char *)malloc((strlen(header) +
-			strlen(this->sw_title) + 2) * sizeof(char));
-	int i;
-	
-	strcpy(group_header, header);
-	strcat(group_header, this->sw_title);
-	strcat(group_header, "\n");
-	
-	if (!fwrite(group_header, sizeof(char), strlen(group_header), f))
-		return 0;
-	
-	for (i = 0; i < this->nitems; i++)
-	{
-		if (!fwrite(this->items[i], sizeof(char), strlen(this->items[i]), f))
-			return 0;
-		if (!fwrite("\n", sizeof(char), 1, f))
-			return 0;
-	}
-
-	return 1; /* everything succesfully written. */
-}
-
 /* returns the item (string) that is currently highlighted by this window's
  * scrollbar into the char* item. 
  * Please remember to delete[] (not free()!) the returned string when you stop
@@ -794,4 +773,48 @@ scrollWin::setItem(int item_index)
 {
 	int diff = item_index - sw_selection;
 	return changeSelection(diff);
+}
+
+/* write the contents of sw to a file (f, which must be opened for writing).
+ * This is how the contents are written to the file:
+ * GROUPNAME: <name>
+ * <file1>
+ * ...
+ * <fileN>
+ * <empty line>
+ * Note: f is not closed. When an error while writing occurs 0 will be 
+ * returned (non-zero otherwise)
+ */
+/* This should be part of a special mp3-class that inherits the standard
+ * scrollWin class!! (some day, that is ... :-)
+ */
+int scrollWin::writeToFile(FILE *f)
+{
+	char
+		header[] = "GROUPNAME: ",
+		*group_header = (char *)malloc((strlen(header) +
+			strlen(this->sw_title) + 2) * sizeof(char));
+	int i;
+	
+	strcpy(group_header, header);
+	strcat(group_header, this->sw_title);
+	strcat(group_header, "\n");
+	
+	if (!fwrite(group_header, sizeof(char), strlen(group_header), f))
+		return 0;
+
+	char tmp[20];
+	sprintf(tmp, "PLAYMODE: %1d\n", sw_playmode);
+	if (!fwrite(tmp, sizeof(char), strlen(tmp), f))
+		return 0;
+	
+	for (i = 0; i < this->nitems; i++)
+	{
+		if (!fwrite(this->items[i], sizeof(char), strlen(this->items[i]), f))
+			return 0;
+		if (!fwrite("\n", sizeof(char), 1, f))
+			return 0;
+	}
+
+	return 1; /* everything succesfully written. */
 }

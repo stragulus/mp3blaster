@@ -249,6 +249,39 @@ playWindow::setSongInfo(const char *inf)
 	wrefresh(interface);
 }
 
+void
+playWindow::setTotalTime(int time)
+{
+	char temp[20];
+	totaltime = time;
+
+	sprintf(temp, "/%02d:%02d", time / 60, time%60);
+	mvwaddstr(interface, 2, 58, temp);
+	updateTime(0);
+}
+
+/* Updates displayed time. 
+ * Argument ``time'' is the amount of time that has elapsed while playing.
+ * This function displays the elapsed time, calculates the remaining time and
+ * displays that too.
+ */
+void
+playWindow::updateTime(int time)
+{
+	char temp[10];
+
+	sprintf(temp, "%02d:%02d", time/60, time%60);
+	mvwaddstr(interface, 2, 53, temp);
+
+	//calculate remaining time
+	int remtime = totaltime - time;
+	if (remtime < 0)
+		remtime = 0;
+	sprintf(temp, "(-%02d:%02d)", remtime/60, remtime%60);
+	mvwaddstr(interface, 2, 64, temp);
+	wrefresh(interface);
+}
+
 #ifdef DEBUG
 void
 playWindow::setFrames(int frames)

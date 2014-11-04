@@ -1,4 +1,28 @@
-V2.0b7: 1999/03/XX
+V2.0b8: 1999/04/XX
+==================
+-Added time to the playing interface. Playing time, total time *and* remaining
+ time are displayed now. Note that the timing will not work with free bitrate
+ mp3's since the total time's calculation is based on the info from the first
+ frame in the mp3. Also, when threading is used, the time is not updated during
+ the last seconds of the mp3(I need to fix this yet!). The code's inspired
+ on patches from Martijn van Buul.
+-updated some classes.
+-Changed (Improved) the interface: '+' and '-' in the playlist editor now 
+ select the previous/next group in the group-window (the small rightmost
+ window). F3 in playlist mode will delete the current group (finally this
+ feature made it, I simply didn't have space in the interface to add this 
+ functionality before ;).
+-Very cool new feature in the file manager ``add dirs as groups'': If you
+ use this function, every subdir that has mp3's in it, will be added as a
+ group with the name of the directory as groupname! Making a playlist never
+ has been easier!
+-The playlist saves the global and each group's playmode. A conversion script
+ for playlist that are made with mp3blaster <2.0b8 is included:
+ ./convlist /path/to/oldplaylist.lst > newplaylist.lst
+-In file selection mode, you can now enter a path directly.
+-Sound device is now guessed correctly for OpenBSD (/dev/audio i.o /dev/dsp)
+
+V2.0b7: 1999/04/06
 ==================
 -Wrote a manual. Sniff.
 -One can select the number of mp3-frames to run in one loop as a command-line
@@ -29,15 +53,6 @@ V2.0b6: 1999/03/XX
 ==================
 -path to mp3 put in border of playwindow which leaves more room for the
  playlist (that's still got to be put in)
--(noise-bug!)
--(Save group's playorder in playlist!)
--(compatible with WinAmp playlist)
--(play single group playmode)
--(``cold start'' option)
--(add elapsed/remaining time/position_indicator)
--(add browsable playlist in playwindow)
--(add wav/http support)
--(include getopt.c/getopt.h from GNU site so all OS's support getopt_long)
 -Applied a patch from Jukka Honkela that should reduce the audible "snap"
  between numbers while playing. If you still here snaps between songs
  that are played in a playlist without user intervention, please tell me!

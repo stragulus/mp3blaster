@@ -1,0 +1,11 @@
+Martijn van Buul (martijnb@stack.nl):
+	Many ideas, patches, and lcd support. Martijn hacks mp3blaster for using
+	it in a student bar at our local university.
+Jukka Honkela:
+	He submitted a patch for reducing ticks between numbers.
+Steve Kemp:
+    He ported mp3tag to Windows NT  (will be added in the version following
+	2.0b8)
+
+And ofcourse everyone else who emailed me with suggestions, bugreports etc!
+And everyone I forgot while making this file.  ;)

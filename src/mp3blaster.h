@@ -28,7 +28,8 @@
 #define BWSCREEN
 
 /* SOUND_DEVICE is the digital sound processor-device on your box. */
-#define SOUND_DEVICE "/dev/dsp"
+/* It's now in configure.in */
+/*#define SOUND_DEVICE "/dev/dsp"*/
 
 /* --------------------------------------- */
 /* Do not change anything below this line! */

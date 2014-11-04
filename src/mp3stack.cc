@@ -203,27 +203,22 @@ void
 mp3Stack::compose_group(int group, int *arr, int offset)
 {
 	scrollWin 
-		//OLD: [struct sw_window] *sw = group_stack[group];
 		*sw = this->entry(group);
 	int
 		i,
 		precount = 0;
 
 	for (i = 0; i < group; i++)
-		//OLD: precount += group_stack[i]->nitems;
 		precount += (this->entry(i))->getNitems();
 		
-	//OLD: for (i = 0; i < sw->nitems; i++)
 	for (i = 0; i < sw->getNitems(); i++)
 		arr[offset + i] = precount + i;
 	
 	if (sw->sw_playmode == 1) /* randomly play songs in group */
 	{
-		//OLD: for (i = 0; i < sw->nitems; i++)
 		for (i = 0; i < sw->getNitems(); i++)
 		{
 			int
-				//OLD: rn = random()%sw->nitems,
 				rn = random()%sw->getNitems(),
 				tmp = arr[offset + i];
 
@@ -231,4 +226,45 @@ mp3Stack::compose_group(int group, int *arr, int offset)
 			arr[offset + rn] = tmp;
 		}
 	}
+}
+
+short
+mp3Stack::writePlaylist(char *filename, playmode pm)
+{
+	unsigned int i;
+	FILE *f;
+
+	if (!filename || !(f = fopen(filename, "w")))
+		return 0;
+
+	/* write global playmode */
+	char tmp[80];
+	strcpy(tmp, "GLOBALMODE: ");
+	switch(pm)
+	{
+		case PLAY_GROUP: strcat(tmp, "onegroup"); break;
+		case PLAY_GROUPS: strcat(tmp, "allgroups"); break;
+		case PLAY_GROUPS_RANDOMLY: strcat(tmp, "groupsrandom"); break;
+		case PLAY_SONGS: strcat(tmp, "allrandom"); break;
+		default: strcat(tmp, "allgroups");
+	}
+	strcat(tmp, "\n");
+	if (!(fwrite(tmp, sizeof(char), strlen(tmp), f)))
+	{
+		fclose(f);
+		return 0;
+	}
+
+	for (i = 0; i < ssize; i++)
+	{
+		if ( !((entry(i))->writeToFile(f)) ||
+			!(fwrite("\n", sizeof(char), 1, f)))
+		{
+			fclose(f);
+			return 0;
+		}
+	}
+	
+	fclose(f);
+	return 1;
 }
