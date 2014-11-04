@@ -16,7 +16,10 @@ AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_LN_S
 AC_PROG_INSTALL
-AC_PROG_RANLIB
+AC_PROG_LIBTOOL
+
+dnl We want to build shared libs
+LT_INIT([disable-static])
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -129,12 +132,12 @@ AC_ARG_WITH(oss,
 	[ if test "$withval" = "yes" ; then WANT_OSS=1; REQ_OSS=1 ; else WANT_OSS=0 ; fi ])
 
 #Features 
-AC_ARG_ENABLE(static,
-  [  --enable-static         Build static binaries instead [default=no]],
-  [ if test "$enableval" = "yes" ; then
-      LDFLAGS="$LDFLAGS -static" ; HAVE_STATIC="yes"
-    else HAVE_STATIC="no" ; fi ],
-  [ HAVE_STATIC="no" ])
+#AC_ARG_ENABLE(static,
+#  [  --enable-static         Build static binaries instead [default=no]],
+#  [ if test "$enableval" = "yes" ; then LDFLAGS="$LDFLAGS -static" ; HAVE_STATIC="yes" ; else HAVE_STATIC="no" ; fi ],
+#  [ HAVE_STATIC="no" ])
+#AC_ARG_ENABLE(static,
+#  [  --enable-static         Build static binaries instead, default=no], [ HAVE_STATIC="yes" ], [ HAVE_STATIC="no" ])
 
 AC_ARG_ENABLE(newthreads,
   [  --enable-newthreads     New (very experimental) buffering [default=no]],
@@ -471,9 +474,9 @@ fi
 
 dnl A check for a particular __math.h file that causes sigsegv's in combination
 dnl with gcc 2.7.*  / egcs-1.1.1 or older versions
-if test -f /usr/include/__math.h -a "`grep 'long long int __p = (long long int) __y' /usr/include/__math.h 2>/dev/null`" != "" -a \( "`$CXX -v 2>&1|grep 'gcc version 2.[[567]]'`" != "" -o "`$CXX -v 2>&1|tail -1|grep egcs|cut -d'(' -f2|egrep 'egcs-(0|1.(0|1.[[01]]))'`" != "" \) ; then
-    CXXFLAGS="$CXXFLAGS -D__NO_MATH_INLINES"
-fi
+#if test -f /usr/include/__math.h -a "`grep 'long long int __p = (long long int) __y' /usr/include/__math.h 2>/dev/null`" != "" -a \( "`$CXX -v 2>&1|grep 'gcc version 2.[[567]]'`" != "" -o "`$CXX -v 2>&1|tail -1|grep egcs|cut -d'(' -f2|egrep 'egcs-(0|1.(0|1.[[01]]))'`" != "" \) ; then
+#    CXXFLAGS="$CXXFLAGS -D__NO_MATH_INLINES"
+#fi
 dnl Even the script above is not foolproof. Since I can't tell the difference
 dnl in speed with or without this define, just define it.
 dnl 2002/03/16: removed this, if you still use an ancient gcc-version and the
@@ -503,7 +506,7 @@ BUILDOPTS=""
 if test "$HAVE_LIRC" = "yes"; then BUILDOPTS="${BUILDOPTS}lirc "; fi
 if test "$HAVE_PTH" = "yes"; then BUILDOPTS="${BUILDOPTS}pth "; fi
 if test "$INCLUDEPTHREAD" = "1"; then BUILDOPTS="${BUILDOPTS}pthreads "; fi
-if test "$HAVE_STATIC" = "yes"; then BUILDOPTS="${BUILDOPTS}static "; fi
+#if test "$HAVE_STATIC" = "yes"; then BUILDOPTS="${BUILDOPTS}static "; fi
 if test "$NEWTHREAD" = "1"; then BUILDOPTS="${BUILDOPTS}newthreads "; fi
 
 AC_DEFINE_UNQUOTED(BUILDOPTS_AUDIOFORMATS, ["$AUDIO_FORMATS"],
@@ -513,9 +516,10 @@ AC_DEFINE_UNQUOTED(BUILDOPTS_AUDIODRIVERS, ["$AUDIO_DRIVERS"],
 AC_DEFINE_UNQUOTED(BUILDOPTS_FEATURES, ["$BUILDOPTS"],
 	[Compile-time features info])
 
-SRCDIRS="mpegsound nmixer src doc doc/charmap"
+SRCDIRS="python doc doc/charmap"
 AC_SUBST(SRCDIRS)
-AC_OUTPUT(src/Makefile mpegsound/Makefile Makefile nmixer/Makefile doc/Makefile doc/charmap/Makefile)
+#AC_OUTPUT(python/Makefile mpegsound/Makefile Makefile nmixer/Makefile doc/Makefile doc/charmap/Makefile)
+AC_OUTPUT(python/Makefile Makefile doc/Makefile doc/charmap/Makefile)
 
 
 AC_MSG_RESULT([

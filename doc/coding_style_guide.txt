@@ -1,0 +1,7 @@
+The coding style guide from coding_style_guide.html must be followed
+for all new mp3blaster code. There are a few exceptions/additions:
+
+ * Indent with tabs rather than spaces. No whitespace must follow 
+   indentation to prevent messed up layouts between different 
+	 tabsettings. (will be changed to spaces only later!)
+ * Line length may not exceed 80 characters, assuming a tab width of 2.
