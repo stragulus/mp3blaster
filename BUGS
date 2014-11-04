@@ -1,3 +1,2 @@
--mp3blaster crashes if Threads=0 is in .mp3blasterrc (?!?!?)
 -48Khz mp3's play too slow (reported by apacheco@altavista.net, untested)
 -genre from mpegsound lib is bogus (I know, gonna fix it Real Soon Now)

@@ -68,6 +68,7 @@ struct _globalopts /* global options, exported for other classes */
 	char *sound_device;
 	short fw_sortingmode; /* 0: case-insensitive (default), 1: case sensitive */
 	playmode play_mode;
+	unsigned int warndelay;
 
 #ifdef PTHREADEDMPEG
 	int threads;

@@ -19,6 +19,7 @@
 #include NCURSES
 #include <unistd.h>
 
+extern struct _globalopts globalopts;
 /* Function Name: PopUpWindow
  * Description  : Pops up a window on a given part of the screen
  *              : (default is the middle of the screen) and places
@@ -54,12 +55,14 @@ void popupWindow(const char *txt, int colour_pair = 1, int ypos = -1,
 	mvwprintw(a, 4, (columns - 28) / 2, "Program will auto-continue..");
 	box(a, 0, 0);
 	wrefresh(a);
-	sleep(2);
+	if (globalopts.warndelay)
+		sleep(globalopts.warndelay);
 	delwin(a);
 	refresh(); // update screen
 }
 	
-// Warning - Display a warning (txt) and wait for a key to be pressed
+// Warning - Display a warning (txt) that disappears in globalopts.warndelay
+// seconds
 void
 warning(const char *txt)
 {

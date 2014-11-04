@@ -27,6 +27,13 @@
 #define KEYMATCH(x) !strcasecmp(string, (x))
 #define MP3BLASTER_RCFILE "~/.mp3blasterrc"
 
+extern short set_warn_delay(unsigned int);
+extern short set_fpl(int);
+extern short set_audiofile_matching(const char**, int);
+extern void set_sound_device(const char*);
+#ifdef PTHREADEDMPEG
+extern short set_threads(int);
+#endif
 
 /* If you want to add a configuration option, you have to add them to the
  * followin three arrays. For each keyword, the index in all three arrays
@@ -37,7 +44,7 @@
  * are put in main.cc and not here!
  */
 enum _kwdlabel { Threads, DownFrequency, FramesPerLoop, SoundDevice,
-                 AudiofileMatching };
+                 AudiofileMatching, WarnDelay };
 
 const char *keywords[] = {
 	"Threads",
@@ -45,6 +52,7 @@ const char *keywords[] = {
 	"FramesPerLoop",
 	"SoundDevice",
 	"AudiofileMatching",
+	"WarnDelay",
 	NULL
 	};
 
@@ -60,6 +68,7 @@ const unsigned short keyword_opts[] = {
 	0, /* framesperloop: 1 number */
 	15, /* 1 * anything */
 	31, /* multiple * anything */
+	0, /* warndelay: 1 number */
 	};
 
 
@@ -235,6 +244,13 @@ cf_add_keyword(_kwdlabel keyword, const char **values, int nrvals)
 		break;
 	case AudiofileMatching:
 		if (!set_audiofile_matching(values, nrvals))
+		{
+			error = BADVALUE;
+			return 0;
+		}
+		break;
+	case WarnDelay:
+		if (!set_warn_delay((unsigned int)cf_type_number(values[0])))
 		{
 			error = BADVALUE;
 			return 0;
@@ -462,14 +478,12 @@ cf_parse_config_file(const char *flnam = NULL)
 			return 0;
 	}
 
-debug("cf: conffile: "); debug(filename); debug("\n");
 	if (!(f = fopen(filename, "r")))
 	{
 		error = NOSUCHFILE;
 		cf_set_error();
 		return 0;
 	}
-debug("cf: openend\n");
 	while ((line = readline(f)) && no_error)
 	{
 		lineno++;

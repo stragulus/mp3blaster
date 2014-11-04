@@ -213,8 +213,7 @@ int mp3Play::playMp3List()
 #endif
 			interface->setStatus(PS_NORMAL);
 
-			if (action != AC_QUIT)
-				player->closefile(); //don't leave files open (oops)
+			player->closefile(); //don't leave files open (oops)
 			if (action == AC_QUIT) /* leave playing interface */
 				play = 0;
 			else if (action == AC_NEXT) /* that's like, default :) */

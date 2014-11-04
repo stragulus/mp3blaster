@@ -1,3 +1,10 @@
+V2.0b16: 1999/12/15
+===================
+-I forgot to mention this in the previous version: 8bit soundcards are now
+ supported too (with command-line option -8 it's forced)
+-Squashed another sigsegv bug that tried to fclose() NULL.
+-genre-bug that caused random genre to be displayed squashed.
+
 V2.0b15: 1999/12/13
 ===================
 -Fixed a bug causing sigsegv for configfile lines with a list of values.

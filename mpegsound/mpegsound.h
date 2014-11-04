@@ -577,8 +577,7 @@ public:
   const char *getalbum   (void) const { return (const char *)songinfo.album;  };
   const char *getyear    (void) const { return (const char *)songinfo.year;   };
   const char *getcomment (void) const { return (const char *)songinfo.comment;};
-  const unsigned char getgenre (void) const { return
-    (const unsigned char)songinfo.genre; };
+  unsigned char getgenre (void) { return songinfo.genre; };
   int gettotaltime() { return totaltime; }
 
   /*******************/
@@ -776,7 +775,7 @@ public:
   bool openfile(char *filename,char *device, soundtype write2file=NONE);
   void closefile(void); 
   void setforcetomono(short flag);
-  void set8bitmode() {}
+  void set8bitmode() { if(player) player->set8bitmode(); }
   bool playing(int verbose);
   
 private:

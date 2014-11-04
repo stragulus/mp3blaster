@@ -19,7 +19,8 @@
 /************************/
 Soundinputstreamfromfile::~Soundinputstreamfromfile()
 {
-  if(fp)fclose(fp);
+  if(fp)
+  	fclose(fp);
 }
 
 bool Soundinputstreamfromfile::open(char *filename)
@@ -95,5 +96,8 @@ int  Soundinputstreamfromfile::getposition(void)
 void Soundinputstreamfromfile::close(void)
 {
 	if (fp)
+	{
 		fclose(fp);
+		fp = NULL;
+	}
 }

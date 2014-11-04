@@ -319,8 +319,9 @@ bool Mpegtoraw::initialize(char *filename)
       data.album   =songinfo.album;
       data.year    =songinfo.year;
       data.comment =songinfo.comment;
-      data.genre   =songinfo.genre;
+      //data.genre   =songinfo.genre;
       parseID3(loader,&data);
+	  songinfo.genre = data.genre;
     }
   }
   else frameoffsets=NULL;
@@ -423,7 +424,7 @@ bool Mpegtoraw::isvalidheader(int mpeg, int mylayer, int brindex, int sfreq)
 	if (!brindex || brindex == 15)  /*Variable Bitrate MP3?? Supported, but
 				 *this frame must be skipped !!! */
 	{
-		debug("Possible VBR mp3!\n");
+		debug("Bad brindex!\n");
 		return false;
 	}
 

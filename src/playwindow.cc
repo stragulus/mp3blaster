@@ -261,7 +261,7 @@ playWindow::setSongInfo(const char *inf)
 }
 
 char *
-playWindow::getGenre(const unsigned char genre)
+playWindow::getGenre(unsigned char genre)
 {
 	return genre_table[genre];
 #if 0

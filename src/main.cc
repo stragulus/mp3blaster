@@ -93,6 +93,7 @@ void write_playlist();
 void play_list();
 #ifdef PTHREADEDMPEG
 void change_threads(int dont=0);
+short set_threads(int);
 #endif
 void add_selected_file(const char*);
 char *get_current_working_path();
@@ -194,6 +195,7 @@ main(int argc, char *argv[])
 	globalopts.eightbits = 0; /* 8bits audio off by default */
 	globalopts.fw_sortingmode = 0; /* case insensitive dirlist */
 	globalopts.play_mode = PLAY_GROUPS;
+	globalopts.warndelay = 2; /* wait 2 seconds for a warning to disappear */
 #ifdef PTHREADEDMPEG
 	globalopts.threads = 100;
 #endif
@@ -351,14 +353,12 @@ main(int argc, char *argv[])
 		}
 	}
 
-#if 0
 	//read .mp3blasterrc
 	if (!cf_parse_config_file(NULL) && cf_get_error() != NOSUCHFILE)
 	{
 			fprintf(stderr, "%s\n", cf_get_error_string());
 			exit(1);
 	}
-#endif
 
 	signal(SIGALRM, SIG_IGN);
 	initscr();
@@ -436,8 +436,6 @@ main(int argc, char *argv[])
 
 	progmode = PM_NORMAL;
 	draw_settings();
-
-	debug_info = NULL;
 
 	if (options & OPT_NOMIXER)
 	{
@@ -2383,3 +2381,12 @@ set_audiofile_matching(const char **matches, int nmatches)
 	return 1;
 }
 
+short
+set_warn_delay(unsigned int seconds)
+{
+	if (seconds > 60)
+		return 0;
+	
+	globalopts.warndelay = seconds;
+	return 1;
+}
