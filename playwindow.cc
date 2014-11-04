@@ -1,4 +1,4 @@
-/* MP3Blaster V2.0b1 - An Mpeg Audio-file player for Linux
+/* MP3Blaster - An Mpeg Audio-file player for Linux
  * Copyright (C) 1997 Bram Avontuur (brama@stack.nl)
  *
  * This program is free software; you can redistribute it and/or modify
@@ -174,8 +174,8 @@ playWindow::setProgressBar(int percentage)
 		int offset = 2 + progress[0];
 		int amount = progress[1] - progress[0];
 		progress[0] = progress[1];
-		//for (int i = offset; i < offset + amount; i++)
-		//	mvwaddch(interface, 5, i, ' ');
+		for (int i = offset; i < offset + amount; i++)
+			mvwaddch(interface, 5, i, '#');
 		mvwchgat(interface, 5, offset, amount, A_BOLD, 5, NULL);
 		touchline(interface, 5, 1);
 	}
@@ -184,8 +184,8 @@ playWindow::setProgressBar(int percentage)
 		int offset = progress[1] + 2;
 		int amount = progress[0] - progress[1];
 		progress[0] = progress[1];
-		//for (int i = offset; i < offset + amount; i++)
-		//	mvwaddch(interface, 5, i, ' ');
+		for (int i = offset; i < offset + amount; i++)
+			mvwaddch(interface, 5, i, ' ');
 		mvwchgat(interface, 5, offset, amount, A_BOLD, 3, NULL);
 		touchline(interface, 5, 1);
 	}

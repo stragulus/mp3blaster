@@ -2,7 +2,7 @@ CC=gcc
 CPP=g++
 LIBPATHS=-L./lib -L/usr/local/lib
 INCS=-I./include -I/usr/include/ncurses
-CPPFLAGS=-O2 -Wall -ansi -pedantic $(INCS) $(LIBPATHS)
+CPPFLAGS=-O2 -Wall $(INCS) $(LIBPATHS)
 #use -g flag for debugging with gdb.
 #CPPFLAGS=-Wall -g -ansi -pedantic $(INCS) $(LIBPATHS)
 LIBS=-lncurses -lpthread -lmpegsound -lm

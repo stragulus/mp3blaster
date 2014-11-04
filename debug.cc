@@ -1,5 +1,4 @@
-
-/* MP3Blaster V2.0b1 - An Mpeg Audio-file player for Linux
+/* MP3Blaster - An Mpeg Audio-file player for Linux
  * Copyright (C) 1997 Bram Avontuur (brama@stack.nl)
  *
  * This program is free software; you can redistribute it and/or modify

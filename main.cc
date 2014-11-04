@@ -1,5 +1,4 @@
- 
-/* MP3Blaster V2.0b1 - An Mpeg Audio-file player for Linux
+/* MP3Blaster - An Mpeg Audio-file player for Linux
  * Copyright (C) 1997 Bram Avontuur (brama@stack.nl)
  *
  * This program is free software; you can redistribute it and/or modify
@@ -26,7 +25,7 @@
  * random order, play in a predefined order, etc. etc.
  * Thanks go out to Jung woo-jae (jwj95@eve.kaist.ac.kr) and some other people
  * who made the mpegsound library used by this program. (see source-code from
- * splay-0.5)
+ * splay-0.8)
  * If you like this program, or if you have any comments, tips for improve-
  * ment, money, etc, you can e-mail me at brama@stack.nl or visit my
  * homepage (http://www.stack.nl/~brama/).
@@ -37,7 +36,7 @@
  * an OS plz. contact me! I don't think the interface needs a lot of 
  * changing, but about the actual mp3-decoding algorithm I'm not sure since
  * I didn't code it and don't know how sound's implemented on other OS's.
- * Current version is 2.0b1. It probably contains a lot of bugs, but I've
+ * Current version is 2.0b2. It probably contains a lot of bugs, but I've
  * completely rewritten the code from the 1.* versions into somewhat readable
  * C++ classes. It's not yet as object-oriented as I want it, but it's a
  * start..
@@ -63,6 +62,9 @@
 #include "fileman.h"
 #include "mp3play.h"
 
+#define ERRMSG "Usage: %s [filename] (plays one mp3 then exits)\n" \
+               "       %s [-l playlist] (loads a playlist)\n"
+	
 /* define this when the program's not finished (i.e. stay off :-) */
 #define UNFINISHED
 
@@ -93,9 +95,12 @@ void change_threads();
 #endif
 void add_selected_file(const char*);
 char *get_current_working_path();
+void play_one_mp3(const char*);
 
 /* global vars */
 
+short
+	bwterm = 0;
 playmode
 	play_mode = PLAY_SONGS;
 WINDOW
@@ -136,10 +141,6 @@ main(int argc, char *argv[])
 		version_string[79];
 	scrollWin
 		*sw;
-
-	/* avoid annoying 'unused variable' messages */
-	if (argc > 74654 || strlen(argv[0]) > 2345)
-		;
 
 	initscr();
 	start_color();
@@ -221,6 +222,26 @@ main(int argc, char *argv[])
 #ifdef PTHREADEDMPEG
 	change_threads(); /* display #threads in command_window */
 #endif
+
+	if (argc == 2) /* mp3file as argument? */
+	{
+		play_one_mp3(argv[1]);
+		endwin();
+		exit(0);
+	}
+	else if (argc == 3) /* -l playlist ? */
+	{
+		if (strcmp(argv[1], "-l"))
+		{
+			fprintf(stderr, ERRMSG, argv[0], argv[0]);
+			endwin();
+			exit(1);
+		}
+		//argv[2] = filename of playlist
+		endwin();
+		fprintf(stderr, "Sorry, feature not yet implemented.\n");
+		exit(1);
+	}
 
 	/* read input from keyboard */
 	while ( (key = handle_input(0)) >= 0)
@@ -939,7 +960,10 @@ void
 play_one_mp3(const char *filename)
 {
 	if (!is_mp3(filename))
+	{
+		warning("Invalid filename (should end with .mp[23])");
 		return;
+	}
 
 	char
 		**mp3s = new char*[1];
@@ -959,6 +983,7 @@ play_one_mp3(const char *filename)
 	progmode = oldprogmode;
 	set_default_fkeys(progmode);
 	refresh_screen();
+fprintf(stderr, "mbwahaa\n");
 	return;
 }
 
@@ -1233,6 +1258,7 @@ handle_input(short no_delay)
 				}
 				break;
 			case KEY_F(1): /* file-selection */
+			case '1':
 			{
 				progmode = PM_FILESELECTION;
 				set_default_fkeys(progmode);
@@ -1250,16 +1276,25 @@ handle_input(short no_delay)
 				delete[] pruts;
 			}
 			break;
-			case KEY_F(2): add_group(); break; //add group
-			case KEY_F(3): select_group(); break; //select another group
-			case KEY_F(4): set_group_name(sw); break; // change groupname
-			case KEY_F(5): read_playlist(); break; // read playlist
-			case KEY_F(6): write_playlist(); break; // write playlist
-			case KEY_F(7): cw_toggle_group_mode(0); break; 
-			case KEY_F(8): cw_toggle_play_mode(0); break;
-			case KEY_F(9): play_list(); break;
+			case KEY_F(2): case '2': 
+				add_group(); break; //add group
+			case KEY_F(3): case '3':
+				select_group(); break; //select another group
+			case KEY_F(4): case '4':
+				set_group_name(sw); break; // change groupname
+			case KEY_F(5): case '5':
+				read_playlist(); break; // read playlist
+			case KEY_F(6): case '6':
+				write_playlist(); break; // write playlist
+			case KEY_F(7): case '7':
+				cw_toggle_group_mode(0); break; 
+			case KEY_F(8): case '8':
+				cw_toggle_play_mode(0); break;
+			case KEY_F(9): case '9':
+				play_list(); break;
 #ifdef PTHREADEDMPEG
-			case KEY_F(10): change_threads(); break;
+			case KEY_F(10): case '0':
+				change_threads(); break;
 #endif
 #ifdef DEBUG
 			case 'c': sw->addItem("Hoei.mp3"); sw->swRefresh(1); break;
@@ -1295,9 +1330,11 @@ handle_input(short no_delay)
 					delete[] file;
 				}
 				break;
-			case KEY_F(1): fw_end(); break;
-			case KEY_F(2): sw->invertSelection(); break;
-			case KEY_F(3):
+			case KEY_F(1): case '1':
+				fw_end(); break;
+			case KEY_F(2): case '2':
+				sw->invertSelection(); break;
+			case KEY_F(3): case '3':
 				mw_settxt("Recursively selecting files..");
 				char *tmppwd = get_current_working_path();
 				recsel_files(tmppwd);

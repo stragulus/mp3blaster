@@ -1,4 +1,4 @@
-/* MP3Blaster V2.0b1 - An Mpeg Audio-file player for Linux
+/* MP3Blaster - An Mpeg Audio-file player for Linux
  * Copyright (C) 1997 Bram Avontuur (brama@stack.nl)
  *
  * This program is free software; you can redistribute it and/or modify
@@ -203,7 +203,13 @@ bool mp3Player::playingwiththread(int verbose)
 		tyd, newtyd;
 
 	time(&tyd);
-	
+
+	/* build up buffer */
+	server->pausethreadedplayer();
+	while (server->getframesaved() < nthreads - 1)
+		server->run(1);
+	server->unpausethreadedplayer();
+		
 	while(should_play)
 	{
 		if (status == PS_PLAYING)

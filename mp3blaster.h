@@ -14,6 +14,9 @@
 /* DEBUG is only useful if you're programming this.. */
 #undef DEBUG
 
+/* define BWSCREEN when you're using a non-colour screen/terminal */
+#define BWSCREEN
+
 /* SOUND_DEVICE is the digital sound processor-device on your box. */
 #define SOUND_DEVICE "/dev/dsp"
 
@@ -24,7 +27,7 @@
 /* Do not change anything below this line! */
 /* --------------------------------------- */
 
-#define VERSION "2.0b1"
+#define VERSION "2.0b2"
 
 /* bad hack to get things to work. I might figure out the autoconf package one
  * day though :-)
