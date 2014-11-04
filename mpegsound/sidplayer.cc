@@ -55,6 +55,12 @@ bool SIDfileplayer::openfile(char *filename, char *device, soundtype write2file)
 	return true;
 }
 
+void SIDfileplayer::closefile(void)
+{
+	if (tune)
+		delete tune;
+}
+
 void SIDfileplayer::setforcetomono(short flag)
 {
 	/*\

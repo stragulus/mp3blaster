@@ -91,3 +91,9 @@ int  Soundinputstreamfromfile::getposition(void)
   return (int)ftell(fp);
 }
 
+
+void Soundinputstreamfromfile::close(void)
+{
+	if (fp)
+		fclose(fp);
+}

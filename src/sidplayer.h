@@ -18,6 +18,7 @@ public:
 	int geterrorcode(void) { return SIDfileplayer::geterrorcode(); }
 	bool openfile(char *filename, char *device, soundtype write2file=NONE) {
 		return SIDfileplayer::openfile(filename, device, write2file); }
+	void closefile(void) { return SIDfileplayer::closefile(); }
 	void setdownfrequency(int value) {
 		SIDfileplayer::setdownfrequency(value); }
 

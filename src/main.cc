@@ -68,7 +68,8 @@ enum program_mode { PM_NORMAL, PM_FILESELECTION, PM_MP3PLAYING }
 
 /* External functions */
 extern short cf_parse_config_file(const char *);
-extern const char *cf_get_error();
+extern cf_error cf_get_error();
+extern const char *cf_get_error_string();
 
 /* Prototypes */
 void set_header_title(const char*);
@@ -332,10 +333,10 @@ main(int argc, char *argv[])
 	}
 
 	//read .mp3blasterrc
-	if (!cf_parse_config_file(NULL))
+	if (!cf_parse_config_file(NULL) && cf_get_error() != NOSUCHFILE)
 	{
-		fprintf(stderr, "%s\n", cf_get_error());
-		exit(1);
+			fprintf(stderr, "%s\n", cf_get_error_string());
+			exit(1);
 	}
 
 	signal(SIGALRM, SIG_IGN);

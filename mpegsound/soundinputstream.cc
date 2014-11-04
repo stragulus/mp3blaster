@@ -49,4 +49,3 @@ Soundinputstream *Soundinputstream::hopen(char *filename,int *errorcode)
 
   return st;
 }
-

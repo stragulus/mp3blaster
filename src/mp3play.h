@@ -55,6 +55,7 @@ public:
 #endif
 	virtual int geterrorcode(void) = 0;
 	virtual bool openfile(char *, char *, soundtype write2file=NONE) = 0;
+	virtual void closefile(void) = 0;
 	virtual void setdownfrequency(int) = 0;
 };
 

@@ -197,6 +197,7 @@ public:
   int geterrorcode(void)  {return __errorcode;};
 
   virtual bool open(char *filename)              =0;
+  virtual void close(void)                       =0;
   virtual int  getbytedirect(void)               =0;
   virtual bool _readbuffer(char *buffer,int size)=0;
   virtual bool eof(void)                         =0;
@@ -221,6 +222,7 @@ public:
   ~Soundinputstreamfromfile();
 
   bool open(char *filename);
+  void close(void);
   bool _readbuffer(char *buffer,int bytes);
   int  getbytedirect(void);
   bool eof(void);
@@ -243,6 +245,7 @@ public:
   ~Soundinputstreamfromhttp();
 
   bool open(char *filename);
+  void close(void) {}
   bool _readbuffer(char *buffer,int bytes);
   int  getbytedirect(void);
   bool eof(void);
@@ -743,8 +746,9 @@ public:
   int geterrorcode(void)        {return __errorcode;};
 
   virtual bool openfile(char *filename,char *device, soundtype write2file=NONE)=0;
+  virtual void closefile(void)                       =0;
   virtual void setforcetomono(short flag)            =0;
-  virtual bool playing(int verbose)                 =0;
+  virtual bool playing(int verbose)                  =0;
 
 protected:
   bool opendevice(char *device, soundtype write2file=NONE);
@@ -764,6 +768,7 @@ public:
   ~Wavefileplayer();
 
   bool openfile(char *filename,char *device, soundtype write2file=NONE);
+  void closefile(void); 
   void setforcetomono(short flag);
   bool playing(int verbose);
   
@@ -783,6 +788,7 @@ public:
   ~Mpegfileplayer();
 
   bool openfile(char *filename,char *device, soundtype write2file=NONE);
+  void closefile(void);
   void setforcetomono(short flag);
   void setdownfrequency(int value);
   bool playing(int verbose);
@@ -812,6 +818,7 @@ public:
 	~SIDfileplayer();
 
 	bool openfile(char *filename,char *device, soundtype write2file=NONE);
+	void closefile(void);
 	void setforcetomono(short flag);
 	void setdownfrequency(int value);
 	bool run(int frames);

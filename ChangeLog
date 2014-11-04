@@ -1,3 +1,10 @@
+V2.0b14: 1999/12/12
+===================
+-fixed bug preventing mp3blaster from running w/o a .mp3blasterrc in your 
+ homedir. (thank you Tjerk Meesters for pointing this out!)
+-during playing, all files accessed were left open. This is hopefully fixed
+ now. (thanks go to Steven Otten for pointing this out!)
+
 V2.0b13: 1999/12/11
 ===================
 -winnt/ section updated (mp3tag.exe from 2.0b11 with genre support)

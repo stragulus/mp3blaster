@@ -69,7 +69,7 @@ const unsigned short keyword_opts[] = {
  * ANYTHING: any string will do. 
  */
 enum _kwdtype { NUMBER, YESNO, KEY, ANYTHING=15};
-enum errtypes { NONE, TOOMANYVALS, BADVALTYPE, BADKEYWORD, BADVALUE } error;
+cf_error error;
 
 char errstring[256];
 
@@ -389,7 +389,7 @@ cf_parse_config_line(const char *line)
 }
 
 void
-cf_set_error(unsigned int lineno)
+cf_set_error(unsigned int lineno=0)
 {
 	char dummy[100];
 	switch(error)
@@ -403,14 +403,25 @@ cf_set_error(unsigned int lineno)
 	case BADKEYWORD:
 		strcpy(dummy, "Unknown keyword");
 		break;
+	case NOSUCHFILE:
+		strcpy(dummy, "File not found");
 	default:
 		strcpy(dummy, "Unkown error");
 	}
-	sprintf(errstring, "%4d %s", lineno, dummy);
+	if (lineno)
+		sprintf(errstring, "In config file, line %04d: %s", lineno, dummy);
+	else
+		sprintf(errstring, "%s", dummy);
+}
+
+cf_error 
+cf_get_error()
+{
+	return error;
 }
 
 const char*
-cf_get_error()
+cf_get_error_string()
 {
 	return (const char*)errstring;
 }
@@ -428,7 +439,7 @@ cf_parse_config_file(const char *flnam = NULL)
 	unsigned int
 		lineno = 0;
 
-	error = NONE;
+	error = CF_NONE;
 
 	if (!flnam)
 	{
@@ -443,7 +454,11 @@ cf_parse_config_file(const char *flnam = NULL)
 
 debug("cf: conffile: "); debug(filename); debug("\n");
 	if (!(f = fopen(filename, "r")))
+	{
+		error = NOSUCHFILE;
+		cf_set_error();
 		return 0;
+	}
 debug("cf: openend\n");
 	while ((line = readline(f)) && no_error)
 	{

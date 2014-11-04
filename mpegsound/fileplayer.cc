@@ -77,6 +77,12 @@ bool Wavefileplayer::openfile(char *filename,char *device, soundtype write2file)
   return server->initialize();
 }
 
+void Wavefileplayer::closefile(void)
+{
+	if (loader)
+		loader->close();
+}
+
 void Wavefileplayer::setforcetomono(short flag)
 {
   server->setforcetomono(flag);
@@ -150,6 +156,13 @@ bool Mpegfileplayer::openfile(char *filename,char *device, soundtype write2file)
   }
 
   return true;
+}
+
+void
+Mpegfileplayer::closefile(void)
+{
+	if (loader)
+		loader->close();
 }
 
 void Mpegfileplayer::setforcetomono(short flag)

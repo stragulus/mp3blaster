@@ -446,13 +446,12 @@ debug(blub);
 		ioctl(mixer, MIXER_WRITE(SOUND_MIXER_VOLUME), &volume);
 		close(mixer);
 	}
-
+	
 	seterrorcode(server->geterrorcode());
 
 	if (status != PS_STOPPED)
 		server->freethreadedplayer();
 	interface->setStatus( (status = PS_NORMAL) );
-  
 	return ( (geterrorcode() == SOUND_ERROR_FINISH) || (geterrorcode() ==
 		SOUND_ERROR_OK));
 }

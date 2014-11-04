@@ -2,6 +2,9 @@
 #define _MP3B_GLOBAL_
 #include <stdio.h>
 
+enum cf_error { CF_NONE, TOOMANYVALS, BADVALTYPE, BADKEYWORD, BADVALUE,
+				NOSUCHFILE };
+
 char *get_homedir(const char*);
 char *expand_path(const char*);
 void debug(const char*);

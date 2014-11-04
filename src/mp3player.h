@@ -22,6 +22,7 @@ public:
 	int geterrorcode(void) { return Mpegfileplayer::geterrorcode(); }
 	bool openfile(char *filename, char *device, soundtype write2file=NONE) {
 		return Mpegfileplayer::openfile(filename, device, write2file); }
+	void closefile(void) { return Mpegfileplayer::closefile(); }
 	void setdownfrequency(int value) {
 		Mpegfileplayer::setdownfrequency(value); }
 

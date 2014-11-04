@@ -9,6 +9,7 @@
  directory where all playlists are stored)
 -When a directory is selected (with spacebar) in the filemanager, add this
  as a separate group to the playlist
+-Link to MySQL for statistical purposes
 -(downmix to 22Khz)
 -(compatible with WinAmp playlist)
 -(``cold start'' option)
