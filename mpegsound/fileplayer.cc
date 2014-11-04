@@ -68,7 +68,7 @@ bool Wavefileplayer::openfile(char *filename,char *device)
   return server->initialize();
 }
 
-void Wavefileplayer::setforcetomono(bool flag)
+void Wavefileplayer::setforcetomono(short flag)
 {
   server->setforcetomono(flag);
 };
@@ -144,7 +144,7 @@ bool Mpegfileplayer::openfile(char *filename,char *device)
   return true;
 }
 
-void Mpegfileplayer::setforcetomono(bool flag)
+void Mpegfileplayer::setforcetomono(short flag)
 {
   server->setforcetomono(flag);
 };

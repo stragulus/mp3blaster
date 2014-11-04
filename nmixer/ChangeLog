@@ -1,0 +1,16 @@
+2.0: 01 feb. 1999: Whoah! This version is very smart! It calculates
+	 the amount of bars that can be shown on-screen (yess..lovely,
+	 huh?) and if there are more bars than can be shown, you can
+	 scroll thru the list of bars :) Furthermore, nmixer now
+	 auto-detects the mixer-devices that your sound-device supports,
+	 without specifying it in the Makefile. *AND* it uses autoconf
+	 for smart&easy configuring.
+
+1.2: Left and right bars now represent the left resp. right channel as
+     opposed to the previous version (aah..whoops).
+
+1.1: Left and right channels can be set individually using the numeric
+     keypad.
+
+1.0: First version that is worth mentioning. Can only set the volume for
+     PCM / master-volume and can't set left/right channels individually.

@@ -1,3 +1,4 @@
+# Generated automatically from Makefile.in by configure.
 # Makefile.in generated automatically by automake 1.3 from Makefile.am
 
 # Copyright (C) 1994, 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
@@ -13,43 +14,42 @@
 
 SHELL = /bin/sh
 
-srcdir = @srcdir@
-top_srcdir = @top_srcdir@
-VPATH = @srcdir@
-prefix = @prefix@
-exec_prefix = @exec_prefix@
+srcdir = .
+top_srcdir = ..
+prefix = /usr/local
+exec_prefix = ${prefix}
 
-bindir = @bindir@
-sbindir = @sbindir@
-libexecdir = @libexecdir@
-datadir = @datadir@
-sysconfdir = @sysconfdir@
-sharedstatedir = @sharedstatedir@
-localstatedir = @localstatedir@
-libdir = @libdir@
-infodir = @infodir@
-mandir = @mandir@
-includedir = @includedir@
+bindir = ${exec_prefix}/bin
+sbindir = ${exec_prefix}/sbin
+libexecdir = ${exec_prefix}/libexec
+datadir = ${prefix}/share
+sysconfdir = ${prefix}/etc
+sharedstatedir = ${prefix}/com
+localstatedir = ${prefix}/var
+libdir = ${exec_prefix}/lib
+infodir = ${prefix}/info
+mandir = ${prefix}/man
+includedir = ${prefix}/include
 oldincludedir = /usr/include
 
 DISTDIR =
 
-pkgdatadir = $(datadir)/@PACKAGE@
-pkglibdir = $(libdir)/@PACKAGE@
-pkgincludedir = $(includedir)/@PACKAGE@
+pkgdatadir = $(datadir)/mp3blaster
+pkglibdir = $(libdir)/mp3blaster
+pkgincludedir = $(includedir)/mp3blaster
 
 top_builddir = ..
 
-ACLOCAL = @ACLOCAL@
-AUTOCONF = @AUTOCONF@
-AUTOMAKE = @AUTOMAKE@
-AUTOHEADER = @AUTOHEADER@
+ACLOCAL = aclocal
+AUTOCONF = autoconf
+AUTOMAKE = automake
+AUTOHEADER = autoheader
 
-INSTALL = @INSTALL@
-INSTALL_PROGRAM = @INSTALL_PROGRAM@
-INSTALL_DATA = @INSTALL_DATA@
-INSTALL_SCRIPT = @INSTALL_SCRIPT@
-transform = @program_transform_name@
+INSTALL = /usr/bin/ginstall -c
+INSTALL_PROGRAM = ${INSTALL}
+INSTALL_DATA = ${INSTALL} -m 644
+INSTALL_SCRIPT = ${INSTALL_PROGRAM}
+transform = s,x,x,
 
 NORMAL_INSTALL = :
 PRE_INSTALL = :
@@ -57,72 +57,63 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-CC = @CC@
-CXX = @CXX@
-LIBMPEGSOUND = @LIBMPEGSOUND@
-LIBNMIXER = @LIBNMIXER@
-LN_S = @LN_S@
-MAKEINFO = @MAKEINFO@
-PACKAGE = @PACKAGE@
-RANLIB = @RANLIB@
-SRCDIRS = @SRCDIRS@
-VERSION = @VERSION@
+CC = gcc
+CXX = c++
+LIBMPEGSOUND = ../mpegsound/libmpegsound.a
+LIBNMIXER = ../nmixer/libnmixer.a
+LN_S = ln -s
+MAKEINFO = makeinfo
+PACKAGE = mp3blaster
+RANLIB = ranlib
+SRCDIRS = mpegsound nmixer src
+VERSION = 2.0b5
 
-noinst_LIBRARIES	= libmpegsound.a
-
-libmpegsound_a_SOURCES  = soundinputstream.cc fileinput.cc httpinput.cc \
-			  soundplayer.cc rawplayer.cc rawtofile.cc \
-			  mpegtable.cc filter.cc filter_2.cc \
-			  mpegtoraw.cc mpeglayer1.cc mpeglayer2.cc \
-			  mpeglayer3.cc bitwindow.cc huffmantable.cc \
-			  wavetoraw.cc \
-			  fileplayer.cc
-
-noinst_HEADERS		= mpegsound.h mpegsound_locals.h
-
-INCLUDES                = -I.
+bin_PROGRAMS	= nmixer
+nmixer_SOURCES	= main.cc
+nmixer_DEPENDENCIES = ../nmixer/libnmixer.a
+LIBS			= -lm  -lpthread -lncurses
+LDADD           = ../nmixer/libnmixer.a
+INCLUDES		= -I/usr/include/ncurses -I.
+noinst_LIBRARIES = libnmixer.a
+libnmixer_a_SOURCES = nmixer.cc
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_CLEAN_FILES = 
 LIBRARIES =  $(noinst_LIBRARIES)
 
 
-DEFS = @DEFS@ -I. -I$(srcdir) 
-CPPFLAGS = @CPPFLAGS@
-LDFLAGS = @LDFLAGS@
-LIBS = @LIBS@
-libmpegsound_a_LIBADD = 
-libmpegsound_a_OBJECTS =  soundinputstream.o fileinput.o httpinput.o \
-soundplayer.o rawplayer.o rawtofile.o mpegtable.o filter.o filter_2.o \
-mpegtoraw.o mpeglayer1.o mpeglayer2.o mpeglayer3.o bitwindow.o \
-huffmantable.o wavetoraw.o fileplayer.o
+DEFS =  -DPACKAGE=\"mp3blaster\" -DVERSION=\"2.0b5\" -DHAVE_LIBM=1 -DSTDC_HEADERS=1 -DHAVE_FCNTL_H=1 -DHAVE_MALLOC_H=1 -DHAVE_SYS_IOCTL_H=1 -DHAVE_UNISTD_H=1 -DHAVE_ERRNO_H=1 -DHAVE_PTHREAD_H=1 -DHAVE_NCURSES_H=1 -DHAVE_CURSES_H=1 -DHAVE_SYS_SOUNDCARD_H=1 -DHAVE_GETOPT_H=1 -DHAVE_STRDUP=1 -DHAVE_STRSTR=1 -DPTHREADEDMPEG=1 -D_REENTRANT=1  -I. -I$(srcdir) 
+CPPFLAGS = 
+LDFLAGS = 
+libnmixer_a_LIBADD = 
+libnmixer_a_OBJECTS =  nmixer.o
 AR = ar
-CXXFLAGS = @CXXFLAGS@
+PROGRAMS =  $(bin_PROGRAMS)
+
+nmixer_OBJECTS =  main.o
+nmixer_LDADD = $(LDADD)
+nmixer_LDFLAGS = 
+CXXFLAGS = -g -O2 -Wall -Wstrict-prototypes -W -fno-strength-reduce 
 CXXCOMPILE = $(CXX) $(DEFS) $(INCLUDES) $(CPPFLAGS) $(CXXFLAGS)
 CXXLINK = $(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@
-HEADERS =  $(noinst_HEADERS)
-
-DIST_COMMON =  AUTHORS Makefile.am Makefile.in
+DIST_COMMON =  README AUTHORS COPYING ChangeLog INSTALL Makefile.am \
+Makefile.in NEWS TODO
 
 
 DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
 
 TAR = tar
 GZIP = --best
-DEP_FILES =  .deps/bitwindow.P .deps/fileinput.P .deps/fileplayer.P \
-.deps/filter.P .deps/filter_2.P .deps/httpinput.P .deps/huffmantable.P \
-.deps/mpeglayer1.P .deps/mpeglayer2.P .deps/mpeglayer3.P \
-.deps/mpegtable.P .deps/mpegtoraw.P .deps/rawplayer.P .deps/rawtofile.P \
-.deps/soundinputstream.P .deps/soundplayer.P .deps/wavetoraw.P
+DEP_FILES =  .deps/main.P .deps/nmixer.P
 CXXMKDEP = $(CXX) -M $(DEFS) $(INCLUDES) $(CPPFLAGS) $(CXXFLAGS)
-SOURCES = $(libmpegsound_a_SOURCES)
-OBJECTS = $(libmpegsound_a_OBJECTS)
+SOURCES = $(libnmixer_a_SOURCES) $(nmixer_SOURCES)
+OBJECTS = $(libnmixer_a_OBJECTS) $(nmixer_OBJECTS)
 
-all: Makefile $(LIBRARIES) $(HEADERS)
+all: Makefile $(LIBRARIES) $(PROGRAMS)
 
 .SUFFIXES:
 .SUFFIXES: .S .c .cc .o .s
 $(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4)
-	cd $(top_srcdir) && $(AUTOMAKE) --gnu mpegsound/Makefile
+	cd $(top_srcdir) && $(AUTOMAKE) --gnu nmixer/Makefile
 
 Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status $(BUILT_SOURCES)
 	cd $(top_builddir) \
@@ -154,10 +145,39 @@ distclean-compile:
 
 maintainer-clean-compile:
 
-libmpegsound.a: $(libmpegsound_a_OBJECTS) $(libmpegsound_a_DEPENDENCIES)
-	-rm -f libmpegsound.a
-	$(AR) cru libmpegsound.a $(libmpegsound_a_OBJECTS) $(libmpegsound_a_LIBADD)
-	$(RANLIB) libmpegsound.a
+libnmixer.a: $(libnmixer_a_OBJECTS) $(libnmixer_a_DEPENDENCIES)
+	-rm -f libnmixer.a
+	$(AR) cru libnmixer.a $(libnmixer_a_OBJECTS) $(libnmixer_a_LIBADD)
+	$(RANLIB) libnmixer.a
+
+mostlyclean-binPROGRAMS:
+
+clean-binPROGRAMS:
+	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
+
+distclean-binPROGRAMS:
+
+maintainer-clean-binPROGRAMS:
+
+install-binPROGRAMS: $(bin_PROGRAMS)
+	@$(NORMAL_INSTALL)
+	$(mkinstalldirs) $(DESTDIR)$(bindir)
+	@list='$(bin_PROGRAMS)'; for p in $$list; do \
+	  if test -f $$p; then \
+	    echo "  $(INSTALL_PROGRAM) $$p $(DESTDIR)$(bindir)/`echo $$p|sed '$(transform)'`"; \
+	     $(INSTALL_PROGRAM) $$p $(DESTDIR)$(bindir)/`echo $$p|sed '$(transform)'`; \
+	  else :; fi; \
+	done
+
+uninstall-binPROGRAMS:
+	@$(NORMAL_UNINSTALL)
+	list='$(bin_PROGRAMS)'; for p in $$list; do \
+	  rm -f $(DESTDIR)$(bindir)/`echo $$p|sed '$(transform)'`; \
+	done
+
+nmixer: $(nmixer_OBJECTS) $(nmixer_DEPENDENCIES)
+	@rm -f nmixer
+	$(CXXLINK) $(nmixer_LDFLAGS) $(nmixer_OBJECTS) $(nmixer_LDADD) $(LIBS)
 .cc.o:
 	$(CXXCOMPILE) -c $<
 
@@ -188,14 +208,14 @@ maintainer-clean-tags:
 
 distdir = $(top_builddir)/$(PACKAGE)-$(VERSION)/$(subdir)
 
-subdir = mpegsound
+subdir = nmixer
 
 distdir: $(DISTFILES)
 	here=`cd $(top_builddir) && pwd`; \
 	top_distdir=`cd $(top_distdir) && pwd`; \
 	distdir=`cd $(distdir) && pwd`; \
 	cd $(top_srcdir) \
-	  && $(AUTOMAKE) --include-deps --build-dir=$$here --srcdir-name=$(top_srcdir) --output-dir=$$top_distdir --gnu mpegsound/Makefile
+	  && $(AUTOMAKE) --include-deps --build-dir=$$here --srcdir-name=$(top_srcdir) --output-dir=$$top_distdir --gnu nmixer/Makefile
 	@for file in $(DISTFILES); do \
 	  d=$(srcdir); \
 	  test -f $(distdir)/$$file \
@@ -242,7 +262,7 @@ dvi:
 check: all
 	$(MAKE)
 installcheck:
-install-exec: 
+install-exec: install-binPROGRAMS
 	@$(NORMAL_INSTALL)
 
 install-data: 
@@ -251,11 +271,12 @@ install-data:
 install: install-exec install-data all
 	@:
 
-uninstall: 
+uninstall: uninstall-binPROGRAMS
 
 install-strip:
 	$(MAKE) INSTALL_PROGRAM='$(INSTALL_PROGRAM) -s' INSTALL_SCRIPT='$(INSTALL_PROGRAM)' install
 installdirs:
+	$(mkinstalldirs)  $(DATADIR)$(bindir)
 
 
 mostlyclean-generic:
@@ -273,31 +294,35 @@ maintainer-clean-generic:
 	-test -z "$(MAINTAINERCLEANFILES)" || rm -f $(MAINTAINERCLEANFILES)
 	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
 mostlyclean:  mostlyclean-noinstLIBRARIES mostlyclean-compile \
-		mostlyclean-tags mostlyclean-depend mostlyclean-generic
+		mostlyclean-binPROGRAMS mostlyclean-tags \
+		mostlyclean-depend mostlyclean-generic
 
-clean:  clean-noinstLIBRARIES clean-compile clean-tags clean-depend \
-		clean-generic mostlyclean
+clean:  clean-noinstLIBRARIES clean-compile clean-binPROGRAMS clean-tags \
+		clean-depend clean-generic mostlyclean
 
-distclean:  distclean-noinstLIBRARIES distclean-compile distclean-tags \
-		distclean-depend distclean-generic clean
+distclean:  distclean-noinstLIBRARIES distclean-compile \
+		distclean-binPROGRAMS distclean-tags distclean-depend \
+		distclean-generic clean
 	-rm -f config.status
 
 maintainer-clean:  maintainer-clean-noinstLIBRARIES \
-		maintainer-clean-compile maintainer-clean-tags \
-		maintainer-clean-depend maintainer-clean-generic \
-		distclean
+		maintainer-clean-compile maintainer-clean-binPROGRAMS \
+		maintainer-clean-tags maintainer-clean-depend \
+		maintainer-clean-generic distclean
 	@echo "This command is intended for maintainers to use;"
 	@echo "it deletes files that may require special tools to rebuild."
 
 .PHONY: mostlyclean-noinstLIBRARIES distclean-noinstLIBRARIES \
 clean-noinstLIBRARIES maintainer-clean-noinstLIBRARIES \
 mostlyclean-compile distclean-compile clean-compile \
-maintainer-clean-compile tags mostlyclean-tags distclean-tags \
-clean-tags maintainer-clean-tags distdir mostlyclean-depend \
-distclean-depend clean-depend maintainer-clean-depend info dvi \
-installcheck install-exec install-data install uninstall all \
-installdirs mostlyclean-generic distclean-generic clean-generic \
-maintainer-clean-generic clean mostlyclean distclean maintainer-clean
+maintainer-clean-compile mostlyclean-binPROGRAMS distclean-binPROGRAMS \
+clean-binPROGRAMS maintainer-clean-binPROGRAMS uninstall-binPROGRAMS \
+install-binPROGRAMS tags mostlyclean-tags distclean-tags clean-tags \
+maintainer-clean-tags distdir mostlyclean-depend distclean-depend \
+clean-depend maintainer-clean-depend info dvi installcheck install-exec \
+install-data install uninstall all installdirs mostlyclean-generic \
+distclean-generic clean-generic maintainer-clean-generic clean \
+mostlyclean distclean maintainer-clean
 
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

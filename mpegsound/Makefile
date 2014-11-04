@@ -1,3 +1,4 @@
+# Generated automatically from Makefile.in by configure.
 # Makefile.in generated automatically by automake 1.3 from Makefile.am
 
 # Copyright (C) 1994, 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
@@ -13,43 +14,42 @@
 
 SHELL = /bin/sh
 
-srcdir = @srcdir@
-top_srcdir = @top_srcdir@
-VPATH = @srcdir@
-prefix = @prefix@
-exec_prefix = @exec_prefix@
+srcdir = .
+top_srcdir = ..
+prefix = /usr/local
+exec_prefix = ${prefix}
 
-bindir = @bindir@
-sbindir = @sbindir@
-libexecdir = @libexecdir@
-datadir = @datadir@
-sysconfdir = @sysconfdir@
-sharedstatedir = @sharedstatedir@
-localstatedir = @localstatedir@
-libdir = @libdir@
-infodir = @infodir@
-mandir = @mandir@
-includedir = @includedir@
+bindir = ${exec_prefix}/bin
+sbindir = ${exec_prefix}/sbin
+libexecdir = ${exec_prefix}/libexec
+datadir = ${prefix}/share
+sysconfdir = ${prefix}/etc
+sharedstatedir = ${prefix}/com
+localstatedir = ${prefix}/var
+libdir = ${exec_prefix}/lib
+infodir = ${prefix}/info
+mandir = ${prefix}/man
+includedir = ${prefix}/include
 oldincludedir = /usr/include
 
 DISTDIR =
 
-pkgdatadir = $(datadir)/@PACKAGE@
-pkglibdir = $(libdir)/@PACKAGE@
-pkgincludedir = $(includedir)/@PACKAGE@
+pkgdatadir = $(datadir)/mp3blaster
+pkglibdir = $(libdir)/mp3blaster
+pkgincludedir = $(includedir)/mp3blaster
 
 top_builddir = ..
 
-ACLOCAL = @ACLOCAL@
-AUTOCONF = @AUTOCONF@
-AUTOMAKE = @AUTOMAKE@
-AUTOHEADER = @AUTOHEADER@
+ACLOCAL = aclocal
+AUTOCONF = autoconf
+AUTOMAKE = automake
+AUTOHEADER = autoheader
 
-INSTALL = @INSTALL@
-INSTALL_PROGRAM = @INSTALL_PROGRAM@
-INSTALL_DATA = @INSTALL_DATA@
-INSTALL_SCRIPT = @INSTALL_SCRIPT@
-transform = @program_transform_name@
+INSTALL = /usr/bin/ginstall -c
+INSTALL_PROGRAM = ${INSTALL}
+INSTALL_DATA = ${INSTALL} -m 644
+INSTALL_SCRIPT = ${INSTALL_PROGRAM}
+transform = s,x,x,
 
 NORMAL_INSTALL = :
 PRE_INSTALL = :
@@ -57,16 +57,16 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-CC = @CC@
-CXX = @CXX@
-LIBMPEGSOUND = @LIBMPEGSOUND@
-LIBNMIXER = @LIBNMIXER@
-LN_S = @LN_S@
-MAKEINFO = @MAKEINFO@
-PACKAGE = @PACKAGE@
-RANLIB = @RANLIB@
-SRCDIRS = @SRCDIRS@
-VERSION = @VERSION@
+CC = gcc
+CXX = c++
+LIBMPEGSOUND = ../mpegsound/libmpegsound.a
+LIBNMIXER = ../nmixer/libnmixer.a
+LN_S = ln -s
+MAKEINFO = makeinfo
+PACKAGE = mp3blaster
+RANLIB = ranlib
+SRCDIRS = mpegsound nmixer src
+VERSION = 2.0b5
 
 noinst_LIBRARIES	= libmpegsound.a
 
@@ -86,17 +86,17 @@ CONFIG_CLEAN_FILES =
 LIBRARIES =  $(noinst_LIBRARIES)
 
 
-DEFS = @DEFS@ -I. -I$(srcdir) 
-CPPFLAGS = @CPPFLAGS@
-LDFLAGS = @LDFLAGS@
-LIBS = @LIBS@
+DEFS =  -DPACKAGE=\"mp3blaster\" -DVERSION=\"2.0b5\" -DHAVE_LIBM=1 -DSTDC_HEADERS=1 -DHAVE_FCNTL_H=1 -DHAVE_MALLOC_H=1 -DHAVE_SYS_IOCTL_H=1 -DHAVE_UNISTD_H=1 -DHAVE_ERRNO_H=1 -DHAVE_PTHREAD_H=1 -DHAVE_NCURSES_H=1 -DHAVE_CURSES_H=1 -DHAVE_SYS_SOUNDCARD_H=1 -DHAVE_GETOPT_H=1 -DHAVE_STRDUP=1 -DHAVE_STRSTR=1 -DPTHREADEDMPEG=1 -D_REENTRANT=1  -I. -I$(srcdir) 
+CPPFLAGS = 
+LDFLAGS = 
+LIBS = -lm  -lpthread -lncurses
 libmpegsound_a_LIBADD = 
 libmpegsound_a_OBJECTS =  soundinputstream.o fileinput.o httpinput.o \
 soundplayer.o rawplayer.o rawtofile.o mpegtable.o filter.o filter_2.o \
 mpegtoraw.o mpeglayer1.o mpeglayer2.o mpeglayer3.o bitwindow.o \
 huffmantable.o wavetoraw.o fileplayer.o
 AR = ar
-CXXFLAGS = @CXXFLAGS@
+CXXFLAGS = -g -O2 -Wall -Wstrict-prototypes -W -fno-strength-reduce 
 CXXCOMPILE = $(CXX) $(DEFS) $(INCLUDES) $(CPPFLAGS) $(CXXFLAGS)
 CXXLINK = $(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@
 HEADERS =  $(noinst_HEADERS)

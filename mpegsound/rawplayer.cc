@@ -13,7 +13,22 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#ifdef HAVE_SYS_SOUNDCARD_H
 #include <sys/soundcard.h>
+#elif HAVE_MACHINE_SOUNDCARD_H
+#include <machine/soundcard.h>
+#else
+#include <soundcard.h>
+#endif
+
+#ifdef __cplusplus
+}
+#endif
 
 #include "mpegsound.h"
 
@@ -104,7 +119,8 @@ bool Rawplayer::setsoundtype(int stereo,int samplesize,int speed)
   rawstereo=stereo;
   rawsamplesize=samplesize;
   rawspeed=speed;
-  forcetomono=forceto8=false;
+  forceto8 = false;
+  forcetomono = 0;
 
   return resetsoundtype();
 }
@@ -123,7 +139,7 @@ bool Rawplayer::resetsoundtype(void)
 #endif
   {
     rawstereo=MODE_MONO;
-    forcetomono=true;
+    forcetomono=1;
   }
 
   tmp=rawsamplesize;

@@ -1,10 +1,17 @@
- -!! After group is added, CHANGE to the new group!! (and mention it)
-  (same case after reading a playlist->update add_group code)
+ -path/filename in bovenste rand playwindow (als niet past:...../bla.mp3)
+ -plugin support
+ -"no mixer" support
+ -chrooted environment
+ -"press q to return to playlist" msg
+ -init_color for mixer 
+ -"multiple del"
+ -if no mixer-device is detected, don't try to do anything with the
+  mixer in playwindow.cc..
+ -NAS (Network Audio System) support!!
+ -find out why many mp3's give 'Can't make thread' near the end of the song.
+  (because of  id3tag perhaps?)
  -improve writing/reading of playlist code.
- -fix bug when playlist is read from a file, it doesn't display the
-  correct contents for the current group
- -be consistent about .lst extension (i.e., don't add it automagically
-  when writing a playlist)
+ -Add support for playing wav files too
  -refresh_screen() that actually works at all times.
  -simple volume control within the program
  -fix a memory-leak. After each played song, 4kb is lost(oops) (but 
@@ -19,12 +26,6 @@
  -Forward/Rewind while playing in relative amounts.
  -Save playing status when program is interrupted, so the playlist can be 
   resumed when mp3blaster is restarted (useful for *big* playlists)
- -There seems to be some nasty bug somewhere causing sigsegv. It seems to be
-  fixed, but I don't have a clue what has fixed it. If you run into segv's (and
-  not because you play some weird-format mp3's!!) please mention it to me and
-  what you did to get it. It could be that these segv's were caused because I
-  had 10 different distributions of ncurses scattered on my system but I'm just
-  not sure.
  -On my cleanly-installed debian-2.0 linux box the blue play-window's layout
   is fucked up bad. Probably due to the ncurses-lib on it (and perhaps because
   I do some unsupported tricks with ncurses, to work around `features' *cough*)
@@ -32,6 +33,13 @@
  -built-in helpmenu
 
 DONE:
+ -save path at startup for playlist reading/saving
+ -be consistent about .lst extension (i.e., don't add it automagically
+  when writing a playlist)
+ -!! After group is added, CHANGE to the new group!! (and mention it)
+  (same case after reading a playlist->update add_group code)
+ -fix bug when playlist is read from a file, it doesn't display the
+  correct contents for the current group
  -glibc2-compliant. (dunno if glibc1 still works)
  -Don't wait for keypress after warning/error: Just wait 1/2 seconds
  -Implemented autoconf/automake

@@ -1,0 +1,24 @@
+This is an interactive mixer for soundcards using ncurses on a normal non-
+graphical terminal. It is especially useful for those who want the easy
+usage of xmixer but who do not want to start X to use the soundcard's mixer..
+
+The program uses autoconf for smart&easy configuring, and is known to
+work on x86/linux and Sparc/NetBSD, but probably works on any BSD-flavour
+that has the ossaudio-lib installed. If you can't get it to compile on
+some box that has ossaudio[-emulation], please notify me of this
+problem so I can try to fix it.
+
+Some HINTS FOR USAGE (no I don't make built-in help-functions for such a
+tiny program):
+-Pressing 0, 1, 2, 3, 4 or 5 does what you expect: Set the scrollbar to that
+ position (indicated by the bar on top).
+-The numeric keypad, with numlock OFF, can be used to set the volume. Arrows
+ move both channels, home/PgUp/end/PgDn move left/right channel either up or
+ down as you'd expect. This probably only makes sense on PC/AT-keyboard and
+ lookalikes..haven't tested it on other architectures than x86.
+-Sending cash to the dutch Postbank with account-no 6250177 with a reference
+ to nmixer and your email-addy will give you good luck in the rest of your
+ life, and will make me very happy too! I might even show you my gratitude
+ in some unique way :)
+
+Bram Avontuur (brama@stack.nl) http://www.stack.nl/~brama/

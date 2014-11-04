@@ -17,13 +17,16 @@
 #include "mpegsound_locals.h"
 
 #define MY_PI 3.14159265358979323846
+#undef DEBUG
+
+extern void debug(const char *);
 
 Mpegtoraw::Mpegtoraw(Soundinputstream *loader,Soundplayer *player)
 {
   __errorcode=SOUND_ERROR_OK;
   frameoffsets=NULL;
 
-  forcetomonoflag=false;
+  forcetomonoflag=0;
   downfrequency=0;
 
   this->loader=loader;
@@ -85,7 +88,7 @@ int Mpegtoraw::getbits(int bits)
   return (u.current>>8);
 }
 
-void Mpegtoraw::setforcetomono(bool flag)
+void Mpegtoraw::setforcetomono(short flag)
 {
   forcetomonoflag=flag;
 }
@@ -96,7 +99,7 @@ void Mpegtoraw::setdownfrequency(int value)
   if(value)downfrequency=1;
 }
 
-bool Mpegtoraw::getforcetomono(void)
+short Mpegtoraw::getforcetomono(void)
 {
   return forcetomonoflag;
 }
@@ -356,7 +359,12 @@ bool Mpegtoraw::loadheader(void)
 {
   register int c;
   bool flag;
-
+#ifdef DEBUG
+  bool badheader = 0;
+  static bool firstheader = 1;
+  static int old_layer,old_version,old_padding,old_frequency,
+    old_bitrateindex,old_extendedmode,old_mode;
+#endif
   sync();
 
 // Synchronize
@@ -367,6 +375,7 @@ bool Mpegtoraw::loadheader(void)
     if((c=loader->getbytedirect())<0)break;
 
     if(c==0xff)
+    {
       while(!flag)
       {
 	if((c=loader->getbytedirect())<0)
@@ -381,28 +390,71 @@ bool Mpegtoraw::loadheader(void)
 	}
 	else if(c!=0xff)break;
       }
+    }
   }while(!flag);
 
   if(c<0)return seterrorcode(SOUND_ERROR_FINISH);
 
-
-
 // Analyzing
-  c&=0xf;
+// Changed by Bram Avontuur, author of mp3blaster, so it will recognize more
+// sampling frequencies.
+  c&=0xf; /* c = 0 0 0 0 bit13 bit14 bit15 bit16 */
   protection=c&1;
   layer=4-((c>>1)&3);
   version=(_mpegversion)((c>>3)^1);
 
-  c=((loader->getbytedirect()))>>1;
+  c=((loader->getbytedirect()))>>1; /* c = 0 bit17 .. bit23 */
   padding=(c&1);             c>>=1;
-  frequency=(_frequency)(c&2); c>>=2;
+  //frequency=(_frequency)(c&2); c>>=2; this is wrong.
+  frequency=(_frequency)(c&3); c>>=2;
+  if ((frequency&0x3) == 0x3)
+  {
+    debug("Invalid frequency (probably a corrupt " \
+	"mp3).\n");
+#ifdef DEBUG
+    if (firstheader)
+	return false;
+    else
+        badheader = 1;
+#else
+    return false;
+#endif
+  }
+
   bitrateindex=(int)c;
   if(bitrateindex==15)return seterrorcode(SOUND_ERROR_BAD);
 
   c=((unsigned int)(loader->getbytedirect()))>>4;
+  /* c = 0 0 0 0 bit25 bit26 bit27 bit27 bit28 */
   extendedmode=c&3;
   mode=(_mode)(c>>2);
 
+#ifdef DEBUG
+  if (!badheader)
+  {
+    old_layer = layer;
+    old_version = version;
+    old_padding = padding;
+    old_frequency = frequency;
+    old_bitrateindex = bitrateindex;
+    old_extendedmode = extendedmode;
+    old_mode = mode;
+    firstheader = 0;
+  }
+  else
+  {
+    layer = old_layer;
+    version = old_version;
+    padding = old_padding;
+    frequency = old_frequency;
+    bitrateindex = old_bitrateindex;
+    extendedmode = old_extendedmode;
+    mode = old_mode;
+    debug("Bad synchronize-header. Falling back to previous header.");
+  }
+
+  if (firstheader) firstheader = 0; /* read first header succesfully */
+#endif
 
 // Making information
   inputstereo= (mode==single)?0:1;

@@ -11,7 +11,9 @@
 /************************************/
 #include <stdio.h>
 #include <sys/types.h>
-
+#ifdef HAVE_BOOL_H
+#include <bool.h>
+#endif
 #ifdef PTHREADEDMPEG
 #ifdef HAVE_PTHREAD_H
 #include <pthread.h>
@@ -321,7 +323,7 @@ private:
   int  rawbuffersize;
   int  audiohandle,audiobuffersize;
   int  rawstereo,rawsamplesize,rawspeed;
-  bool forcetomono,forceto8;
+  short forcetomono,forceto8;
   int  quota;
 };
 
@@ -338,7 +340,7 @@ public:
   ~Wavetoraw();
 
   bool initialize(void);
-  void setforcetomono(bool flag){forcetomonoflag=flag;};
+  void setforcetomono(short flag){forcetomonoflag=flag;};
   bool run(void);
 
   int  getfrequency(void)    const {return speed;};
@@ -355,7 +357,7 @@ private:
   int  __errorcode;
   void seterrorcode(int errorcode) {__errorcode=errorcode;};
 
-  bool forcetomonoflag;
+  short forcetomonoflag;
 
   Soundinputstream *loader;
   Soundplayer *player;
@@ -435,18 +437,18 @@ public:
   /* Interface for setting music quality */
   /***************************************/
 private:
-  bool forcetomonoflag;
+  short forcetomonoflag;
   int  downfrequency;
 
 public:
-  void setforcetomono(bool flag);
+  void setforcetomono(short flag);
   void setdownfrequency(int value);
 
   /******************************************/
   /* Functions getting other MPEG variables */
   /******************************************/
 public:
-  bool getforcetomono(void);
+  short getforcetomono(void);
   int  getdownfrequency(void);
   int  getpcmperframe(void);
 
@@ -666,7 +668,7 @@ public:
   int geterrorcode(void)        {return __errorcode;};
 
   virtual bool openfile(char *filename,char *device)=0;
-  virtual void setforcetomono(bool flag)            =0;
+  virtual void setforcetomono(short flag)            =0;
   virtual bool playing(int verbose)                 =0;
 
 protected:
@@ -686,7 +688,7 @@ public:
   ~Wavefileplayer();
 
   bool openfile(char *filename,char *device);
-  void setforcetomono(bool flag);
+  void setforcetomono(short flag);
   bool playing(int verbose);
   
 private:
@@ -705,7 +707,7 @@ public:
   ~Mpegfileplayer();
 
   bool openfile(char *filename,char *device);
-  void setforcetomono(bool flag);
+  void setforcetomono(short flag);
   void setdownfrequency(int value);
   bool playing(int verbose);
 #if PTHREADEDMPEG

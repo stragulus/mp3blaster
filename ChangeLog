@@ -1,3 +1,30 @@
+V2.0b5: 1999/03/XX
+==================
+
+-chroot-function. This is about to change to something that (a) doesn't
+ require root-privs and (b) only affects the file selection dialogs.
+-Several new commandline options for setting default playingmode, 
+ wether to have a mixer or not, wether to start playing / quiting 
+ automagically or not, etc.
+-Compiles on OpenBSD/alpha, FreeBSD(2.2.8), Linux/alpha too.
+-Built-in mixer support! (also, nmixer is distributed as an integrated 
+ package with mp3blaster. This is the very same mixer as used in mp3blaster,
+ but then as a separate binary!)
+-When a new group is added, it is now automatically selected too.
+ (it used to select the new group but displayed the wrong one)
+-The .lst extension is no longer automagically added when writing a playlist.
+-It recognizes 48Khz sampled mp3's now! (instead of crashing om them)
+ However, it doesn't synchronise yet (which is necessary if the mp3 is
+ slightly corrupted at some point - then again: Get only good quality MP3's!)
+ Hmm..this actually appears to be a feature, not a bug :) The mpegsoundlib
+ supports variable bitrate mp3's.
+-The command-line syntax is changed becuz I use getopt now to 
+ process arguments. If you have getopt.h, it supports meaningful long
+ arguments (--blabla instead of -b) too.
+-No more reports about sigsegv's unrelated to weird mp3 formats.
+-No mp3's discovered that could not be played by mp3blaster. (only some
+ mp3's with glitches in them that causes mp3blaster to stop playing them)
+
 V2.0b4: 1999/01/21
 ==================
 

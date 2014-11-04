@@ -55,18 +55,19 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <time.h>
+#ifdef HAVE_GETOPT_H
+#include <getopt.h>
+#endif
+#ifdef HAVE_ERRNO_H
+#include <errno.h>
+#endif
 #include "scrollwin.h"
 #include "gstack.h"
 #include "mp3stack.h"
 #include "fileman.h"
 #include "mp3play.h"
 
-#define ERRMSG "Usage: %s [filename] (plays one mp3 then exits)\n" \
-               "       %s [-l playlist] (loads a playlist)\n"
-	
-/* define this when the program's not finished (i.e. stay off :-) */
-#define UNFINISHED
-
+/* paranoia define[s] */
 #ifndef FILENAME_MAX
 #define FILENAME_MAX 1024
 #endif
@@ -74,6 +75,9 @@
 /* values for global var 'window' */
 enum program_mode { PM_NORMAL, PM_FILESELECTION, PM_MP3PLAYING }
 	progmode;
+
+/* External functions */
+extern void debug(const char *);
 
 /* Prototypes */
 void set_header_title(const char*);
@@ -89,12 +93,22 @@ void mw_clear();
 void mw_settxt(const char*);
 void read_playlist(const char *);
 void write_playlist();
+void play_list();
 #ifdef PTHREADEDMPEG
 void change_threads();
 #endif
 void add_selected_file(const char*);
 char *get_current_working_path();
 void play_one_mp3(const char*);
+void usage();
+
+#define OPT_LOADLIST 1
+#define OPT_DEBUG 2
+#define OPT_PLAYMP3 4
+#define OPT_NOMIXER 8
+#define OPT_AUTOLIST 16
+#define OPT_QUIT 32
+#define OPT_CHROOT 64
 
 /* global vars */
 
@@ -112,10 +126,13 @@ fileManager
 	*file_window = NULL; /* window to select files with */
 int
 	current_group, /* selected group (group_stack[current_group - 1]) */
+	no_mixer,
 #ifdef PTHREADEDMPEG
 	threads = 100, /* amount of threads for playing mp3's */
 #endif
 	nselfiles = 0;
+FILE
+	*debug_info = NULL; /* filedescriptor of debug-file. */
 
 char
 	*playmodes_desc[] = {
@@ -125,19 +142,114 @@ char
 	"Play all groups in random order",	/* PLAY_GROUPS_RANDOMLY */
 	"Play all songs in random order"	/* PLAY_SONGS */
 	},
-	**selected_files = NULL;
+	**selected_files = NULL,
+	*startup_path = NULL;
 
 int
 main(int argc, char *argv[])
 {
 	int
-		key;
+		c,
+		long_index,
+		key,
+		options = 0;
 	char
 		*grps[] = { "01" },
-		*dummy = NULL;
+		*dummy = NULL,
+		*play1mp3 = NULL,
+		*init_playlist = NULL,
+		*chroot_dir = NULL;
 	scrollWin
 		*sw;
 
+	long_index = 0;
+	no_mixer = 0;
+	/* parse arguments */
+	while (1)
+	{
+#ifdef HAVE_GETOPT_H
+		static struct option long_options[] = 
+		{
+			{ "debug", 0, 0, 'd'},
+			{ "file" , 1, 0, 'f'},
+			{ "list", 1, 0, 'l'},
+			{ "no-mixer", 0, 0, 'n'},
+			{ "autolist", 1, 0, 'a'},
+			{ "playmode", 1, 0, 'p'},
+			{ "quit", 0, 0, 'q'},
+			{ "chroot", 1, 0, 'c'},
+			{ 0, 0, 0, 0}
+		};
+		
+		c = getopt_long_only(argc, argv, "ql:a:df:p:nc:", long_options,
+			&long_index);
+#else
+		c = getopt(argc, argv, "ql:a:df:p:nc:");
+#endif
+
+		if (c == EOF)
+			break;
+		
+		switch(c)
+		{
+		case ':':
+		case '?':
+			usage();
+			break;
+		case 'd':
+			options |= OPT_DEBUG;
+			break;
+		case 'f': /* play one mp3 and exit */
+			options |= OPT_PLAYMP3;
+			if (play1mp3)
+				delete[] play1mp3;
+			play1mp3 = new char[strlen(optarg)+1];
+			strcpy(play1mp3, optarg);
+			break;
+		case 'l': /* load playlist */
+			options |= OPT_LOADLIST;
+			if (init_playlist)
+				delete[] init_playlist;
+			init_playlist = new char[strlen(optarg)+1];
+			strcpy(init_playlist, optarg);
+			break;
+		case 'n': /* disable mixer */
+			options |= OPT_NOMIXER;
+			break;
+		case 'a': /* load playlist and play */
+			options |= OPT_AUTOLIST;
+			if (init_playlist)
+				delete[] init_playlist;
+			init_playlist = new char[strlen(optarg)+1];
+			strcpy(init_playlist, optarg);
+			break;
+		case 'p': /* set initial playmode */
+			if (!strcmp(optarg, "onegroup"))
+				play_mode = PLAY_GROUP;
+			else if (!strcmp(optarg, "allgroups"))
+				play_mode = PLAY_GROUPS;
+			else if (!strcmp(optarg, "groupsrandom"))
+				play_mode = PLAY_GROUPS_RANDOMLY;
+			else if (!strcmp(optarg, "allrandom"))
+				play_mode = PLAY_SONGS;
+			else
+				usage();
+			break;
+		case 'q': /* quit after playing 1 mp3/playlist */
+			options |= OPT_QUIT;
+			break;
+		case 'c': /* chroot */
+			options |= OPT_CHROOT;
+			if (chroot_dir)
+				delete[] chroot_dir;
+			chroot_dir = new char[strlen(optarg)+1];
+			strcpy(chroot_dir, optarg);
+			break;
+		default:
+			usage();
+		}
+	}
+		
 	initscr();
  	start_color();
 	cbreak();
@@ -145,6 +257,8 @@ main(int argc, char *argv[])
 	nonl();
 	//intrflush(stdscr, FALSE);
 	//keypad(stdscr, TRUE);
+
+	startup_path = get_current_working_path();
 
 	if (LINES < 25 || COLS < 80)
 	{
@@ -215,36 +329,128 @@ main(int argc, char *argv[])
 #ifdef PTHREADEDMPEG
 	change_threads(); /* display #threads in command_window */
 #endif
+	debug_info = NULL;
 
-	if (argc == 2) /* mp3file as argument? */
+	if (options & OPT_DEBUG) 
 	{
-		play_one_mp3(argv[1]);
-		endwin();
-		exit(0);
+		char *homedir = getenv("HOME");
+		const char flnam[] = ".mp3blaster";
+		char *to_open = (char*)malloc((strlen(homedir) + strlen(flnam) +
+			2) * sizeof(char));
+		sprintf(to_open, "%s/%s", homedir, flnam);
+		if (!(debug_info = fopen(to_open, "a")))
+			warning("Couldn't open debuginfo-file!");
+		free(to_open);
 	}
-	else if (argc == 3) /* -l playlist ? */
+
+	if (options & OPT_NOMIXER)
 	{
-		if (strcmp(argv[1], "-l"))
+		no_mixer = 1;
+	}
+
+	if (options & OPT_CHROOT)
+	{
+		if (chroot(chroot_dir) < 0)
 		{
-			fprintf(stderr, ERRMSG, argv[0], argv[0]);
 			endwin();
+			perror("chroot");
+			fprintf(stderr, "Could not chroot to %s! (are you root?)\n",
+				chroot_dir);
 			exit(1);
 		}
-		//argv[2] = filename of playlist
-		read_playlist(argv[2]);
+		chdir("/");
+		delete[] chroot_dir;
 	}
-	else if (argc != 1)
+
+	if (options & OPT_PLAYMP3)
 	{
-		fprintf(stderr, ERRMSG, argv[0], argv[0]);
-		endwin();
-		exit(1);
+		play_one_mp3(play1mp3);
+		delete[] play1mp3;
+		if (options & OPT_QUIT)
+		{
+			endwin();
+			exit(0);
+		}
 	}
+	else if ((options & OPT_LOADLIST) || (options & OPT_AUTOLIST))
+	{
+		read_playlist(init_playlist);
+		delete[] init_playlist;
+		if (options & OPT_AUTOLIST)
+		{
+			play_list();
+			if (options & OPT_QUIT)
+			{
+				endwin();
+				exit(0);
+			}
+		}
+	}
+	//{ char bla[100]; sprintf(bla, "optind=%d", optind); debug(bla); }
 
 	/* read input from keyboard */
 	while ( (key = handle_input(0)) >= 0);
 
 	endwin();
 	return 0;
+}
+
+/* Function Name: usage
+ * Description  : Warn user about this program's usage and then exit nicely
+ *              : Program must be in ncurses-mode when this function is
+ *              : called.
+ */
+void
+usage()
+{
+	fprintf(stderr, "%s",
+#ifdef HAVE_GETOPT_H
+		"Usage:\n" \
+		"\tmp3blaster [options]\n"\
+		"\tmp3blaster [options] --file/-f <filename.mp3>\n"\
+		"\t\tPlay one mp3 (and exit with --quit).\n"\
+		"\tmp3blaster [options] --list/-l <playlist.lst>\n"\
+		"\t\tLoad a playlist but don't start playing.\n"\
+		"\tmp3blaster [options] --autolist/-a <playlist.lst>\n"\
+		"\t\tLoad a playlist and start playing.\n"\
+		"\nOptions:\n"\
+		"\t--no-mixer/-n: Don't start the built-in mixer.\n"\
+		"\t--debug/-d: Log debug-info in $HOME/.mp3blaster.\n"\
+		"\t--chroot/-c=<rootdir>: Set <rootdir> as mp3blaster's root dir.\n"\
+		"\t\tThis affects *ALL* file operations in mp3blaster!!(including\n"\
+		"\t\tplaylist reading&writing!) Note that only users with uid 0\n"\
+		"\t\tcan use this option (yet?). This feature will change soon.\n"\
+		"\t--quit/-q: Quit after playing mp3[s] (only makes sense in \n"\
+		"\t\tcombination with --autolist or --file)\n"\
+		"\t--playmode/-p={onegroup,allgroups,groupsrandom,allrandom}\n"\
+		"\t\tDefault playing mode is resp. Play first group only, Play\n"\
+		"\t\tall groups in given order(default), Play all groups in random\n"\
+		"\t\torder, Play all songs in random order.\n");
+#else
+		"Usage:\n" \
+		"\tmp3blaster [options]\n"\
+		"\tmp3blaster [options] -f <filename.mp3>\n"\
+		"\t\tPlay one mp3 (and exit with -q).\n"\
+		"\tmp3blaster [options] -l <playlist.lst>\n"\
+		"\t\tLoad a playlist but don't start playing.\n"\
+		"\tmp3blaster [options] -a <playlist.lst>\n"\
+		"\t\tLoad a playlist and start playing.\n"\
+		"\nOptions:\n"\
+		"\t-n: Don't start the built-in mixer.\n"\
+		"\t-d: Log debug-info in $HOME/.mp3blaster.\n"\
+		"\t-c <rootdir>: Set <rootdir> as mp3blaster's root dir.\n"\
+		"\t\tThis affects *ALL* file operations in mp3blaster!!(including\n"\
+		"\t\tplaylist reading&writing!) Note that only users with uid 0\n"\
+		"\t\tcan use this option (yet?). This feature will change soon.\n"\
+		"\t-q: Quit after playing mp3[s] (only makes sense in \n"\
+		"\t\tcombination with -a or -f)\n"\
+		"\t-p {onegroup,allgroups,groupsrandom,allrandom}\n"\
+		"\t\tDefault playing mode is resp. Play first group only, Play\n"\
+		"\t\tall groups in given order(default), Play all groups in random\n"\
+		"\t\torder, Play all songs in random order.\n");
+#endif
+
+	exit(1);
 }
 
 /* Function Name: set_header_title
@@ -508,6 +714,43 @@ cw_set_fkey(short fkey, const char *desc)
 	wrefresh(command_window);
 }
 
+/* Selects group group_window->entry(groupnr - 1).
+ * (i.e. groupnr - 1 == index of the groupstack)
+ */
+void
+select_group(int groupnr)
+{
+	scrollWin
+		*sw;
+
+	if (!(group_window->getNitems())) //no groups yet (shouldn't happen)
+		return;
+
+	if (groupnr > (group_window->getNitems()))
+		groupnr = 1;
+	if (groupnr < 1)
+		groupnr = group_window->getNitems();
+
+	current_group = groupnr;
+
+	/* update group_window & its contents */
+	sw = group_stack->entry(current_group - 1);
+	sw->swRefresh(1);
+	touchwin(group_window->sw_win);
+	group_window->setItem(current_group - 1);
+
+	char
+		*title = sw->getTitle(),
+		*dummy = new char[strlen(title) + 10];
+
+	sprintf(dummy, "%02d:%s", current_group, title);
+	set_header_title(dummy);
+	delete[] dummy;
+	delete[] title;
+	cw_toggle_group_mode(1); /* display this group's playmode */
+}
+
+/* Adds a new group to the end of the list. */
 void
 add_group()
 {
@@ -527,30 +770,8 @@ add_group()
 	sprintf(gnr, "%02d", ngroups);
 	group_window->addItem(gnr);
 	group_window->swRefresh(1);
-}
 
-void
-select_group()
-{
-	scrollWin
-		*sw;
-	
-	if (++current_group > (group_window->getNitems()))
-		current_group = 1;
-	sw = group_stack->entry(current_group - 1);
-	
-	sw->swRefresh(1);
-	touchwin(group_window->sw_win);
-	group_window->changeSelection(1);
-	char
-		*title = sw->getTitle(),
-		*dummy = new char[strlen(title) + 10];
-
-	sprintf(dummy, "%02d:%s", current_group, title);
-	set_header_title(dummy);
-	delete[] dummy;
-	delete[] title;
-	cw_toggle_group_mode(1); /* display this group's playmode */
+	select_group(ngroups);
 }
 
 void
@@ -756,14 +977,12 @@ gettext()
 	char
 		name[53],
 		*txt = NULL,
-		*pstring,
-		*pwd = get_current_working_path();
+		*pstring;
 	
 	leaveok(gname, TRUE);
-	pstring = (char*)malloc((strlen(pwd) + 7) * sizeof(char));
+	pstring = (char*)malloc((strlen(startup_path) + 7) * sizeof(char));
 	strcpy(pstring, "Path: ");
-	strcat(pstring, pwd);
-	free(pwd);
+	strcat(pstring, startup_path);
 
 	keypad(gname, TRUE);
 	wbkgd(gname, COLOR_PAIR(4)|A_BOLD);
@@ -802,13 +1021,26 @@ read_playlist(const char *filename)
 		name = (char*)malloc((strlen(filename)  + 1) * sizeof(char));
 		strcpy(name, filename);
 	}
+	
+	/*append startup path if filename does not start with a slash */
+	if (strlen(name) && name[0] != '/')
+	{
+		char *newname = (char*)malloc(strlen(startup_path) +
+			strlen(name) + 1);
+		strcpy(newname, startup_path);
+		strcat(newname, name);
+		free(name);
+		name = newname;
+		//fprintf(stderr, "New path: %s\n", name);
+	}
 
 	f = fopen(name, "r");
 	free(name);
 
 	if (!f)
 	{
-		Error("Couldn't open playlist-file.");
+		warning("Couldn't open playlist-file.");
+		refresh_screen();
 		return;
 	}
 	while (read_group_from_file(f))
@@ -841,10 +1073,16 @@ write_playlist()
 	char *name = NULL;
 	
 	name = gettext();
-	if (strlen(name) < 4 || strcmp(name + (strlen(name) - 4), ".lst"))
+	/*append startup path if filename does not start with a slash */
+	if (strlen(name) && name[0] != '/')
 	{
-		name = (char*)realloc(name, (strlen(name) + 5) * sizeof(char));
-		strcat(name, ".lst");
+		char *newname = (char*)malloc(strlen(startup_path) +
+			strlen(name) + 1);
+		strcpy(newname, startup_path);
+		strcat(newname, name);
+		free(name);
+		name = newname;
+		//fprintf(stderr, "New path: %s\n", name);
 	}
 
 	f = fopen(name, "w");
@@ -1272,7 +1510,7 @@ handle_input(short no_delay)
 			case KEY_F(2): case '2': 
 				add_group(); break; //add group
 			case KEY_F(3): case '3':
-				select_group(); break; //select another group
+				select_group(current_group + 1); break; //select another group
 			case KEY_F(4): case '4':
 				set_group_name(sw); break; // change groupname
 			case KEY_F(5): case '5':

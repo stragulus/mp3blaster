@@ -1,0 +1,22 @@
+Bah. MP3-specs are hard to find. So I hacked my way into the source code
+to fix the bugs.... (and peeked into mpg123's source for helpful info as
+well)
+
+This is what I reverse-engineered from the mpegsound-lib:
+
+bit 13: 0 => mpeg_2
+        1 => mpeg_1
+
+bit 14 and bit 15 => layer (mpg123: 4 - layer) 
+
+bit 16 => protection (0=no, 1=yes)
+
+bit 17..20 => bitrate-index
+(mpg123: can't be 0000 (free format))
+
+bit 21 and bit 22 => frequency
+(00=44.1Khz, 01=48Khz, 10=32000)
+(mpg123: can't be both 1)
+(mpg123: if mpeg_2 (bit 13=0) then frequency = 22050Hz)
+
+bit 23 => padding (?)

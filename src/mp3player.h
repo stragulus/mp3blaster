@@ -9,6 +9,9 @@
 #include "mp3play.h"
 #include "playwindow.h"
 #include <mpegsound.h>
+#ifdef HAVE_BOOL_H
+#include <bool.h>
+#endif
 
 class mp3Player : public Mpegfileplayer
 {

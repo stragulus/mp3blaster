@@ -786,3 +786,12 @@ scrollWin::getTitle()
 	char *tit = new char[strlen(sw_title) + 1];
 	return strcpy(tit, sw_title);
 }
+
+/* setItem selects this->sw_items[item_index] and redraws selection window
+ */
+void
+scrollWin::setItem(int item_index)
+{
+	int diff = item_index - sw_selection;
+	return changeSelection(diff);
+}

@@ -19,6 +19,7 @@ public:
 	char *getTitle();
 	void swRefresh(short);
 	void addItem(const char*);
+	void setItem(int);
 	void delItem(int);
 	void delItems(); 
 	void setBorder(chtype, chtype, chtype, chtype,

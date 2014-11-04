@@ -9,7 +9,11 @@
 #include "config.h"
 #endif
 
+#ifdef __FreeBSD__
+#include <stdlib.h>
+#else
 #include <malloc.h>
+#endif
 
 #include "mpegsound.h"
 

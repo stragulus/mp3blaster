@@ -1,0 +1,11 @@
+--- /usr/include/__math.h	Wed Feb 17 19:05:17 1999
++++ __math.h	Wed Feb 17 19:04:57 1999
+@@ -294,7 +294,7 @@
+ pow (double __x, double __y)
+ {
+   register double __value, __exponent;
+-  long long int __p = (long long int) __y;
++  long __p = (long) __y;
+ 
+   if (__x == 0.0 && __y > 0.0)
+     return 0.0;

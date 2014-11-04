@@ -17,8 +17,14 @@
  */
 #include <stdio.h>
 
+extern FILE *debug_info;
+
 void 
 debug(const char *txt)
 {
-	fprintf(stderr, "%s", txt);
+	if (debug_info)
+	{
+		fwrite(txt, sizeof(char), strlen(txt), debug_info);
+		fflush(debug_info);
+	}
 }

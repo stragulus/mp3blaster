@@ -20,17 +20,19 @@
 #include <string.h>
 #include "playwindow.h"
 
+extern int no_mixer; /* from main.cc */
+
 playWindow::playWindow()
 {
 	short
 		begin_x, begin_y;
 
 	status = PS_NORMAL;
-	nrlines = 15;
-	nrcols = 60;
+	nrlines = LINES;
+	nrcols = COLS;
 	interface = NULL;
-	begin_x = (COLS - nrcols ) / 2;
-	begin_y = (LINES - nrlines ) / 2;
+	begin_x = 0;
+	begin_y = 0;
 
 	interface = newwin(nrlines, nrcols, begin_y, begin_x);
 	leaveok(interface, TRUE);
@@ -39,7 +41,7 @@ playWindow::playWindow()
 	wbkgd(interface, COLOR_PAIR(4)|A_BOLD);
 	wborder(interface, 0, 0, 0, 0, 0, 0, 0, 0);
 	char header[100];
-	sprintf(header, "MP3Blaster V%s (C)1998 Bram Avontuur (brama@stack.nl)",
+	sprintf(header, "MP3Blaster V%s (C)1999 Bram Avontuur (brama@stack.nl)",
 		VERSION);
 	mvwaddch(interface, nrlines - 3, 0, ACS_LTEE|COLOR_PAIR(4)|A_BOLD);
 	mvwaddch(interface, nrlines - 3, nrcols -1, ACS_RTEE|COLOR_PAIR(4)|A_BOLD);
@@ -63,6 +65,17 @@ playWindow::playWindow()
 	progress[0] = progress[1] = 0;
 	mvwchgat(interface, 5, 2, 50, A_BOLD, 3, NULL);
 
+	int color_pairs[4] = { 7,8,9,10 };
+	mixer = NULL;
+	if (!no_mixer)
+	{
+		mixer = new NMixer(interface, 10, nrlines - 10 - 5, color_pairs);
+		if (!(mixer->NMixerInit()))
+		{
+			delete mixer;
+			mixer = NULL;
+		}
+	}
 	touchwin(interface); /* to get the colours right */
 	wrefresh(interface);
 }
@@ -146,10 +159,11 @@ playWindow::getInput()
 }
 
 void
-playWindow::setProperties(int layer, int freq, int bitrate, bool stereo)
+playWindow::setProperties(int mpeg_version, int layer, int freq, int bitrate,
+	bool stereo)
 {
-	mvwprintw(interface, 4, 2, "Mpeg-2 layer %d at %dhz, %d kb/s (%s)",
-		layer, freq, bitrate, (stereo ? "stereo" : "mono"));
+	mvwprintw(interface, 4, 2, "Mpeg-%d layer %d at %dhz, %d kb/s (%s)",
+		mpeg_version, layer, freq, bitrate, (stereo ? "stereo" : "mono"));
 	wrefresh(interface);
 }
 

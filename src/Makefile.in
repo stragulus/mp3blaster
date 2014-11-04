@@ -60,6 +60,8 @@ POST_UNINSTALL = :
 CC = @CC@
 CXX = @CXX@
 LIBMPEGSOUND = @LIBMPEGSOUND@
+LIBNMIXER = @LIBNMIXER@
+LN_S = @LN_S@
 MAKEINFO = @MAKEINFO@
 PACKAGE = @PACKAGE@
 RANLIB = @RANLIB@
@@ -78,10 +80,10 @@ mp3blaster_SOURCES	= debug.cc \
 			  playwindow.cc \
 			  scrollwin.cc \
 			  windows.cc
-mp3blaster_DEPENDENCIES = @LIBMPEGSOUND@
-INCLUDES		= -I../mpegsound
-LDADD			= @LIBMPEGSOUND@
-LIBS			= @LIBS@
+mp3blaster_DEPENDENCIES = @LIBMPEGSOUND@ @LIBNMIXER@
+INCLUDES		= -I../mpegsound -I/usr/include/ncurses -I../nmixer
+LDADD			= @LIBMPEGSOUND@ @LIBNMIXER@
+LIBS			= -L../mpegsound -L../nmixer @LIBS@
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_CLEAN_FILES = 
 PROGRAMS =  $(bin_PROGRAMS)

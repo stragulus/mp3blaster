@@ -10,7 +10,7 @@ mp3blaster_SOURCES	= debug.cc \
 			  playwindow.cc \
 			  scrollwin.cc \
 			  windows.cc
-mp3blaster_DEPENDENCIES = @LIBMPEGSOUND@
-INCLUDES		= -I../mpegsound
-LDADD			= @LIBMPEGSOUND@
-LIBS			= @LIBS@
+mp3blaster_DEPENDENCIES = @LIBMPEGSOUND@ @LIBNMIXER@
+INCLUDES		= -I../mpegsound -I/usr/include/ncurses -I../nmixer
+LDADD			= @LIBMPEGSOUND@ @LIBNMIXER@
+LIBS			= -L../mpegsound -L../nmixer @LIBS@

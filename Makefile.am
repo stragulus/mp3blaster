@@ -1,1 +1,1 @@
-SUBDIRS = mpegsound src
+SUBDIRS = mpegsound nmixer src

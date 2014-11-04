@@ -1,5 +1,9 @@
 #ifndef _CLASS_PLAYWINDOW_
 #define _CLASS_PLAYWINDOW_
+#include <nmixer.h>
+#ifdef HAVE_BOOL_H
+#include <bool.h>
+#endif
 
 class playWindow
 {
@@ -9,7 +13,8 @@ public:
 
 	void setFileName(const char *flname);
 	void setStatus(playstatus ps);
-	void setProperties(int layer, int freq, int bitrate, bool stereo);
+	void setProperties(int mpeg_version, int layer, int freq, int bitrate,
+		bool stereo);
 	playstatus getStatus(void) { return status; }
 	chtype getInput();
 	WINDOW *getCursesWindow() { return interface; }
@@ -20,6 +25,7 @@ public:
 	void setAlbum(const char *tp);
 	void setSongYear(const char *yr);
 	void setSongInfo(const char *inf);
+	NMixer* getMixerHandle() { return mixer; }
 #ifdef DEBUG
 	void setFrames(int frames);
 #endif
@@ -29,6 +35,7 @@ private:
 	short nrlines, nrcols;
 	playstatus status;
 	int progress[2];
+	NMixer *mixer;
 };
 
 #endif /* _CLASS_PLAYWINDOW_ */

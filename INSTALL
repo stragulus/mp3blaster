@@ -4,16 +4,27 @@ Please report any changes you make to this program to me by e-mail so that
 I know what's going on.
 ------------------------------------------------------------------------
 
-If you don't have GLIBC2 (libc6) installed on your system, you need an
-older version of mp3blaster (mp3blaster-2.0b2 or earlier), since the
-newer versions use the mpegsound-lib from the splay-package which
-only compiles on GLIBC2-machines. I haven't tried to get this package
-to work on libc5-machines yet.. if you have GLIBC2, you only need the
-mp3blaster-package and nothing more.
-
 INSTALL
 
 Installation is a piece of cake, thanks to autoconf & automake.
+
+HOWEVER!!!
+
+!!! Some systems using libc6 might need their /usr/include/__math.h patched.
+!!! If mp3blaster compiles, but gives a segmentation fault on all mp3's you
+!!! try to play with it, apply the file named 'patch' in this directory
+!!! in the /usr/include-directory as root like this:
+!!! 
+!!! cp patch /tmp ; cd /usr/include ; patch -p0 < /tmp/patch
+!!! 
+!!! This patch changes one line in __math.h (line 297 for the curious amongst
+!!! us, it appears the cast on this line is buggy)
+!!! If someone can explain what exactly causes this bug (I can't reproduce
+!!! it in any other code), please tell me!!!!
+!!! Don't forget to recompile mp3blaster after this patch ;)
+
+Now on with the show..
+
 If your distribution is GLIBC2 (libc6)-based:
 
 ./configure
@@ -24,13 +35,22 @@ And you're ready :)
 
 If you want more info on configure, try ./configure --help.
 
-If you *DONT* have GLIBC2: Upgrade!! Your last resort is using an older
-version of mp3blaster (on my homepage, look for version 2.0b2 and lower),
-but I wouldn't do that.. PS: It might be possible that this version of
-mp3blaster compiles on non-GLIBC2 systems, but I don't have such a system
-anymore. If you get that to work, plz. notify me.
+If you *DONT* have GLIBC2: Upgrade!! 
+I have compiled it on a libc5 box too.. The only problem was that
+this box (which has libc5 as default linking library) also had libc6
+installed, including libpthread. If one tries to compile a program it 
+would use libc5 with the libpthread from libc6, resulting in mp3blaster
+linked against 2 libc's...not really a good idea. 2 Solutions: 
+configure without pthread-lib (./configure --with-pthread=no), or install
+a pthread-lib for libc5 and link against that.
 
 Any comments, ideas, praises, bugreports and cheques => EMAIL brama@stack.nl.
 Check http://www.stack.nl/~brama/ for the latests updates, or visit
 ftp://sunsite.unc.edu/pub/Linux/some/vague/and/obscure/sound/dir where you
 probably found this file anyway.
+
+Platforms that are known to compile mp3blaster out-of-the-box:
+Linux/ix86 (libc5 & libc6)
+FreeBSD (2.2.8)
+OpenBSD/Alpha (compiled, didn't test playing cuz sounddevice wasn't working)
+Linux/Alpha

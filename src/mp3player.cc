@@ -20,8 +20,11 @@
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
+#include <stdio.h>
 #include "playwindow.h"
 #include "mp3player.h"
+
+extern void debug(const char *txt);
 
 // mp3Player constructor
 mp3Player::mp3Player(mp3Play *calling, playWindow *interface, int threads)
@@ -42,8 +45,8 @@ bool mp3Player::playing(int verbose)
 		verbose = 1;
 
 	interface->setStatus( (status = PS_PLAYING) );
-	interface->setProperties( server->getlayer(), server->getfrequency(),
-		server->getbitrate(), server->isstereo() );
+	interface->setProperties( server->getversion()+1, server->getlayer(),
+		server->getfrequency(), server->getbitrate(), server->isstereo() );
 	if (server->getname())
 		interface->setSongName(server->getname());
 	if (server->getartist())
@@ -156,7 +159,9 @@ bool mp3Player::playing(int verbose)
 				should_play = 0;
 				caller->setAction(AC_QUIT);
 				break;
-			default: continue;
+			default: 
+				if (interface->getMixerHandle())
+					(interface->getMixerHandle())->ProcessKey(ch);
 		}
 	}
 
@@ -180,8 +185,8 @@ bool mp3Player::playingwiththread(int verbose)
 
 	interface->setProgressBar(0);
 	interface->setStatus( (status = PS_PLAYING) );
-	interface->setProperties( server->getlayer(), server->getfrequency(),
-		server->getbitrate(), server->isstereo() );
+	interface->setProperties( server->getversion()+1, server->getlayer(),
+		server->getfrequency(), server->getbitrate(), server->isstereo() );
 	if (server->getname())
 		interface->setSongName(server->getname());
 	if (server->getartist())
@@ -323,7 +328,9 @@ bool mp3Player::playingwiththread(int verbose)
 				should_play = 0;
 				caller->setAction(AC_QUIT);
 				break;
-			default: continue;
+			default: 
+				if (interface->getMixerHandle())
+					(interface->getMixerHandle())->ProcessKey(ch);
 		}
 	}
 
