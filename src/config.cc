@@ -25,7 +25,6 @@
 #include NCURSES_HEADER
 
 #define WORDMATCH(x) !strcasecmp(string, (x))
-#define MP3BLASTER_RCFILE "~/.mp3blasterrc"
 
 extern short set_warn_delay(unsigned int);
 extern short set_audiofile_matching(const char**, int);
@@ -39,7 +38,7 @@ extern short set_sort_mode(const char*);
 extern void bindkey(command_t,int);
 extern short set_charset_table(const char *);
 extern short set_pan_size(int);
-extern short set_audio_driver(const char *);
+extern char * set_audio_driver(const char *);
 #ifdef PTHREADEDMPEG
 extern short set_threads(int);
 #endif
@@ -530,14 +529,23 @@ cf_add_keyword(int keyword, const char **values, int nrvals)
 	case 101: bindkey(CMD_JUMP_TOP, cf_type_key(v)); break;
 	case 102: bindkey(CMD_JUMP_BOT, cf_type_key(v)); break;
 	case 103:
-		if (!set_pan_size(cf_type_number(v)))
-		{ 
+		if (!set_pan_size(cf_type_number(v))) { 
 			error = BADVALUE;
 			return 0;
 		}
 		break;
 	case 104: //audio driver
-		if (!set_audio_driver(values[0])) { error = BADVALUE; return 0; }
+		{
+			char *audio_error_msg;
+
+			if ( (audio_error_msg = set_audio_driver(values[0]))) { 
+				strncpy(errstring, audio_error_msg, 255);
+				errstring[256] = '\0';
+				error = BADVALUE;
+				delete[] audio_error_msg;
+				return 0;
+			}
+		}
 		break;
 	}
 
@@ -595,6 +603,12 @@ cf_process_keyword(const char *keyword, const char **values, int nrvals)
 	return 1; //grin.
 }
 
+/*
+ * Returns 0 on errors, 1 on success.
+ *
+ * Fills global errstring with an error message
+ * on some errors.
+ */
 short
 cf_parse_config_line(const char *line)
 {
@@ -731,30 +745,19 @@ cf_get_error_string()
 }
 
 short
-cf_parse_config_file(const char *flnam = NULL)
+cf_parse_config_file(const char *filename)
 {
 	char
-		*filename = NULL,
 		*line = NULL;
 	FILE
 		*f = NULL;
 	short
-		no_error = 1;
+		error_in_config = 0;
 	unsigned int
 		lineno = 0;
 
 	error = CF_NONE;
-
-	if (!flnam)
-	{
-		if ( !(filename = expand_path(MP3BLASTER_RCFILE)) )
-			return 0;
-	}
-	else
-	{
-		if ( !(filename = expand_path(flnam)) )
-			return 0;
-	}
+	errstring[0] = '\0';
 
 	if (!(f = fopen(filename, "r")))
 	{
@@ -762,16 +765,17 @@ cf_parse_config_file(const char *flnam = NULL)
 		cf_set_error();
 		return 0;
 	}
-	while ((line = readline(f)) && no_error)
+	while ((line = readline(f)) && !error_in_config)
 	{
 		lineno++;
-		no_error = cf_parse_config_line((const char*)line);
+		error_in_config = cf_parse_config_line((const char*)line) == 0;
 	}
 	
-	if (!no_error)
+	if (error_in_config && !strlen(errstring))
+		// There is an error, and no custom error string has been set.
+		// In that case, set a generic config file parse error.
 		cf_set_error(lineno);
 
 	fclose(f);
-	free(filename);
-	return no_error;
+	return !error_in_config;
 }

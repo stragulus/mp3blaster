@@ -32,6 +32,9 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
+#include <iostream>
+
 #include "history.h"
 #include "mp3blaster.h"
 #include <string.h>
@@ -59,6 +62,7 @@
 #ifdef HAVE_ERRNO_H
 #include <errno.h>
 #endif
+#include "configfile.h"
 #include "global.h"
 #include "scrollwin.h"
 #include "mp3win.h"
@@ -78,6 +82,9 @@
 #define USLEEP(x) usleep(x)
 #endif
 
+// location of default config file
+#define MP3BLASTER_RCFILE "~/.mp3blasterrc"
+
 /* paranoia define[s] */
 #ifndef FILENAME_MAX
 #define FILENAME_MAX 1024
@@ -85,6 +92,8 @@
 
 #define MIN_SCREEN_WIDTH 80
 #define MIN_SCREEN_HEIGHT 23
+
+using namespace std;
 
 /* values for global var 'window' */
 enum _action { AC_NONE, AC_REWIND, AC_FORWARD, AC_NEXT, AC_PREV,
@@ -3477,8 +3486,8 @@ show_help()
 		get_mainwin_size(&height, &width, &y, &x);
 		get_mainwin_borderchars(&b1, &b2, &b3, &b4, &b5, &b6, &b7, &b8);
 
-		configfile = new char[strlen(MP3BLASTER_DOCDIR) + 20];
-		sprintf(configfile, "%s/%s", MP3BLASTER_DOCDIR, "commands.txt");
+		configfile = new char[strlen(MP3BLASTER_DATADIR) + 20];
+		sprintf(configfile, "%s/%s", MP3BLASTER_DATADIR, "commands.txt");
 		if (read_file(configfile, &lines, &linecount))
 		{
 			int i;
@@ -5348,42 +5357,56 @@ set_charset_table(const char *tabName)
 	return read_recode_table(tabName);
 }
 
-short
+char *
 set_audio_driver(const char *driverName)
 {
+	char *result;
+
 #ifdef WANT_OSS
-	if (!strcasecmp(driverName, "oss"))
-	{
+	if (!strcasecmp(driverName, "oss")) {
 		globalopts.audio_driver = AUDIODEV_OSS;
-		return 1;
+		return NULL;
 	}
 #endif
 
 #ifdef WANT_ESD
-	if (!strcasecmp(driverName, "esd"))
-	{
+	if (!strcasecmp(driverName, "esd")) {
 		globalopts.audio_driver = AUDIODEV_ESD;
-		return 1;
+		return NULL;
 	}
 #endif
 
 #ifdef WANT_SDL
-	if (!strcasecmp(driverName, "sdl"))
-	{
+	if (!strcasecmp(driverName, "sdl")) {
+		char *sdl_env;
+
 		globalopts.audio_driver = AUDIODEV_SDL;
-		return 1;
+
+		// !! Require user to set SDL_AUDIODRIVER environment variable.
+		// Hopefully this will make using mp3blaster with SDL easier.
+		sdl_env = getenv("SDL_AUDIODRIVER");
+		if (!sdl_env) {
+			result = new char[256];
+			strcpy(result, "Environment variable SDL_AUDIODRIVER must be set, e.g. " \
+				"'alsa' or 'pulseaudio'");
+			return result;
+		}
+
+		return NULL;
 	}
 #endif
 
 #ifdef WANT_NAS
-	if (!strcasecmp(driverName, "nas"))
-	{
+	if (!strcasecmp(driverName, "nas")) {
 		globalopts.audio_driver = AUDIODEV_NAS;
-		return 1;
+		return NULL;
 	}
 #endif
 
-	return 0; //bad value or unsupported audio driver
+	
+	result = new char[256 + strlen(driverName)];
+	sprintf(result, "Unknown audio driver '%s'", driverName);
+	return result;
 }
 
 short
@@ -5568,7 +5591,7 @@ main(int argc, char *argv[], char *envp[])
 			options |= OPT_THREADS;
 #ifdef PTHREADEDMPEG
 			tmp.threads = atoi(optarg);
-#endif
+
 			break;
 		case 'v': /* version info */
 			printf("%s version %s - http://mp3blaster.sourceforge.net/\n",
@@ -5589,15 +5612,47 @@ main(int argc, char *argv[], char *envp[])
 		debug("Debugging of mp3blaster started.\n");
 	}
 
-	//read .mp3blasterrc
-	if (!cf_parse_config_file(config_file) &&
-		(config_file || cf_get_error() != NOSUCHFILE))
-	{
-		fprintf(stderr, "%s\n", cf_get_error_string());
-		exit(1);
+	//
+	// Read configuration 
+	//
+	ConfigFile* config = 0;
+
+	if (!config_file) {
+		config_file = expand_path(MP3BLASTER_RCFILE);
+		if (stat(config_file) == -1) {
+			free(config_file);
+			config_file = 0;
+		}
 	}
-	if (config_file)
+	
+	if (!config_file) {
+		config_file = (char*)malloc(strlen(MP3BLASTER_DATADIR) + 100);
+		sprintf(config_file, "%s/%s", MP3BLASTER_DATADIR, "mp3blasterrc");
+		if (stat(config_file) == -1) {
+			free(config_file);
+			config_file = 0;
+		}
+	}
+
+	if (config_file) {
+		// new way of reading the config.
+		config = new ConfigFile()
+
+		try {
+			config->load(config_file);
+		} catch(ConfigFileException& e) {
+			cerr << "Error reading config file: " << e.what() << endl;
+		}
+
+		// also read .mp3blasterrc old style until the transitional
+		// phase is over.
+		if (!cf_parse_config_file(config_file)) {
+			fprintf(stderr, "%s\n", cf_get_error_string());
+			exit(1);
+		}
+
 		free(config_file);
+	}
 
 	if (optind < argc) /* assume all other arguments are mp3's */
 	{

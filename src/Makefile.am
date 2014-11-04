@@ -13,7 +13,9 @@ mp3blaster_SOURCES	= fileman.cc \
 			  mp3blaster.h \
 			  global.cc \
 			  global.h \
-			  config.cc \
+			  configfile.cc \
+			  configfile.h \
+				config.cc \
 			  scrollwin.h \
 			  winitem.cc \
 			  winitem.h \
@@ -38,4 +40,4 @@ mp3blaster_DEPENDENCIES = ../mpegsound/libmpegsound.a ../nmixer/libnmixer.a
 INCLUDES		= -I$(top_srcdir)/mpegsound -I/usr/include/ncurses -I$(top_srcdir)/nmixer -I$(includedir)
 mp3blaster_LDADD	= @LIBMPEGSOUND@ @LIBNMIXER@ @NAS_LIBS@ @SID_LIBS@ @OGG_LIBS@ @LIRC_LIBS@ @NCURSES_LIBS@ @LIBESD@ @LIBSDL@
 EXTRA_DIST = FILES
-AM_CXXFLAGS	= @NAS_CFLAGS@ -DMP3BLASTER_DOCDIR=\"${pkgdatadir}\"
+AM_CXXFLAGS	= @NAS_CFLAGS@ -DMP3BLASTER_DATADIR=\"${pkgdatadir}\"
