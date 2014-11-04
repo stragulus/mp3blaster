@@ -53,6 +53,9 @@ public:
 	bool SetMixer(int device, struct volume *vol);
 	bool GetMixer(int device, struct volume *vol);
 	const char *GetMixerLabel(int device);
+	virtual bool CanRecord(int device) = 0;
+	virtual bool GetRecord(int device) = 0;
+	virtual bool SetRecord(int device, bool set) = 0;
 protected:
 	void AddDevice(int device);
 	virtual bool Set(int device, struct volume *vol) = 0;
@@ -69,6 +72,9 @@ class OSSMixer : public baseMixer
 public:
 	OSSMixer(baseMixer *next = 0);
 	~OSSMixer();
+	bool CanRecord(int device);
+	bool GetRecord(int device);
+	bool SetRecord(int device, bool set);
 protected:
 	bool Set(int device, struct volume *vol);
 	bool Get(int device, struct volume *vol);
@@ -83,6 +89,9 @@ class NASMixer : public baseMixer
 public:
 	NASMixer(baseMixer *next = 0);
 	~NASMixer();
+	bool CanRecord(int device) { return false; }
+	bool GetRecord(int device) { return false; }
+	bool SetRecord(int device, bool set) { return false; }
 protected:
 	bool Set(int device, struct volume *vol);
 	bool Get(int device, struct volume *vol);

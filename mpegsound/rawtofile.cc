@@ -21,8 +21,8 @@ Rawtofile::~Rawtofile()
   {
     off_t filelen = lseek(filehandle, 0, SEEK_CUR);
     lseek(filehandle, 0, SEEK_SET);
-    hdr.length = (u_int32_t)filelen; /* file length */
-	hdr.data_length = (u_int32_t)(filelen - 36);
+    hdr.length = (u_int32_t)(filelen-8); /* file length */
+	hdr.data_length = (u_int32_t)(filelen - 44);
 	write(filehandle, &hdr, sizeof(hdr));
   }
   close(filehandle);

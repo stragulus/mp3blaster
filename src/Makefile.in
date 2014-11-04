@@ -230,33 +230,6 @@ distdir: $(DISTFILES)
 	    || cp -p $$d/$$file $(distdir)/$$file || :; \
 	  fi; \
 	done
-config.o: config.cc mp3blaster.h global.h
-fileman.o: fileman.cc mp3blaster.h getopt.h fileman.h scrollwin.h
-getopt.o: getopt.c
-getopt1.o: getopt1.c
-global.o: global.cc getopt.h mp3blaster.h
-gstack.o: gstack.cc mp3blaster.h gstack.h scrollwin.h
-id3parse.o: id3parse.cc id3parse.h genretab.h
-main.o: main.cc mp3blaster.h getopt.h global.h scrollwin.h gstack.h \
-	mp3stack.h fileman.h mp3play.h playwindow.h ../nmixer/nmixer.h \
-	../mpegsound/mpegsound.h
-mp3play.o: mp3play.cc mp3blaster.h getopt.h mp3play.h gstack.h \
-	scrollwin.h playwindow.h ../nmixer/nmixer.h \
-	../mpegsound/mpegsound.h mp3player.h global.h
-mp3player.o: mp3player.cc mp3blaster.h getopt.h global.h playwindow.h \
-	../nmixer/nmixer.h mp3player.h mp3play.h gstack.h scrollwin.h \
-	../mpegsound/mpegsound.h
-mp3stack.o: mp3stack.cc mp3blaster.h mp3stack.h gstack.h scrollwin.h
-mp3tag.o: mp3tag.cc getopt.h ../mpegsound/mpegsound.h id3parse.h \
-	mp3blaster.h
-mp3tag2.o: mp3tag2.cc getopt.h ../mpegsound/mpegsound.h id3parse.h \
-	mp3blaster.h
-playwindow.o: playwindow.cc mp3blaster.h getopt.h global.h playwindow.h \
-	../nmixer/nmixer.h genretab.h
-scrollwin.o: scrollwin.cc mp3blaster.h global.h scrollwin.h
-sidplayer.o: sidplayer.cc mp3blaster.h
-windows.o: windows.cc mp3blaster.h getopt.h
-
 info-am:
 info: info-am
 dvi-am:

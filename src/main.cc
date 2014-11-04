@@ -1,4 +1,4 @@
-/* Copyright (C) Bram Avontuur (brama@stack.nl)
+/* Copyright (C) Bram Avontuur (bram@avontuur.org)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@
  * who made the mpegsound library used by this program. (see source-code from
  * splay-0.8)
  * If you like this program, or if you have any comments, tips for improve-
- * ment, money, etc, you can e-mail me at brama@stack.nl or visit my
+ * ment, money, etc, you can e-mail me at bram@avontuur.org or visit my
  * homepage (http://www.stack.nl/~brama/).
  */
 #include "mp3blaster.h"

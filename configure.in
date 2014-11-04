@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(src/main.cc)
-AM_INIT_AUTOMAKE(mp3blaster, 2.0b17)
+AM_INIT_AUTOMAKE(mp3blaster, 2.0b18)
 
 dnl Checks for programs.
 AC_PROG_CC
@@ -161,7 +161,8 @@ AC_DEFINE_UNQUOTED(SOUND_DEVICE, "$SOUNDDEV")
 
 if test "$INCLUDEPTHREAD" = 1 ; then
   if test "$FREEBSD" = "1" ; then
-    LIBS="$LIBS -lc_r"
+	  LDFLAGS="-pthread"
+		AC_DEFINE(_THREAD_SAFE)
   else
 	LIBS="$LIBS -lpthread"
   fi
@@ -204,5 +205,5 @@ AC_OUTPUT(src/Makefile mpegsound/Makefile Makefile nmixer/Makefile)
 cat << EOF
 If configure can't find certain libraries or include files, you can specify them on the commandline like:
 CPPFLAGS="-I/usr/local/nas/include" LDFLAGS="-L/usr/local/nas/lib" ./configure
-If mp3blaster's layout is incorrect, UPGRADE your ncurses library and includefiles to version 4.2 or better (but not 5.*).
+If mp3blaster's layout is incorrect, UPGRADE your ncurses library and includefiles to version 4.2 or better (avoid beta versions)
 EOF

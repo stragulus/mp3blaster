@@ -11,7 +11,9 @@ is an interactive text-based sound-mixer control program that you can
 use to set the volume of each supported mixer device of your
 soundcard.  It automagically detects all devices that are supported by
 your sound hardware, and shows a list of scrollbars for each of these
-devices.  You can use the up and down arrow keys (or k and j resp.) to
+devices.
+.PP
+You can use the up and down arrow keys (or k and j resp.) to
 scroll though the list of scrollbars (some do not fit on the screen,
 but you can reach them by simply scrolling down at the bottom of the
 screen). The left and right arrow keys (or h and l resp.) change the
@@ -19,6 +21,10 @@ volume for the currently highlighted device, and (if you're lucky),
 you can use home/end/PgUp/PgDn on the numerical keyboard to set left
 and right volume independantly. You can also use 0..5 to set the
 volume to the position indicated by the numbers on top of the screen.
+.PPIf a device can be recorded from, red brackets will be displayed under
+the device's name. If it's selected as recording source, a red 'X' is
+displayed as well. You can set a recording device with the space bar.
+.PP
 If nmixer is compiled with NAS (Network Audio System) support and it's
 called as 'nasmixer', it will show the settings for the NAS mixer
 device.
@@ -36,12 +42,12 @@ the interface is drawn while setting the mixer, and removed afterwards, which
 might be annoying, but it's in the way of being changed :)
 .SH BUGS
 .PP
-If you find bugs, please send reports to brama@stack.nl.
+If you find bugs, please send reports to bram@avontuur.org.
 .PP
 .SH AUTHOR
 .I nmixer
 was written, directed and performed by 
-.B Bram Avontuur <brama@stack.nl> <http://www.stack.nl/~brama/>
+.B Bram Avontuur <bram@avontuur.org> <http://www.stack.nl/~brama/>
 .PP
 Please send comments, suggestions, complaints, bug fixes, coffee and porting
 experiences to me, including the version number of nmixer in your mail. 

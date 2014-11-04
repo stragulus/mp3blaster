@@ -29,7 +29,6 @@ Fileplayer::~Fileplayer()
 
 bool Fileplayer::opendevice(char *device, soundtype write2file)
 {
-	char x[80]; sprintf(x, "device=%s\n", (device?device:"NULL"));debug(x);
 	if (player) delete player;
 	if (!write2file) {
 #ifdef HAVE_NASPLAYER

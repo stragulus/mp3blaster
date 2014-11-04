@@ -41,6 +41,11 @@ bool Soundinputstreamfromfile::open(char *filename)
 
   stat(filename,&buf);
   size=buf.st_size;
+	if (size < 10 * 1024)
+	{
+		seterrorcode(SOUND_ERROR_FILEOPENFAIL);
+		return false;
+	}
 
   return true;
 }

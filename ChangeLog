@@ -1,3 +1,12 @@
+V2.0b18: 2001/01/21
+===================
+-Several changes in the mpegsound libary that fix numerous SIGFPU/SIGSEGV's.
+-Using non-blocking I/O to soundcard which reduces CPU-load (esp. on FreeBSD).
+-Nmixer program can view/set recording devices now.
+-Fixed compilation errors
+-Should produce normal audio on big-endian machines - couldn't test though.
+ (thanks go once again to Martijn van Buul)
+
 V2.0b17: 1900/01/18
 ===================
 -cosmetic fixes & code beautify updates

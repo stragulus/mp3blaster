@@ -2,6 +2,7 @@
 |*|  Base class for handling different mixer types
 \*/
 #include <nmixer.h>
+#include <string.h>
 
 #define MIXER_ID_SHIFT 12
 #define MIXER_ID_MASK (~((1 << MIXER_ID_SHIFT) - 1))

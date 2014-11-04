@@ -24,6 +24,28 @@
 #endif
 #endif
 
+#ifdef HAVE_SYS_SOUNDCARD_H
+#define SOUNDCARD_HEADERFILE <sys/soundcard.h>
+#elif HAVE_MACHINE_SOUNDCARD_H
+#define SOUNDCARD_HEADERFILE <machine/soundcard.h>
+#else
+#define SOUNDCARD_HEADERFILE <soundcard.h>
+#endif
+
+/* Not all OSS implementations define an endian-independant samplesize. 
+ * This code is taken from linux' <sys/soundcard.h, OSS version 0x030802
+ */
+#ifndef AFMT_S16_NE
+#if defined(_AIX) || defined(AIX) || defined(sparc) || defined(HPPA) || defined(PPC)
+/* Big endian machines */
+#  define _PATCHKEY(id) (0xfd00|id)
+#  define AFMT_S16_NE AFMT_S16_BE
+#else
+#  define _PATCHKEY(id) ((id<<8)|0xfd)
+#  define AFMT_S16_NE AFMT_S16_LE
+#endif
+#endif
+
 #ifndef _L__SOUND__
 #define _L__SOUND__
 
@@ -479,7 +501,6 @@ private:
   /*************************/
   /* Initialization vars   */
   /*************************/
-  short first_header;
   struct mpeg_header
   {
     int layer;
@@ -621,6 +642,7 @@ private:
   /********************/
 private:
   int lastfrequency,laststereo;
+	int suppress_sound;
 
   // for Layer3
   int layer3slots,layer3framestart,layer3part2start;
@@ -639,7 +661,6 @@ private:
   /* Decoding functions for each layer */
   /*************************************/
 private:
-  bool isvalidheader(int,int,int,int);
   bool loadheader(void);
 
   //

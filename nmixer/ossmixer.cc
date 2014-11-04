@@ -69,3 +69,38 @@ const char *OSSMixer::Label(int device)
 		return "<OSS:none>";
 	return sources[device];
 }
+
+bool OSSMixer::CanRecord(int device)
+{
+	unsigned int setting;
+
+	ioctl(mixer, MIXER_READ(SOUND_MIXER_RECMASK), &setting);
+	return (setting & (1 << device));
+}
+
+bool OSSMixer::SetRecord(int device, bool set)
+{
+	unsigned int setting;
+	ioctl(mixer, MIXER_READ(SOUND_MIXER_RECSRC), &setting);
+
+	if (set)
+	{
+		setting |= (1 << (unsigned int)device);
+		ioctl(mixer, MIXER_WRITE(SOUND_MIXER_RECSRC), &setting);
+	}
+	else
+	{
+		setting &= ~(1 << (unsigned int)device);
+		ioctl(mixer, MIXER_WRITE(SOUND_MIXER_RECSRC), &setting);
+	}
+
+	return true;
+}
+
+bool OSSMixer::GetRecord(int device)
+{
+	unsigned int setting;
+
+	ioctl(mixer, MIXER_READ(SOUND_MIXER_RECSRC), &setting);
+	return (setting & (1 << device));
+}
