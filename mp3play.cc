@@ -1,7 +1,20 @@
-/* This file belongs to the mp3player (C) 1997 Bram Avontuur.
- * It uses Jung woo-jae's mpegsound library, for which I am very grateful!
- * 27 October 1997: Code transformed into a neat C++ class instead of C code.
- * 7 November 1997: Upgraded to new mpegsound-lib (that goes with splay-0.8)
+/* MP3Blaster V2.0b1 - An Mpeg Audio-file player for Linux
+ * Copyright (C) 1997 Bram Avontuur (brama@stack.nl)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
  */
 #include "mp3blaster.h"
 #include NCURSES
@@ -48,13 +61,10 @@ inline void mp3Play::error(int n)
 	};
 
 	warning(sound_errors[n]);
-	refresh_screen();
-
 	if (interface)
-	{
-		touchwin(interface->getCursesWindow());
-		wrefresh(interface->getCursesWindow());
-	}
+		interface->redraw();
+	else
+		wclear(stdscr);
 }
 
 mp3Play::mp3Play(const char *mp3tje)
@@ -62,7 +72,7 @@ mp3Play::mp3Play(const char *mp3tje)
 	mp3s = NULL;
 	interface = NULL;
 	nmp3s = 0;
-	threads = 100;
+	threads = 0;
 	action = AC_NONE;
 
 	mp3s = new char*[1];
@@ -75,7 +85,7 @@ mp3Play::mp3Play(const char **mp3tjes, unsigned int nmp3tjes)
 {
 	mp3s = NULL;
 	nmp3s = 0;
-	threads = 100;
+	threads = 0;
 	interface = NULL;
 	action = AC_NONE;
 
@@ -98,86 +108,6 @@ mp3Play::~mp3Play()
 		delete[] mp3s;
 	}
 }
-
-#if 0
-/* old playingstuff */
-int mp3Play::playingwiththread(int threadstore)
-{
-	int
-		retval = 1,
-		playstatus ps = PS_NORMAL;
-
-	server->makethreadedplayer(threadstore);
-
-	if( !server->run(-1) )
-		return -1; // Initialize MPEG Layer 3
-
-	for (;;)
-	{
-		int
-			keypressed = 0;
-		
-		if ( (keypressed = handle_input(1)) != ERR)
-		{
-			switch(keypressed)
-			{
-				case 'p': /* pause */
-				case KEY_F(2):
-				{
-					if ( ps != PS_PAUSED)
-					{
-						server->pausethreadedplayer();
-						ps = PS_PAUSED;
-					}
-					else
-					{
-						server->pausethreadedplayer();
-						ps = PS_NORMAL;
-					}
-				}
-				break;
-				case 'q': /* stop */
-				case KEY_F(1):
-				{
-					server->stopthreadedplayer();
-					ps = PS_STOPPED;
-					retval = KEY_F(1);
-				}
-				break;
-				case ' ': /* skip song when using playlist, else stop */
-				{
-					/* implement code here */
-					server->stopthreadedplayer();
-					ps = PS_STOPPED;
-					retval = ' ';
-				}
-				break;
-			}
-			
-			if (ps == PS_STOPPED)
-				break;
-		}
-		else if (ps == PS_PAUSED)
-		{
-			if ( server->getframesaved() < threadstore - 1)
-				server->run(1);
-			else
-				usleep(100);
-		}
-
-		if (ps != PS_PAUSED && !server->run(1))
-			break;
-	}
-	server->freethreadedplayer();
-  
-	seterrorcode(server->geterrorcode());
-	
-	if ( seterrorcode(SOUND_ERROR_FINISH) )
-		return -1;
-	
-	return retval;
-}
-#endif
 
 /* the program needs to be in ncurses-mode before this function's used.
  * and the screensize had better be at least 60x12 too!
@@ -208,6 +138,7 @@ int mp3Play::playMp3List()
 			*filename = mp3s[i];
 	
 		next_to_play++; //default is to play next mp3 in list after this one.
+		action = AC_NEXT; //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 		player = new mp3Player(this, interface, threads);
    
@@ -229,7 +160,9 @@ int mp3Play::playMp3List()
 #endif
 			interface->setStatus(PS_NORMAL);
 
-			if (action == AC_NEXT) /* that's like, default :) */
+			if (action == AC_QUIT) /* leave playing interface */
+				play = 0;
+			else if (action == AC_NEXT) /* that's like, default :) */
 				;
 			else if (action == AC_PREV) /* that's like, previous song! */
 			{
@@ -238,6 +171,8 @@ int mp3Play::playMp3List()
 				else
 					next_to_play = 0;
 			}
+			else if (action == AC_SAMESONG) /* play that song again, sam */
+				next_to_play--;
 		}
 		delete player;
 		

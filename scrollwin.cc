@@ -1,3 +1,20 @@
+/* MP3Blaster V2.0b1 - An Mpeg Audio-file player for Linux
+ * Copyright (C) 1997 Bram Avontuur (brama@stack.nl)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
 #include "mp3blaster.h"
 #include NCURSES
 #include <string.h>
@@ -25,15 +42,7 @@ scrollWin::scrollWin(int lines, int ncols, int begin_y, int begin_x,
 {
 	int i;
 
-	sw_win = newwin(lines, ncols, begin_y, begin_x);
-	width = ncols;
-	height = lines;
-	sw_selection = 0;
-	keypad(sw_win, TRUE);
-	this->items = NULL;
-	sw_title = NULL;
-	xoffset = x_offset;
-	sw_playmode = 0; /* normal (non-random) play mode */
+	init(lines, ncols, begin_y, begin_x, showpath, x_offset);
 
 	/* memory for array 'items' is allocated the conventional 'C' way, because
 	 * it's a lot easier to increase the array than using vectors or similar..
@@ -46,22 +55,11 @@ scrollWin::scrollWin(int lines, int ncols, int begin_y, int begin_x,
 	}
 
 	this->nitems = narr;
-	this->showpath = showpath;
 	shown_range[0] = 0;
 	shown_range[1] = MIN(height - 3, narr - 1);
 
 	if (shown_range[1] < 0)
 		shown_range[1] = 0;
-
-	/* create empty line */
-	sw_emptyline = (char *)malloc((width - 1 - x_offset + 1 ) *
-		sizeof(char));
-	for (i = 0; i < width - 1 - x_offset; i++)
-		sw_emptyline[i] = ' ';
-	sw_emptyline[width - 2] = '\0';
-
-	sw_selected_items = NULL;
-	nselected = 0;
 }	
 
 scrollWin::~scrollWin()
@@ -82,7 +80,113 @@ scrollWin::~scrollWin()
 	delwin(sw_win);
 }
 
-void scrollWin::setTitle(const char *tmp)
+/* deletes *all* items in the scroll-window. */
+void scrollWin::delItems()
+{
+	if (nitems)
+	{
+		for (int i = nitems; i--;)
+			free(items[i]);
+		free(items);
+		items = NULL;
+		nitems = 0;
+	}
+
+	if (sw_selected_items)
+	{
+		free(sw_selected_items);
+		sw_selected_items = NULL;
+	}
+	sw_selection = 0;
+	nselected = 0;
+	shown_range[0] = shown_range[1] = 0;
+
+	if (sw_title)
+	{
+		free(sw_title);
+		sw_title = NULL;
+	}
+	swRefresh(2);
+}
+
+void scrollWin::init(int lines, int ncols, int begin_y, int begin_x, 
+                     short showpath, short x_offset)
+{
+	sw_win = newwin(lines, ncols, begin_y, begin_x);
+	leaveok(sw_win, TRUE);
+	width = ncols;
+	height = lines;
+	sw_selection = 0;
+	keypad(sw_win, TRUE);
+	this->items = NULL;
+	sw_title = NULL;
+	nitems = 0;
+	xoffset = x_offset;
+	sw_playmode = 0; /* normal (non-random) play mode */
+	shown_range[0] = 0;
+	shown_range[1] = 0;
+	this->showpath = showpath;
+
+	/* create empty line */
+	sw_emptyline = (char *)malloc((width - 1 - x_offset + 1 ) *
+		sizeof(char));
+	for (int i = 0; i < width - 1 - x_offset; i++)
+		sw_emptyline[i] = ' ';
+	sw_emptyline[width - 2] = '\0';
+
+	sw_selected_items = NULL;
+	nselected = 0;
+	for (int i = 0; i < 8; i++)
+		border[i] = 0;
+	want_border = 0;
+}
+
+void
+scrollWin::invertSelection()
+{
+	if (!nitems)
+		return;
+
+	int
+		i,
+		*its = NULL,
+		ni2;
+		
+	its = (int *)malloc(nitems * sizeof(int));
+
+	for (i = 0; i < nitems; i++)
+		its[i] = 1;
+
+	ni2 = nitems;
+
+	if ( sw_selected_items )	
+	{
+		ni2 = nitems - nselected;
+
+		for (i = 0; i < nselected; i++)
+			its[sw_selected_items[i]] = 0;
+
+		free(sw_selected_items);
+		sw_selected_items = NULL;
+	}
+
+	nselected = ni2;
+	sw_selected_items = (int *)malloc(ni2 * sizeof(int));
+
+	ni2 = 0;
+
+	for (i = 0; i < nitems; i++)
+	{
+		if ( its[i] )
+			sw_selected_items[ni2++] = i;
+	}
+
+	free(its);
+	swRefresh(1);	
+}
+
+void
+scrollWin::setTitle(const char *tmp)
 {
 	if (sw_title)
 		free(sw_title);
@@ -108,8 +212,9 @@ void scrollWin::swRefresh(short scroll)
 	if (scroll == 2)
 	{
 		werase(this->sw_win);
-		wborder(this->sw_win, 0, 0, 0, 0, ACS_LTEE, ACS_RTEE, ACS_BTEE,
-			ACS_BTEE);
+		if (want_border)
+			wborder(this->sw_win, border[0], border[1], border[2], border[3],
+				border[4], border[5], border[6], border[7]);
 	}
 
 	for (i = 1; i < MIN((this->height) - 1, this->nitems -
@@ -537,7 +642,7 @@ void scrollWin::pageUp()
  * returned (non-zero otherwise)
  */
 /* This should be part of a special mp3-class that inherits the standard
- * scrollWin class!!
+ * scrollWin class!! (some day, that is ... :-)
  */
 int scrollWin::writeToFile(FILE *f)
 {
@@ -627,3 +732,57 @@ char *scrollWin::getItem(int index)
 	return strcpy(item, items[index]);
 }
 
+/* Returns an array of strings, representing all selected items in this window.
+ * Each string and the string-array are allocated using C++'s new. Oh yeah,
+ * the order of the selected items is the order in which they have been selected
+ * by the user or program operating on this class. Ain't that nice :) And ..
+ * The amount of strings is stored in itemcount. Great huh.
+ */
+char **scrollWin::getSelectedItems(int *itemcount)
+{
+	int i;
+
+	char **selitems = NULL;
+
+	if (!nselected)
+	{
+		*itemcount = 0;
+		return NULL;
+	}
+
+	selitems = new char*[nselected];
+	
+	for (i = 0; i < nselected; i++)
+	{
+		char
+			*pruts = items[sw_selected_items[i]];
+
+		selitems[i] = new char[strlen(pruts) + 1];
+		strcpy(selitems[i], pruts);
+	}
+
+	*itemcount = nselected;
+	return selitems; /* don't forget to delete[] the string + array! */
+}
+
+void
+scrollWin::setBorder(chtype ls, chtype rs, chtype ts, chtype bs, 
+                     chtype tl, chtype tr, chtype bl, chtype br)
+{
+	border[0] = ls; border[1] = rs; border[2] = ts; border[3] = bs;
+	border[4] = tl; border[5] = tr; border[6] = bl; border[7] = br;
+
+	wborder(sw_win, ls, rs, ts, bs, tl, tr, bl, br);
+	want_border = 1;
+	wrefresh(sw_win);
+}
+
+char *
+scrollWin::getTitle()
+{
+	if (!sw_title)
+		return NULL;
+
+	char *tit = new char[strlen(sw_title) + 1];
+	return strcpy(tit, sw_title);
+}

@@ -1,0 +1,13 @@
+ -Write a manual or a popup-menu of [shortcut]keys in the program.
+ -refresh_screen() that actually works at all times.
+ -simple volume control within the program
+ -fix a memory-leak. After each played song, 16kb is lost(oops) (but 
+  regained if you leave the playlist by F1 :) So far I can't find anything
+  causing it in my program so maybe it's the mpegsound-library I'm using..
+  However, in the new 2.* version, this problem is reduced to only 4k/song or
+  so. Getting better .. :-) Dunno if it's due to the fact that I use a new
+  version of the mpegsound-lib or becuz of the slick *ahem* new code I wrote.
+ -Allowing user to change group-order (and mp3-order afterwards)
+ -Get/hack source that plays mp2's too. (22Khz 56kbit/s & some more modes)
+ -when paused, show this on the interface.
+ -update border in refresh_screen() too

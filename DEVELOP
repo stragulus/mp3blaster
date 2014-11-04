@@ -1,6 +1,0 @@
-Nu play_entire_list() aan't aanpassen zodat die sw_window *play_window
-maakt en daarin alle te spelen mp3's zet. variable 'playing' moet 
-vervangen worden door play_window (dus ipv if (playing) -> if (play_window))
-Scrollen e.d. gebeurt dan ook in deze play_window en met enter kan een stuk
-in de playlist verschoven worden. (als mp3#5 in play_window gespeeld wordt
-en bij nr. 11 wordt op enter gedrukt dan gaat de playlist daar verder)

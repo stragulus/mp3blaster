@@ -4,6 +4,9 @@ Please report any changes you make to this program to me by e-mail so that
 I know what's going on.
 ------------------------------------------------------------------------
 
+Information about compiling and installing MP3Blaster on your system is listed
+in the file called 'INSTALL'.
+
 This version of MP3Blaster is only tested on a linux box using kernel 2.0.27
 and above, with an Intel processor. It *might* just work on other platforms
 with some changing. I'm working on it but if you are willing to do please tell
@@ -23,9 +26,7 @@ you might like:
 	If not playing MP3's it will select a file to be added to the playlist
 	when you're in the file-selection menu. It highlights an mp3 too when you
 	are not selecting files, but currently that doesn't do anything.
--'p' :
-    Same as F2 during MP3 playback (pause)
 -'q' :
-    Leaves MP3Blaster or stops playing mp3['s].
+    Leaves MP3Blaster or leaves the playing interface (blue screen)
 -CURSOR KEYS:
-    Moves around the highlighted bar.
+    Moves around the highlighted bar in selection mode 

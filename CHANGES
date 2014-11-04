@@ -1,9 +1,9 @@
-V1.1.0: 1997/??/?? *yet to be completed*
+V2.0b1: 1997/12/06
 ==================
 
-De code netjes maken, verdelen in C++ classes, interface mooier & gebruiks-
-vriendelijker maken (meer kleur, status-balk benutten (o.a. pauze, etc) en
-evt. zo maken dat het ook met FreeBSE werkt. En mixer-menuutje inbouwen.
+Large parts of code have been redone and written in C++ instead of plain C.
+The interface while playing has changed entirely and should be more user-
+friendly.
 
 V1.0.1: 1997/09/29
 ==================

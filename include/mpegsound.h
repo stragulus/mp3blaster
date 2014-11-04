@@ -7,7 +7,7 @@
 //   Now, it's for only linux-pc-?86
 
 /************************************/
-/* Inlcude default library packages */
+/* Include default library packages */
 /************************************/
 #include <stdio.h>
 #include <sys/types.h>
@@ -709,6 +709,7 @@ public:
   bool playingwiththread(int verbose,int framenumbers);
 #endif
 
+protected:
   Mpegtoraw *server;
 
 private:

@@ -1,3 +1,20 @@
+/* MP3Blaster V2.0b1 - An Mpeg Audio-file player for Linux
+ * Copyright (C) 1997 Bram Avontuur (brama@stack.nl)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
 #include "mp3blaster.h"
 #include NCURSES
 
@@ -30,6 +47,7 @@ void popupWindow(const char *txt, int colour_pair = 1, int ypos = -1,
 	else
 		a = newwin(lines, columns, (LINES - lines) / 2, (COLS - columns) /
 			2);
+	leaveok(a, TRUE);
 	wbkgd(a, COLOR_PAIR(colour_pair));
 	mvwprintw(a, 2, (columns - strlen(txt)) / 2, txt); //write text in window
 	mvwprintw(a, 4, (columns - 27) / 2, "Press any key to continue..");
@@ -54,6 +72,7 @@ messageBox(const char *txt)
 	popupWindow(txt, 2, 13);
 }
 
+#if 0
 void
 refresh_screen()
 {
@@ -61,3 +80,4 @@ refresh_screen()
 	touchwin(stdscr);
 	doupdate();
 }
+#endif

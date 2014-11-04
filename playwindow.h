@@ -13,11 +13,22 @@ public:
 	playstatus getStatus(void) { return status; }
 	chtype getInput();
 	WINDOW *getCursesWindow() { return interface; }
+	void redraw();
+	void setProgressBar(int percentage);
+	void setSongName(const char *sn);
+	void setArtist(const char *ar);
+	void setSongType(const char *tp);
+	void setSongYear(const char *yr);
+	void setSongInfo(const char *inf);
+#ifdef DEBUG
+	void setFrames(int frames);
+#endif
 
 private:
 	WINDOW *interface;
 	short nrlines, nrcols;
 	playstatus status;
+	int progress[2];
 };
 
 #endif /* _CLASS_PLAYWINDOW_ */

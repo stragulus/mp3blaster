@@ -20,8 +20,10 @@ public:
 	mp3Play(const char **mp3tjes, unsigned int nmp3tjes);
 	~mp3Play(); 
 
+#ifdef PTHREADEDMPEG
 	void setThreads(int t) { threads = t; }
 	int getThreads() { return threads; }
+#endif
 	int playMp3List();
 	void setAction(actiontype bla) { action = bla; }
 	actiontype getAction(void) { return action; }
