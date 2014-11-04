@@ -65,8 +65,8 @@ Rawtofile::~Rawtofile()
 		off_t filelen = lseek(audiohandle, 0, SEEK_CUR);
 		lseek(audiohandle, 0, SEEK_SET);
 		hdr.length = HOST_TO_LE32((u_int32_t)(filelen-8)); /* file length */
-	hdr.data_length = HOST_TO_LE32((u_int32_t)(filelen - 44));
-	write(audiohandle, &hdr, sizeof(hdr));
+		hdr.data_length = HOST_TO_LE32((u_int32_t)(filelen - 44));
+		(void)write(audiohandle, &hdr, sizeof(hdr));
 	}
 	close(audiohandle);
 }
@@ -77,7 +77,7 @@ Rawtofile::Rawtofile(int audiohandle)
 	init_putblock = 1;
 }
 
-Rawtofile *Rawtofile::opendevice(char *filename)
+Rawtofile *Rawtofile::opendevice(const char *filename)
 {
 	int audiohandle;
 	if(filename==NULL)audiohandle=1;

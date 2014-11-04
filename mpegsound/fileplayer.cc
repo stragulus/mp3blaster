@@ -42,7 +42,7 @@ Fileplayer::~Fileplayer()
 };
 
 /* shared by all subclasses */
-bool Fileplayer::opendevice(char *device, soundtype write2file)
+bool Fileplayer::opendevice(const char *device, soundtype write2file)
 {
 	delete player; //delete possibly existing player
 	
@@ -108,7 +108,7 @@ Wavefileplayer::~Wavefileplayer()
   if(server)delete server;
 }
 
-bool Wavefileplayer::openfile(char *filename,char *device, soundtype write2file)
+bool Wavefileplayer::openfile(const char *filename, const char *device, soundtype write2file)
 {
 // Player
   if (!opendevice(device, write2file))
@@ -242,7 +242,7 @@ Mpegfileplayer::~Mpegfileplayer()
 /* if device[0] == '-' output will be written to stdout.
  * if write2file != 0, output will be written to file `device'
  */
-bool Mpegfileplayer::openfile(char *filename,char *device, soundtype write2file)
+bool Mpegfileplayer::openfile(const char *filename, const char *device, soundtype write2file)
 {
 // Player
   if (!opendevice(device, write2file))

@@ -256,11 +256,11 @@ public:
   Soundinputstream();
   virtual ~Soundinputstream();
 
-  static Soundinputstream *hopen(char *filename,int *errcode);
+  static Soundinputstream *hopen(const char *filename,int *errcode);
 
   int geterrorcode(void)  {return __errorcode;};
 
-  virtual bool open(char *filename)              =0;
+  virtual bool open(const char *filename)              =0;
   virtual void close(void)                       =0;
   virtual int  getbytedirect(void)               =0;
   virtual bool _readbuffer(char *buffer,int size)=0;
@@ -288,7 +288,7 @@ public:
   Soundinputstreamfromfile();
   ~Soundinputstreamfromfile();
 
-  bool open(char *filename);
+  bool open(const char *filename);
   void close(void);
   bool _readbuffer(char *buffer,int bytes);
   int  getbytedirect(void);
@@ -311,7 +311,7 @@ public:
   Soundinputstreamfromhttp();
   ~Soundinputstreamfromhttp();
 
-  bool open(char *filename);
+  bool open(const char *filename);
   void close(void) {}
   bool _readbuffer(char *buffer,int bytes);
   int  getbytedirect(void);
@@ -328,7 +328,7 @@ private:
 
   bool writestring(int fd,char *string);
   bool readstring(char *string,int maxlen,FILE *f);
-  FILE *http_open(char *url);
+  FILE *http_open(const char *url);
 };
 
 
@@ -370,7 +370,7 @@ class Rawtofile : public Soundplayer
 public:
   ~Rawtofile();
 
-  static Rawtofile *opendevice(char *filename);
+  static Rawtofile *opendevice(const char *filename);
 
   bool setsoundtype(int stereo,int samplesize,int speed);
   void set8bitmode() { want8bit = 1; }
@@ -395,7 +395,7 @@ class Rawplayer : public Soundplayer
 public:
   ~Rawplayer();
 
-  static Rawplayer *opendevice(char *filename);
+  static Rawplayer *opendevice(const char *filename);
   static int getdevicehandle(const char *filename);
 
   void abort(void);
@@ -413,11 +413,11 @@ public:
   void setquota(int q){quota=q;};
   int  getquota(void) {return quota;};
 
-  static char *defaultdevice;
+  static const char *defaultdevice;
   static int  setvolume(int volume);
   int  fix_samplesize(void *buffer, int size);
 private:
-  Rawplayer(char *filename, int audiohandle, int audiobuffersize);
+  Rawplayer(const char *filename, int audiohandle, int audiobuffersize);
   short int rawbuffer[RAWDATASIZE];
   int  rawbuffersize;
   int  audiobuffersize;
@@ -516,7 +516,7 @@ class NASplayer : public Soundplayer
 public:
 	~NASplayer();
 
-	static NASplayer *opendevice(char *device);
+	static NASplayer *opendevice(const char *device);
 
 	void abort(void);
 
@@ -785,7 +785,7 @@ public:
 public:
   Mpegtoraw(Soundinputstream *loader,Soundplayer *player);
   ~Mpegtoraw();
-  bool initialize(char *filename);
+  bool initialize(const char *filename);
   bool run(int frames);
   int  geterrorcode(void) {return __errorcode;};
   void clearbuffer(void);
@@ -964,7 +964,7 @@ public:
 
   int geterrorcode(void)        {return __errorcode;};
 	struct song_info getsonginfo() { return info;};
-  virtual bool openfile(char *filename,char *device, soundtype write2file=NONE)=0;
+  virtual bool openfile(const char *filename, const char *device, soundtype write2file=NONE)=0;
   virtual void closefile(void)                       =0;
   virtual void setforcetomono(short flag)            =0;
 	virtual void setdownfrequency(int)                 =0;
@@ -986,12 +986,12 @@ public:
 protected:
   Fileplayer(); //thou shallt not instantiate fileplayer itself.
 
-  bool opendevice(char *device, soundtype write2file=NONE);
+  bool opendevice(const char *device, soundtype write2file=NONE);
 	void set_driver(audiodriver_t driver);
   bool seterrorcode(int errorno){__errorcode=errorno;return false;};
   Soundplayer *player;
 	struct song_info info;
-	char *filename;
+	const char *filename;
 
 private:
   int __errorcode;
@@ -1012,7 +1012,7 @@ public:
   Wavefileplayer(audiodriver_t driver);
   ~Wavefileplayer();
 
-  bool openfile(char *filename,char *device, soundtype write2file=NONE);
+  bool openfile(const char *filename, const char *device, soundtype write2file=NONE);
   void closefile(void); 
   void setforcetomono(short flag);
 	void setdownfrequency(int value) { if (value); }
@@ -1045,7 +1045,7 @@ public:
   Mpegfileplayer(audiodriver_t driver);
   ~Mpegfileplayer();
 
-  bool openfile(char *filename,char *device, soundtype write2file=NONE);
+  bool openfile(const char *filename, const char *device, soundtype write2file=NONE);
   void closefile(void);
   void setforcetomono(short flag);
   void set8bitmode() { if (server) server->set8bitmode(); }
@@ -1093,7 +1093,7 @@ public:
   Oggplayer(audiodriver_t driver);
   ~Oggplayer();
 
-  bool openfile(char *filename,char *device, soundtype write2file=NONE);
+  bool openfile(const char *filename, const char *device, soundtype write2file=NONE);
   void closefile(void);
   void setforcetomono(short flag);
   void set8bitmode();
@@ -1140,7 +1140,7 @@ public:
 	SIDfileplayer(audiodriver_t driver);
 	~SIDfileplayer();
 
-	bool openfile(char *filename,char *device, soundtype write2file=NONE);
+	bool openfile(const char *filename, const char *device, soundtype write2file=NONE);
 	bool initialize(void *data) { if(data); return true; }
 	void closefile(void);
 	void setforcetomono(short flag);

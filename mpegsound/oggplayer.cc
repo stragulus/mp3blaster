@@ -35,7 +35,7 @@ Oggplayer::~Oggplayer()
 	}
 }
 
-bool Oggplayer::openfile(char *filename, char *device, soundtype write2file)
+bool Oggplayer::openfile(const char *filename, const char *device, soundtype write2file)
 {
 	FILE *f;
 	int openres;

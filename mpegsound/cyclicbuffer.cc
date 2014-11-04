@@ -10,6 +10,7 @@ CyclicBuffer::CyclicBuffer(const unsigned int size)
 	this->bufferSize = size;
 	this->readIndex = 0;
 	this->writeIndex = 0;
+	this->isFull = 0;
 #ifdef LIBPTH
   (void)pth_mutex_init(&rw_mutex);
 #elif defined(PTHREADEDMPEG)
@@ -43,15 +44,17 @@ CyclicBuffer::read(unsigned char * const buf, const unsigned int amount,
 
 		//partial read
 		bytesRead = contentLength;
-		readData(buf, bytesRead);
-		unlock();
-		return (int)bytesRead;
+	} else {
+		/* #bytes to read >= amount */
+		bytesRead = amount;
 	}
 
-	/* #bytes to read >= amount */
-	readData(buf, amount);
+	if (bytesRead > 0) {
+		readData(buf, bytesRead);
+		isFull = 0; //since we just read data, there's always space to write now
+	}
 	unlock();
-	return (int)amount;
+	return (int)bytesRead;
 }
 
 int
@@ -59,27 +62,40 @@ CyclicBuffer::write(const unsigned char * const buf,
 	const unsigned int amount, const int partial)
 {
 	unsigned int emptySpace;
+	unsigned int bytesWritten = 0;
 	
 	lock();
 	emptySpace = this->bufferSize - this->contentSizeInternal();
 
-	if (emptySpace < amount)
-	{
-		if (!partial)
-		{
+	if (emptySpace == 0) {
+		unlock();
+		return 0; //no space to write to
+	}
+
+	if (emptySpace < amount) {
+		if (!partial) {
 			unlock();
 			return 0; //not enough space to write to
 		}
 
 		//partial write
-		writeData(buf, emptySpace);
-		unlock();
-		return (int)emptySpace;
+		bytesWritten = emptySpace;
+	} else {
+		bytesWritten = amount;
 	}
 
-	writeData(buf, amount);
+	writeData(buf, bytesWritten);
+
+	/* If we filled all of the buffer, toggle isFull. This is required since
+	 * it's otherwise impossible to tell if the buffer is full or empty when
+	 * the R/W pointers are equal!
+	 */
+	if (bytesWritten > 0 && this->readIndex == this->writeIndex) {
+		isFull = 1;
+	}
+
 	unlock();
-	return (int)amount;
+	return (int)bytesWritten;
 }
 
 void
@@ -101,13 +117,24 @@ CyclicBuffer::contentSize()
 	return returnValue;
 }
 
+/**
+ * Returns the number of bytes in the buffer that contain data. The
+ * empty space would then be the total bufer size minus the return value.
+ * This function does not perform locking.
+ */
 unsigned int
 CyclicBuffer::contentSizeInternal()
 {
-	if (this->readIndex == this->writeIndex) // ____RW_____
+	if (this->readIndex == this->writeIndex) {
+		// ____RW_____, either completely empty or completely filled
+		if (isFull) {
+			return this->bufferSize;
+		} 
 		return 0; //no content
-	else if (this->readIndex < this->writeIndex) // ___R******W___
+	} else if (this->readIndex < this->writeIndex) {
+		// ___R******W___
 		return this->writeIndex - this->readIndex;
+	}
 	
 	// ****W_______R**** 
 	/* readIndex > writeIndex. Content is from readIndex to end of buffer,
@@ -140,8 +167,13 @@ CyclicBuffer::size()
 }
 
 /*
- * amount must always be equal to, or less than, the contents in the buffer.
- * Adjusts read pointer.
+ * Transfers data from the internal buffer into the supplied 'buf'
+ * parameter.
+ *
+ * 'amount' must always be equal to, or less than, the contents in the
+ * internal buffer.
+ *
+ * Adjusts internal buffer's read pointer.
  */
 void
 CyclicBuffer::readData(unsigned char * const buf, const unsigned int amount)

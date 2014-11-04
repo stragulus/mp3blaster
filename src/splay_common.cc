@@ -19,7 +19,7 @@
 
 int  splay_verbose=0;
 char *splay_progname;
-char *splay_devicename = SOUND_DEVICE;
+const char *splay_devicename = SOUND_DEVICE;
 
 char *splay_list[MAXLISTSIZE];
 int  splay_listsize=0;
@@ -32,7 +32,7 @@ bool splay_shuffleflag=false,
 int splay_threadnum=50;
 #endif
 
-char *splay_Sounderrors[SOUND_ERROR_UNKNOWN]=
+const char *splay_Sounderrors[SOUND_ERROR_UNKNOWN]=
 { "Failed to open sound device.",
   "Sound device is busy.",
   "Buffersize of sound device is wrong.",

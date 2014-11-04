@@ -56,7 +56,7 @@ extern short set_threads(int);
 //TODO: remove color-options bartoken/progressbar
 struct _confopts
 {
-	char *keyword;
+	const char * const keyword;
 	unsigned short keyword_opts;
 } confopts[] = {
 { "Threads", 0 },               //0

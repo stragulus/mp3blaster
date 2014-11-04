@@ -68,6 +68,7 @@ public:
 	             short before=0, void *object=NULL, itemtype type=TEXT);
 	virtual short addItem(const char **, short *, short colour=0, int index=-1,
 	             short before=0, void *object=NULL, itemtype type=TEXT);
+	int findItem(const char *, short nameindex = 0);
 	void changeItem(int, const char *, short nameindex=0);
 	void changeItem(int, char *(*)(void *), void *arg=NULL, short nameindex=0);
 	void replaceItem(int, winItem *newitem);

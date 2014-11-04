@@ -1,6 +1,9 @@
 #include <config.h>
-#include "history.h"
+
 #include <string.h>
+#include <stdlib.h>
+
+#include "history.h"
 
 History::History()
 {

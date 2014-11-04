@@ -324,7 +324,7 @@ getInput
 void
 usage()
 {
-	fprintf(stderr, "Mp3blaster v%s (C)1997 - 2001 Bram Avontuur.\n%s", \
+	fprintf(stderr, "Mp3blaster v%s (C)1997 - 2009 Bram Avontuur.\n%s", \
 		VERSION, \
 		"Usage:\n" \
 		"\tmp3blaster [options]\n"\
@@ -568,7 +568,39 @@ fw_changedir(const char *newpath = 0)
 		delete[] selitems;
 	}
 	
+	/* If the old dir is a directory in the new dir, set the current
+	 * selection to the entry for that dir. */
+	const char *oldPath = file_window->getPath();
+	char *foundItem = NULL;
+	if (oldPath != NULL)
+	{
+		if (strcmp(path, "../") == 0) {
+			const char *oldPtr = oldPath + strlen(oldPath) - 1;
+			if (oldPtr > oldPath && *oldPtr == '/')
+				oldPtr--;
+			while (oldPtr >= oldPath)
+			{
+				if (*oldPtr == '/') {
+					foundItem = strdup(oldPtr + 1);
+					break;
+				}
+				oldPtr--;
+			}
+		}
+		else if (strcmp(path, "./") == 0)
+			foundItem = strdup(path);
+	}
+
 	file_window->changeDir(path);
+
+	if (foundItem != NULL)
+	{
+		int index = file_window->findItem(foundItem);
+		if (index != -1)
+			file_window->setItem(index);
+		free(foundItem);
+	}
+
 	refresh();
 }
 
@@ -1280,15 +1312,15 @@ parse_playlist_token(const char *str)
  *            : returned.
  */
 const char*
-tag_keyword_value(struct ptag_t tag, const char *kword)
+tag_keyword_value(const struct ptag_t * tag, const char *kword)
 {
 	int i;
 
 	for (i = 0; i < 5; i++)
 	{
-		if (!strcasecmp(tag.keywords[i], kword))
+		if (!strcasecmp(tag->keywords[i], kword))
 		{
-			return tag.values[i];
+			return tag->values[i];
 		}
 	}
 	return NULL;
@@ -1356,14 +1388,14 @@ read_playlist(const char *filename)
 
 			if (!strcasecmp(ptag.tag, "global"))
 			{
-				keyval = tag_keyword_value(ptag, "playmode"); 
+				keyval = tag_keyword_value(&ptag, "playmode"); 
 				if (keyval)
 				{
 					set_play_mode(keyval);
 					debug("Set playmode from playlist file\n");
 				}
 
-				keyval = tag_keyword_value(ptag, "mode");
+				keyval = tag_keyword_value(&ptag, "mode");
 				if (keyval && !strcasecmp(keyval, "shuffle"))
 				{
 					mp3_rootwin->setPlaymode(1);
@@ -1372,7 +1404,7 @@ read_playlist(const char *filename)
 			}
 			else if (!strcasecmp(ptag.tag, "group"))
 			{
-				const char *group_name = tag_keyword_value(ptag, "name");
+				const char *group_name = tag_keyword_value(&ptag, "name");
 				const char *group_mode = NULL;
 				if (group_name)
 				{
@@ -1388,7 +1420,7 @@ read_playlist(const char *filename)
 						continue;
 
 					new_group->setTitle(gname);
-					if ( (group_mode = tag_keyword_value(ptag, "mode")) &&
+					if ( (group_mode = tag_keyword_value(&ptag, "mode")) &&
 						!strcasecmp(group_mode, "shuffle"))
 						new_group->setPlaymode(1);
 					current_group->addGroup(new_group, gname);
@@ -1737,7 +1769,7 @@ void
 cw_draw_play_mode(short cleanit)
 {
 	unsigned int i;
-	char *playmodes_desc[] = {
+	const char *playmodes_desc[] = {
 		/* PLAY_NONE */
 		"",
 		// PLAY_GROUP
@@ -5159,16 +5191,13 @@ playlist_write(const char *playlistfile, void *args)
 	org_path = get_current_working_path();
 	char *tmpDir = expand_path(globalopts.playlist_dir);
 
-	do
-	{
-		if (!tmpDir)
-		{
+	do {
+		if (!tmpDir) {
 			warning("Failed to change to playlist dir.");	
 			break;
 		}
 
-		if (chdir(tmpDir) == -1)
-		{
+		if (chdir(tmpDir) == -1) {
 			warning("Failed to change to playlist dir.");
 			break;
 		}
@@ -5182,7 +5211,10 @@ playlist_write(const char *playlistfile, void *args)
 	if (tmpDir)
 		free(tmpDir);
 
-	chdir(org_path);
+	if (chdir(org_path) == -1) {
+		warning("Failed to change to original path.");
+	}
+		
 	free(org_path);
 	free(tmp_pfile);
 }
@@ -5700,17 +5732,19 @@ main(int argc, char *argv[], char *envp[])
 		}
 	}
 
-	if (options & OPT_CHROOT)
-	{
-		if (chroot(chroot_dir) < 0)
-		{
+	if (options & OPT_CHROOT) {
+		if (chroot(chroot_dir) < 0) {
 			endwin();
 			perror("chroot");
 			fprintf(stderr, "Could not chroot to %s! (are you root?)\n",
 				chroot_dir);
 			exit(1);
 		}
-		chdir("/");
+
+		if (-1 == chdir("/")) {
+			fprintf(stderr, "Failed to change to root directory\n");
+			exit(1);
+		}
 		delete[] chroot_dir;
 	}
 

@@ -47,7 +47,7 @@ extern "C" {
 
 /* AUDIO_NONBLOCKING : If defined, non-blocking audio playback is used. */
 
-char *Rawplayer::defaultdevice=SOUND_DEVICE;
+const char *Rawplayer::defaultdevice=SOUND_DEVICE;
 
 /* Volume */
 int Rawplayer::setvolume(int volume)
@@ -76,7 +76,7 @@ int Rawplayer::setvolume(int volume)
 /*******************/
 // Rawplayer class
 /* filename is stored in case audiohandle needs to be reopened */
-Rawplayer::Rawplayer(char *filename, int audiohandle, int audiobuffersize)
+Rawplayer::Rawplayer(const char *filename, int audiohandle, int audiobuffersize)
 {
 	this->audiohandle = audiohandle;
 	this->audiobuffersize = audiobuffersize;
@@ -100,8 +100,8 @@ Rawplayer::~Rawplayer()
 		close(audiohandle);
 	}
 
-	if (filename)
-		free(filename);
+	if (this->filename)
+		free(this->filename);
 }
 
 int Rawplayer::getdevicehandle(const char *filename)
@@ -138,11 +138,12 @@ int Rawplayer::getdevicehandle(const char *filename)
 	return audiohandle;
 }
 
-Rawplayer *Rawplayer::opendevice(char *filename)
+Rawplayer *Rawplayer::opendevice(const char *filename)
 {
 	int audiohandle, audiobuffersize;
 
-	if (!filename) filename = defaultdevice;
+	if (!filename)
+		filename = defaultdevice;
 
 	audiohandle = getdevicehandle(filename);
 

@@ -585,6 +585,25 @@ scrollWin::addItem(winItem *newitem, int index, short before)
 	return index;
 }
 
+/* Function   : findItem
+ * Description: find an item with an exact name
+ * Parameters : item - the description of the item
+ * Returns    : The index of the item, or -1 if not found
+ */
+int scrollWin::findItem(const char *name, short nameindex)
+{
+	int index = 0;
+
+	for (winItem *itemI = first; itemI != NULL; itemI = itemI->next)
+	{
+		if (strcmp(itemI->getName(nameindex), name) == 0)
+			return index;
+		index++;
+	}
+
+	return -1;
+}
+
 /* Function   : changeItem
  * Descrption : changeItem changes an item's description for 1 display mode,
  *            : without recreating the underlying winItem object.

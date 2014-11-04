@@ -170,8 +170,7 @@ expand_path(const char *org_path)
 }
 
 void 
-debug(const char *fmt, ... )
-{
+debug(const char *fmt, ... ) {
 	va_list ap;
 	char buf[1024];
 	static int debug_init = 1;
@@ -180,8 +179,7 @@ debug(const char *fmt, ... )
 	if (!globalopts.debug)
 		return;
 
-	if (debug_init)
-	{
+	if (debug_init) {
 		debug_init = 0;
 		char *homedir = get_homedir(NULL);
 		if (!homedir) return;
@@ -195,9 +193,8 @@ debug(const char *fmt, ... )
 	va_start(ap, fmt);
 	vsnprintf(buf,1024,fmt,ap);
 	va_end(ap);
-	if (debug_info)
-	{
-		fwrite(buf, sizeof(char), strlen(buf), debug_info);
+	if (debug_info) {
+		(void)fwrite(buf, sizeof(char), strlen(buf), debug_info);
 		fflush(debug_info);
 	}
 }
@@ -207,8 +204,7 @@ debug(const char *fmt, ... )
  * by \n. The line is malloc()'d so don't forget to free it ..
  */
 char *
-readline(FILE *f)
-{
+readline(FILE *f) {
 	short
 		not_found_endl = 1;
 	char *
@@ -249,8 +245,7 @@ readline(FILE *f)
 
 /* returns a malloc()'d string */
 char *
-crop_whitespace(const char *string)
-{
+crop_whitespace(const char *string) {
 	char *orgstring, *tmpstring, *newstring;
 	int index = 0;
 
@@ -277,13 +272,11 @@ crop_whitespace(const char *string)
  * doesn't check access)
  */
 short
-is_dir(const char *path)
-{
+is_dir(const char *path) {
 	DIR 
 		*dir2 = opendir(path);
 	
-	if (dir2)
-	{
+	if (dir2) {
 		closedir(dir2);
 		return 1;
 	}
@@ -292,8 +285,7 @@ is_dir(const char *path)
 }
 
 const char *
-chop_path(const char *a)
-{
+chop_path(const char *a) {
 	const char
 		*last_slash = strrchr(a, '/');
 	int

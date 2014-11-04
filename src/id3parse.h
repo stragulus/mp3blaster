@@ -31,7 +31,7 @@ public:
 private:
 	int search_header(FILE *);
 	int appendNewID3Header(FILE *);
-	char *getGenre(const unsigned char);
+	const char *getGenre(const unsigned char);
 
 	char *flnam;
 	id3header *song;

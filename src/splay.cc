@@ -17,7 +17,7 @@
 
 #include "splay.h"
 
-static char *help=
+static const char *help=
 "\t-2 : playing with half frequency.\n"
 "\t-e : exit when playing is done. (only XSPLAY)\n"
 "\t-m : force to mono.\n"

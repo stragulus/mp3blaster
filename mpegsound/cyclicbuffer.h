@@ -80,6 +80,7 @@ private:
 	unsigned char *buffer;
 	int readIndex; //where are we reading
 	int writeIndex; //where are we writing
+	int isFull; //if readIndex==writeIndex, this indicates the filled status
 	unsigned int bufferSize; //size of buffer
 
 #ifdef LIBPTH

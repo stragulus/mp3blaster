@@ -777,7 +777,7 @@ inline void parseID3(Soundinputstream *fp,ID3 *data)
 
 // Convert mpeg to raw
 // Mpeg header class
-bool Mpegtoraw::initialize(char *filename)
+bool Mpegtoraw::initialize(const char *filename)
 {
 	register int i;
 	register REAL *s1,*s2;

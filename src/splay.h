@@ -15,7 +15,7 @@
 #define PACKAGE "splay-mp3blaster"
 extern int  splay_verbose;
 extern char *splay_progname;
-extern char *splay_devicename;
+extern const char *splay_devicename;
 
 extern char *splay_list[MAXLISTSIZE];
 extern int  splay_listsize;
@@ -24,7 +24,7 @@ extern bool splay_shuffleflag,
             splay_repeatflag,
             splay_forcetomonoflag;
 
-extern char *splay_Sounderrors[];
+extern const char *splay_Sounderrors[];
 
 #ifdef PTHREADEDMPEG
 extern int  splay_threadnum;

@@ -72,7 +72,7 @@ id3Parse::search_header(FILE *fp)
 	return success;
 }
 
-char *
+const char *
 id3Parse::getGenre(const unsigned char genre)
 {
 #if 0

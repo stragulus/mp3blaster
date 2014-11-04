@@ -33,7 +33,7 @@ SIDfileplayer::~SIDfileplayer()
 	if (buffer) delete buffer;
 }
 
-bool SIDfileplayer::openfile(char *filename, char *device, soundtype write2file)
+bool SIDfileplayer::openfile(const char *filename, char *device, soundtype write2file)
 {
 	int ssize;
 

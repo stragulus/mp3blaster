@@ -30,7 +30,7 @@ Soundinputstreamfromfile::~Soundinputstreamfromfile()
   	fclose(fp);
 }
 
-bool Soundinputstreamfromfile::open(char *filename)
+bool Soundinputstreamfromfile::open(const char *filename)
 {
   struct stat buf;
 

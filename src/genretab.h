@@ -1,6 +1,6 @@
 #ifndef _MY_GENRE_TAB
 #define _MY_GENRE_TAB
-char *genre_table[] = {
+const char *genre_table[] = {
 	"Blues",		//0
 	"Classic Rock",
 	"Country",
@@ -259,6 +259,6 @@ char *genre_table[] = {
 	NULL
 };
 #else
-extern char *genre_table[];
+extern const char *genre_table[];
 
 #endif

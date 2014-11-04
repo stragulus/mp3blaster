@@ -1,3 +1,11 @@
+V3.2.4 2009/01/18
+=================
+-Fixed bug in buffering code when using SDL as audio output; this fixes
+ possible hickups in such cases.
+-When changing back directories in the file browser, jump to the 
+ position in the file list the user came from. 
+-Reduced number of warnings using newer g++ versions
+
 V3.2.3 2006/08/05
 =================
 -Fixed parallel build bug, make -j now works

@@ -26,7 +26,7 @@ Soundinputstream::~Soundinputstream()
 /********************/
 /* File & Http open */
 /********************/
-Soundinputstream *Soundinputstream::hopen(char *filename,int *errorcode)
+Soundinputstream *Soundinputstream::hopen(const char *filename,int *errorcode)
 {
 	Soundinputstream *st;
 

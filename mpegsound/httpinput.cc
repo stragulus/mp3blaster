@@ -126,7 +126,8 @@ char *proxyurl=NULL;
 unsigned long proxyip=0;
 unsigned int proxyport;
 
-FILE *Soundinputstreamfromhttp::http_open(char *urrel)
+FILE
+*Soundinputstreamfromhttp::http_open(const char *urrel)
 {
 	char
 		*purl=NULL,
@@ -340,7 +341,7 @@ Soundinputstreamfromhttp::~Soundinputstreamfromhttp()
   if(fp)fclose(fp);
 }
 
-bool Soundinputstreamfromhttp::open(char *url)
+bool Soundinputstreamfromhttp::open(const char *url)
 {
   if((fp=http_open(url))==NULL)
   {
