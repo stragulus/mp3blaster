@@ -11,12 +11,12 @@ public:
 	~fileManager() { if (path) delete[] path; }
 
 	int changeDir(const char *newpath);
-	char *getPath();
+	const char *getPath();
 	short isDir(int index);
 
 private:
 	void getCurrentWorkingPath();	
-	void readDir();
+	int readDir();
 	char *path;
 };
 

@@ -74,7 +74,7 @@ SRCDIRS = @SRCDIRS@
 VERSION = @VERSION@
 
 bin_PROGRAMS = mp3blaster mp3tag
-mp3blaster_SOURCES = fileman.cc 			  gstack.cc 			  main.cc 			  mp3play.cc 			  mp3player.cc 			  sidplayer.cc 			  mp3stack.cc 			  playwindow.cc 			  scrollwin.cc 			  windows.cc 			  getopt.c 			  getopt1.c 			  fileman.h 			  genretab.h 			  getopt.h 			  gstack.h 			  id3parse.h 			  mp3blaster.h 			  mp3play.h 			  mp3player.h 			  sidplayer.h 			  mp3stack.h 			  playwindow.h 			  global.cc 			  global.h 			  config.cc 			  scrollwin.h 			  @MP3B_MODULES@
+mp3blaster_SOURCES = fileman.cc 			  main.cc 			  scrollwin.cc 			  windows.cc 			  getopt.c 			  getopt1.c 			  fileman.h 			  genretab.h 			  getopt.h 			  id3parse.h 			  mp3blaster.h 			  global.cc 			  global.h 			  config.cc 			  scrollwin.h 			  winitem.cc 			  winitem.h 			  mp3win.cc 			  mp3win.h 			  mp3item.cc 			  mp3item.h 			  @MP3B_MODULES@
 
 mp3tag_SOURCES = id3parse.cc mp3tag.cc
 mp3tag_DEPENDENCIES = ../mpegsound/libmpegsound.a ../nmixer/libnmixer.a
@@ -98,9 +98,8 @@ X_CFLAGS = @X_CFLAGS@
 X_LIBS = @X_LIBS@
 X_EXTRA_LIBS = @X_EXTRA_LIBS@
 X_PRE_LIBS = @X_PRE_LIBS@
-mp3blaster_OBJECTS =  fileman.o gstack.o main.o mp3play.o mp3player.o \
-sidplayer.o mp3stack.o playwindow.o scrollwin.o windows.o getopt.o \
-getopt1.o global.o config.o
+mp3blaster_OBJECTS =  fileman.o main.o scrollwin.o windows.o getopt.o \
+getopt1.o global.o config.o winitem.o mp3win.o mp3item.o
 mp3blaster_LDFLAGS = 
 mp3tag_OBJECTS =  id3parse.o mp3tag.o
 mp3tag_LDFLAGS = 
@@ -111,7 +110,7 @@ CFLAGS = @CFLAGS@
 COMPILE = $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(LDFLAGS) -o $@
-DIST_COMMON =  Makefile.am Makefile.in
+DIST_COMMON =  Makefile.am Makefile.in TODO
 
 
 DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
@@ -230,6 +229,26 @@ distdir: $(DISTFILES)
 	    || cp -p $$d/$$file $(distdir)/$$file || :; \
 	  fi; \
 	done
+config.o: config.cc mp3blaster.h global.h
+fileman.o: fileman.cc mp3blaster.h getopt.h fileman.h scrollwin.h \
+	winitem.h global.h
+getopt.o: getopt.c
+getopt1.o: getopt1.c
+global.o: global.cc getopt.h mp3blaster.h
+id3parse.o: id3parse.cc id3parse.h genretab.h
+main.o: main.cc mp3blaster.h getopt.h global.h scrollwin.h winitem.h \
+	mp3win.h fileman.h ../mpegsound/mpegsound.h ../nmixer/nmixer.h \
+	keybindings.h
+mp3item.o: mp3item.cc mp3item.h winitem.h mp3blaster.h mp3win.h \
+	scrollwin.h
+mp3tag.o: mp3tag.cc getopt.h ../mpegsound/mpegsound.h id3parse.h \
+	mp3blaster.h
+mp3win.o: mp3win.cc mp3win.h scrollwin.h mp3blaster.h winitem.h \
+	mp3item.h
+scrollwin.o: scrollwin.cc mp3blaster.h global.h scrollwin.h winitem.h
+windows.o: windows.cc mp3blaster.h getopt.h
+winitem.o: winitem.cc mp3blaster.h scrollwin.h winitem.h
+
 info-am:
 info: info-am
 dvi-am:

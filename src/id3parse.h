@@ -12,6 +12,9 @@ struct id3header
 	char year[5];
 	char etc[31];
 	unsigned char genre;
+	//A track is the 30th byte in the etc field if the 29th byte is 0. This
+	//conforms to the ID3V1.1 standard.
+	int track;
 	//char genre_txt[41]; 
 };
 

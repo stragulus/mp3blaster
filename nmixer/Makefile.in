@@ -239,6 +239,12 @@ distdir: $(DISTFILES)
 	    || cp -p $$d/$$file $(distdir)/$$file || :; \
 	  fi; \
 	done
+main.o: main.cc nmixer.h
+mixers.o: mixers.cc nmixer.h
+nasmixer.o: nasmixer.cc
+nmixer.o: nmixer.cc nmixer.h
+ossmixer.o: ossmixer.cc nmixer.h
+
 info-am:
 info: info-am
 dvi-am:

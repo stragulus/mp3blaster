@@ -16,21 +16,33 @@ _globalopts globalopts;
 
 //MySQL global variables.
 int
-	cdnr = -1;
+	cdnr = -1,
+	add2sql = 0,
+	mergeID3 = 0,
+	change = 0;
 #ifdef WANT_MYSQL
 int
-	add_mysql_record(const struct id3header*);
+	add_mysql_record(const char*,const struct id3header*);
+MYSQL
+	mysql; //database handler
 #endif
+struct
+	id3header *hdr = NULL;
 char
 	*fullpath = NULL,
 	*cdtype = NULL,
-	*flnam = NULL,
 	*dbname = NULL,
 	*table = NULL,
 	*user = NULL,
 	*passwd = NULL,
 	*albumname = NULL,
 	*owncomment = NULL;
+
+struct _filelist
+{
+	char *filename;
+	_filelist *next;
+} *filelist;
 
 struct _mp3info
 {
@@ -42,17 +54,22 @@ struct _mp3info
 	char mode[20];
 } mp3info;
 
+void addfiletolist(const char*);
+int parse_mp3(const char*);
+void debug(const char *);
+
 void
 usage(const char *bla="mp3tag2")
 {
-	fprintf(stderr, "Usage:\t%s -f <filename> [-a <artist>] [-s <songn" \
-		"ame>] [-l <album>] [-y <year>] [-e etcetera] [-g genre] [-r]\n",
+	fprintf(stderr, "Usage:\t%s [-a <artist>] [-s <songname>] [-l <album>] "\
+		"[-y <year>] [-e etcetera] [-g genre] [-k track] [-r] filename "\
+		"[..filename]\n",
 		bla);
 #ifdef WANT_MYSQL
 	fprintf(stderr,
-		"or\t%s -m mysql_dbname -f <filename> -n <pathoncd> "\
-		"-t tablename -u user -p passwd -c cdnr -d <cdtype:(CD|HQ)> "\
-		"[-l non-ID3 album] [-e <non-ID3 comment>]\n\n" \
+		"or\t%s -m mysql_dbname -n <pathoncd> -t tablename -u user -p passwd "\
+		"-c cdnr -d <cdtype:(CD|HQ)> [-l non-ID3 album] [-e <non-ID3 comment>]"\
+		"filename [..filename]\n\n" \
 		"With the -m option (which must be the first option given!) info "\
 		"of the mp3 is added to a mysql database (all the other options"\
 		"to alter the ID3 tag are thus useless)\n\n", bla);
@@ -67,9 +84,13 @@ usage(const char *bla="mp3tag2")
 		"\tAlbum    : 30 characters\n"\
 		"\tYear     :  4 characters\n"\
 		"\tComment  : 30 characters\n"\
-		"\tGenre    : 1 integer [0..254]\n\n"\
+		"\tGenre    : 1 integer [0..254]\n"\
+		"\tTrack    : 1 integer [0..255]\n\n"\
 		"If you don't specify any of the id3-tag fields, the file's id3tag"\
-		" will be shown only.\n");
+		" will be shown only.\n"\
+		"The TRACK option is only supported for mp3players that support the "\
+		"ID3V1.1 standard (other will probably just ignore it). This cuts off"\
+		" the length of the comment field to 28 characters if used.\n");
 	exit(1);
 }
 
@@ -80,21 +101,29 @@ copystring(char *a, const char *b, int n)
 	strncpy(a, b, n);
 }
 
+void
+clearheader(struct id3header *myhdr)
+{
+	memset(myhdr->songname, 0, 31 * sizeof (char));
+	memset(myhdr->artist, 0, 31 * sizeof (char));
+	memset(myhdr->type, 0, 31 * sizeof (char));
+	memset(myhdr->year, 0, 5 * sizeof (char));
+	memset(myhdr->etc, 0, 31 * sizeof (char));
+	myhdr->genre = 255;
+	myhdr->track = -1;
+}
+
 int
 main(int argc, char *argv[])
 {
-	int c, mergeID3 = 0, change = 0, add2sql = 0;
-	struct id3header *hdr = new id3header;
+	int c;
 
 	globalopts.debug = 0;
-	memset(hdr->songname, 0, 31 * sizeof (char));
-	memset(hdr->artist, 0, 31 * sizeof (char));
-	memset(hdr->type, 0, 31 * sizeof (char));
-	memset(hdr->year, 0, 5 * sizeof (char));
-	memset(hdr->etc, 0, 31 * sizeof (char));
-	hdr->genre = 255;
+	hdr = new id3header;
+	clearheader(hdr);
+	filelist = NULL;
 
-	while ( (c =  getopt(argc, argv, "f:a:c:d:e:g:l:m:n:p:rs:t:u:y:")) != EOF)
+	while ( (c =  getopt(argc, argv, "a:c:d:e:g:k:l:m:n:p:rs:t:u:y:")) != EOF)
 	{
 		switch(c)
 		{
@@ -135,10 +164,6 @@ main(int argc, char *argv[])
 					owncomment = strdup(optarg);
 				}
 				break;
-			case 'f':
-				free(flnam);
-				flnam = strdup(optarg);
-				break;
 			case 'g': //genres
 				if (add2sql) usage();
 				if (!strcmp(optarg, "list"))
@@ -148,6 +173,13 @@ main(int argc, char *argv[])
 					exit(0);
 				}
 				hdr->genre = (unsigned char)atoi(optarg);
+				change = 1;
+				break;
+			case 'k':
+				if (add2sql) usage();
+				hdr->track = atoi(optarg);
+				if (hdr->track < 0 || hdr->track > 255)
+					usage();
 				change = 1;
 				break;
 			case 'l':
@@ -207,42 +239,91 @@ main(int argc, char *argv[])
 		}
 	}
 
-	if (!flnam)
+	if (optind < argc) /* rest of arguments are filename[s] */
+	{
+		int i;
+
+		for (i = optind; i < argc; i++)
+			addfiletolist(argv[i]);
+	}
+	if (!filelist)
 		 usage(argv[0]);
 
+#ifdef WANT_MYSQL
+	if (add2sql)
+	{
+		mysql_init(&mysql);
+		if (!mysql_real_connect(&mysql, "localhost", user, passwd, dbname, 0,
+			NULL, 0))
+		{
+			fprintf(stderr, "Failed to connect to database: Error: %s\n",
+				mysql_error(&mysql));
+			return 1;
+		}
+	}
+#endif
+
+	struct _filelist *fl = filelist;
+	while (fl)
+	{
+		const char *fln = fl->filename;
+		int retval = parse_mp3(fln);
+
+		switch(retval)
+		{
+		case 0 : break;
+		case -1: fprintf(stderr, "[1mError opening \"%s\".[0m\n", fln); 
+			break;
+		case -2: fprintf(stderr, "[1mError initializing \"%s\".[0m\n", fln);
+			break;
+		case -3: fprintf(stderr, "[1m%s: Failed to write ID3 tag![0m\n", fln);
+			break;
+		}
+		fl = fl->next;
+	}
+	return 0;
+}
+
+void
+dupheader(struct id3header *h1, struct id3header *h2)
+{
+	clearheader(h1);
+	strcpy(h1->songname, h2->songname);
+	strcpy(h1->artist, h2->artist);
+	strcpy(h1->type, h2->type);
+	strcpy(h1->year, h2->year);
+	strcpy(h1->etc, h2->etc);
+	h1->genre = h2->genre;
+	h1->track = h2->track;
+}
+
+int
+parse_mp3(const char *flnam)
+{
 	Mpegtoraw *mp3;
 	Soundinputstream *loader;
 	Soundplayer *player = NULL;
+	struct id3header *oldtag = NULL, *header = NULL;
 
 	loader = new Soundinputstreamfromfile;
-	if (!loader->open(flnam))
+	if (!loader->open((char*)flnam))
 	{
-		fprintf(stderr, "Error opening file.\n");
-		exit(1);
+		delete loader;
+		return -1; //error opening file
 	}
 	
 	mp3 = new Mpegtoraw(loader,player);
-	if (!mp3->initialize(flnam))
+	debug(flnam);
+	if (!mp3->initialize((char*)flnam))
 	{
-		fprintf(stderr, "Error initializing mp3.\n");
-		exit(1);
+		delete mp3;
+		return -2; //error initializing mp3
 	}
 
-	struct id3header *oldtag = new id3header;
-
-	memset(oldtag->songname, 0, 31 * sizeof (char));
-	memset(oldtag->artist, 0, 31 * sizeof (char));
-	memset(oldtag->type, 0, 31 * sizeof (char));
-	memset(oldtag->year, 0, 5 * sizeof (char));
-	memset(oldtag->etc, 0, 31 * sizeof (char));
-	oldtag->genre = 255;
+	oldtag = new id3header;
+	clearheader(oldtag);
 
 	//store all info about this mp3.
-	strncpy(oldtag->songname, mp3->getname(), 30);
-	strncpy(oldtag->artist, mp3->getartist(), 30);
-	strncpy(oldtag->type, mp3->getalbum(), 30);
-	strncpy(oldtag->year, mp3->getyear(), 4);
-	strncpy(oldtag->etc, mp3->getcomment(), 30);
 	mp3info.bitrate = mp3->getbitrate();
 	mp3info.layer = mp3->getlayer();
 	mp3info.version = mp3->getversion() + 1;
@@ -251,61 +332,102 @@ main(int argc, char *argv[])
 	memset(mp3info.mode, 0, 20 * sizeof(char));
 	strncpy(mp3info.mode, mp3->getmodestring(), 19);
 
-	//delete mp3;
+	id3Parse *tmp3 = new id3Parse(flnam);
+	id3header *bla = tmp3->parseID3();
+	if (bla)
+	{	
+		strncpy(oldtag->songname, bla->songname, 30);
+		strncpy(oldtag->artist, bla->artist, 30);
+		strncpy(oldtag->type, bla->type, 30);
+		strncpy(oldtag->year, bla->year, 4);
+		strncpy(oldtag->etc, bla->etc, 30);
+		oldtag->genre = bla->genre;
+		oldtag->track = bla->track;
+	}
+
+	delete mp3;
+	delete loader;
+	delete tmp3;
+	bla = NULL;
 
 #ifdef WANT_MYSQL
 	if (add2sql)
 	{
-		return add_mysql_record(oldtag);
+		int retval = add_mysql_record(flnam, oldtag);
+		if (oldtag)
+			delete oldtag;
+		return retval;
 	}
 #endif
 
 	id3Parse *mp3tje = new id3Parse(flnam);
+	header = new id3header;
+	dupheader(header, hdr);
 	if (change && mergeID3 && mp3tje->parseID3())
 	{
 		printf("ID3 tag in file detected. Going to merge!\n");
-
-		if (!strlen(hdr->songname))
-			copystring(hdr->songname, oldtag->songname, 30);
-		if (!strlen(hdr->artist))
-			copystring(hdr->artist, oldtag->artist, 30);
-		if (!strlen(hdr->type))
-			copystring(hdr->type, oldtag->type, 30);
-		if (!strlen(hdr->year))
-			copystring(hdr->year, oldtag->year, 4);
-		if (!strlen(hdr->etc))
-			copystring(hdr->etc, oldtag->etc, 30);
-		if (hdr->genre == 255)
-			hdr->genre = oldtag->genre;
+		fprintf(stderr, "hdr->songname=%s, header->songname=%s\n", hdr->songname,
+			header->songname);fflush(stderr);
+		if (!strlen(header->songname))
+			copystring(header->songname, oldtag->songname, 30);
+		if (!strlen(header->artist))
+			copystring(header->artist, oldtag->artist, 30);
+		if (!strlen(header->type))
+			copystring(header->type, oldtag->type, 30);
+		if (!strlen(header->year))
+			copystring(header->year, oldtag->year, 4);
+		if (!strlen(header->etc))
+			copystring(header->etc, oldtag->etc, 30);
+		if (header->genre == 255)
+			header->genre = oldtag->genre;
+		if (header->track == -1)
+			header->track = oldtag->track;
 	}
 
-	if (change && !(mp3tje->writeID3(hdr)))
+	if (change && !(mp3tje->writeID3(header)))
 	{
-		fprintf(stderr, "%s: Failed to write ID3 tag!\n", argv[0]);
-		exit(1);
+		delete mp3tje;
+		delete oldtag;
+		delete header;
+		return -3;
 	}
 	else if (change)
 		printf("Wrote ID3 tag successfully!\n");
 	
 	if (!change) //only display current ID3 tag.
 	{
-		delete hdr;
-		hdr = oldtag;
+		delete header;
+		header = oldtag;
+		oldtag = NULL;
 	}
 
+	char track[50];
+	if (header->track != -1)
+		sprintf(track, "[1;32mTrack[0m: %02d", header->track);
+	else
+		strcpy(track, "");
+
+	char balkje[81];
+	memset(balkje, 0, 81);
+	memset(balkje, '-', (strlen(flnam) > 80 ? 80 : strlen(flnam)));
 	printf(
-		"Artist    : %-30s\n"\
-		"Songname  : %-30s\n"\
-		"Album     : %-30s  Year: %-4s\n"\
-		"Etcetera  : %-30s\n"\
-		"Genre     : %-40s\n"\
-		"Info      : Mpeg-%d layer %d at %dHz, %dkb/s (%s)\n",
-		hdr->artist, hdr->songname, hdr->type,
-		hdr->year, hdr->etc, genre_table[hdr->genre],
+		"[1;33m%s[0m\n[1;34m%s[0m\n"\
+		"[1;32mArtist[0m    [1;34m:[0m %-30s\n"\
+		"[1;32mSongname[0m  [1;34m:[0m %-30s\n"\
+		"[1;32mAlbum[0m     [1;34m:[0m %-30s  [1;32mYear[0m: %-4s\n"\
+		"[1;32mEtcetera[0m  [1;34m:[0m %-30s %s\n"\
+		"[1;32mGenre[0m     [1;34m:[0m %-40s\n"\
+		"[1;32mInfo[0m      [1;34m:[0m Mpeg-[1;33m%d[0m layer "\
+		"[1;33m%d[0m at [1;33m%d[0mHz, "\
+		"[1;33m%d[0mkb/s ([1;33m%s[0m)\n\n",
+		flnam, balkje, header->artist, header->songname, header->type,
+		header->year, header->etc, track, genre_table[header->genre],
 		mp3info.version, mp3info.layer, mp3info.frequency, mp3info.bitrate,
 		mp3info.mode);
 	
 	delete mp3tje;
+	delete oldtag;
+	delete header;
 
 	return 0;
 }
@@ -314,9 +436,8 @@ main(int argc, char *argv[])
 //from given id3header.
 #ifdef WANT_MYSQL
 int
-add_mysql_record(const struct id3header *id3)
+add_mysql_record(const char *flnam, const struct id3header *id3)
 {
-	MYSQL mysql;
 	struct stat finf;
 	const char *flnam2;
 
@@ -327,8 +448,7 @@ add_mysql_record(const struct id3header *id3)
 
 	if (stat(flnam, &finf) == -1)
 	{
-		perror("stat");
-		return 1;
+		return -1;
 	}
 	//remove trailing path from filename.
 	if ( (flnam2 = strrchr(flnam, '/')) )
@@ -336,14 +456,6 @@ add_mysql_record(const struct id3header *id3)
 	else
 		flnam2 = flnam;
 
-	mysql_init(&mysql);
-	if (!mysql_real_connect(&mysql, "localhost", user, passwd, dbname, 0,
-		NULL, 0))
-	{
-		fprintf(stderr, "Failed to connect to database: Error: %s\n",
-			mysql_error(&mysql));
-		return 1;
-	}
 	char tmp_flnam[strlen(flnam2)*2 + 1],
 		tmp_songname[strlen(id3->songname)*2 + 1],
 		tmp_artist[strlen(id3->artist)*2 + 1],
@@ -394,4 +506,27 @@ add_mysql_record(const struct id3header *id3)
 #endif
 
 //needed for libmpegsound; not pretty.
-void debug(const char*msg) { if(!msg); }
+void debug(const char*msg) { if(msg); }
+
+void
+addfiletolist(const char *fn)
+{
+	struct _filelist *fl, *newfl;
+
+	if (!filelist)
+	{
+		filelist = new _filelist;
+		filelist->next = NULL;
+		filelist->filename = strdup(fn);
+	}
+	else
+	{
+		fl = filelist;
+		while (fl->next) fl = fl->next;
+		newfl = new _filelist;
+		newfl->next = NULL;
+		newfl->filename = NULL;
+		fl->next = newfl;
+		newfl->filename = strdup(fn);
+	}
+}

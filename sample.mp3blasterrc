@@ -6,11 +6,7 @@ DownFrequency = No
 #of 50 are accepted.
 Threads=0
 
-#FramesPerLoop Range: 1 to 10 (default=5). A low value means that the
-#interface (while playing) reacts faster but slow CPU's might
-#hick. A higher number implies a slow interface but less
-#hicks on slow CPU's.
-FramesPerLoop = 1
+#The FramesPerLoop keyword no longer exists. Remove it from your config file.
 
 #SoundDevice is the digital sound device in your system. Usually /dev/dsp
 SoundDevice = /dev/dsp
@@ -33,3 +29,23 @@ WarnDelay = 1
 #forwarding or rewinding during mp3 playback. Range = 100..1000 (100=default).
 #More frames means larger skips.
 SkipFrames = 500
+
+#MiniMixer can be toggled on or off. If off (default), mp3blaster's mixer 
+#Will be large with multiple scrollbars. If on, the mixer will only use 11x2
+#characters, thus be very small.
+MiniMixer = No
+
+#Use PlaylistMatching to specify which files are considered to be playlists.
+#Files that are considered playlists, can be loaded by pressing enter over the
+#file when it's highlighted in the filemanager.
+PlaylistMatching = \\.lst$ \\.m3u$
+
+#Set a bunch of colours. Try and find out what they do; most should be obvious.
+#Colours: black, red, green, yellow, blue, magenta, cyan, white
+Color.Default.bg = black
+Color.Popup.bg = blue
+Color.PopupInput.bg = magenta
+Color.Button.bg = magenta
+Color.ProgressBar.bg = red
+Color.BarToken.fg = white
+Color.BarToken.bg = magenta

@@ -14,20 +14,9 @@
 #include <math.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <string.h>
 
 #include "mpegsound.h"
 #include "mpegsound_locals.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#include SOUNDCARD_HEADERFILE
-
-#ifdef __cplusplus
-}
-#endif
 
 #define MY_PI 3.14159265358979323846
 #undef DEBUG
@@ -161,16 +150,14 @@ inline void Mpegtoraw::flushrawdata(void)
   }
   else
   {
-		if (!suppress_sound)
-    	player->putblock((char *)rawdata,rawdataoffset<<1);
+    player->putblock((char *)rawdata,rawdataoffset<<1);
     currentframe++;
   }
   rawdataoffset=0;
 }
 #else
 {
-	if (!suppress_sound)
-  	player->putblock((char *)rawdata,rawdataoffset<<1);
+  player->putblock((char *)rawdata,rawdataoffset<<1);
   currentframe++;
   rawdataoffset=0;
 }
@@ -243,7 +230,6 @@ bool Mpegtoraw::initialize(char *filename)
 	if (!filename)
 		return false;
 
-	suppress_sound = 0;
   register int i;
   register REAL *s1,*s2;
   REAL *s3,*s4;
@@ -272,9 +258,10 @@ bool Mpegtoraw::initialize(char *filename)
 
   currentframe=decodeframe=0;
   is_vbr = 0;
+  first_header = 1;
   int headcount = 0, first_offset = 0, loopcount = 0;
   sync();
-  while (headcount < 1 && geterrorcode() != SOUND_ERROR_FINISH)
+  while (headcount < 3 && geterrorcode() != SOUND_ERROR_FINISH)
   {
     int fileseek = loader->getposition();
 
@@ -293,7 +280,7 @@ bool Mpegtoraw::initialize(char *filename)
     loopcount++;
   }
 
-  if(headcount > 0)
+  if(headcount > 2)
   {
     totalframe=(loader->getsize()+framesize-1)/framesize;
   }
@@ -394,6 +381,24 @@ void Mpegtoraw::clearbuffer(void)
   player->resetsoundtype();
 }
 
+bool Mpegtoraw::isvalidheader(int mpeg, int mylayer, int brindex, int sfreq)
+{
+	if (first_header)
+	{
+		char blep[200];
+		sprintf(blep, "(brindex %d) Mpeg-%d layer %d %dkbps, freq=%d\n",
+			brindex, mpeg, mylayer,
+			bitrate[mpeg-1][mylayer-1][brindex], sfreq);
+		debug(blep);
+	}
+	/* check if mpeg, layer, bitrateindex are valid first */
+	if ( (mylayer < 1 || mylayer > 3) || (mpeg < 1 || mpeg > 2) ||
+		(brindex < 1 || brindex > 14) || (sfreq < 0 || sfreq > 2))
+		return false;
+
+	return true;
+}
+
 //find a valid frame. If one is found, read the frame (so the filepointer
 //points to the next frame). If an invalid frame is found, the filepointer
 //points to the first or second byte after a sequence of 0xff 0xf? bytes.
@@ -401,7 +406,7 @@ bool Mpegtoraw::loadheader(void)
 {
   register int c;
   bool flag;
-  sync();
+  if (!first_header) sync();
 
 // Synchronize
   flag=false;
@@ -432,30 +437,93 @@ bool Mpegtoraw::loadheader(void)
   if(c<0)return seterrorcode(SOUND_ERROR_FINISH);
 
 // Analyzing
+// Changed by Bram Avontuur, author of mp3blaster, so it will recognize more
+// sampling frequencies.
   c&=0xf; /* c = 0 0 0 0 bit13 bit14 bit15 bit16 */
-  protection=c&1; /* bit16 */
-  layer=4-((c>>1)&3); /* bit 14 bit 15: 1..4, 4=invalid */
-	if (layer == 4)
-		return seterrorcode(SOUND_ERROR_BAD);
-
-  version=(_mpegversion)((c>>3)^1); /* bit 13 */
+  protection=c&1;
+  layer=4-((c>>1)&3); /* 1..4, 4=invalid */
+  version=(_mpegversion)((c>>3)^1);
 
   c=((loader->getbytedirect()))>>1; /* c = 0 bit17 .. bit23 */
-  padding=(c&1);
-  c>>=1;
+  padding=(c&1);             c>>=1;
+  //frequency=(_frequency)(c&2); c>>=2; this is wrong.
   frequency=(_frequency)(c&3); c>>=2;
-	if (frequency > 2)
-		return seterrorcode(SOUND_ERROR_BAD);
 
   bitrateindex=(int)c;
-  if (bitrateindex == 15 || !bitrateindex)
-    return seterrorcode(SOUND_ERROR_BAD);
 
   c=((unsigned int)(loader->getbytedirect()))>>4;
   /* c = 0 0 0 0 bit25 bit26 bit27 bit27 bit28 */
   extendedmode=c&3;
   mode=(_mode)(c>>2);
 
+  if (first_header && !(isvalidheader(version + 1, layer, bitrateindex,
+    frequency)))
+  {
+  	debug("Bad file format: mpegtoraw.cc line 459\n");
+    return seterrorcode(SOUND_ERROR_BAD);
+  }
+
+  if (first_header)
+  {
+    header_one.layer = layer;
+    header_one.protection = protection;
+    header_one.bitrateindex = bitrateindex;
+    header_one.padding = padding;
+    header_one.extendedmode = extendedmode;
+    header_one.version = version;
+    header_one.mode = mode;
+    header_one.frequency = frequency;
+    first_header = 0;
+  }
+  else
+  {
+	unsigned short bla = 0;
+
+	//isvalidheader(version + 1, layer, bitrateindex, frequency);
+  	if (layer != header_one.layer)
+	{
+	  bla |= 1;
+	  layer = header_one.layer;
+	}
+	if (protection != header_one.protection)
+	  bla |= 2;
+	if (bitrateindex != header_one.bitrateindex)
+	  bla |= 4;
+	//if (padding != header_one.padding)
+	//  bla |= 8;
+	//if (extendedmode != header_one.extendedmode)
+	//  bla |= 16;
+	if (version != header_one.version)
+	{
+	  bla |= 32;
+	  version = header_one.version;
+	}
+	if (mode != header_one.mode)
+	{
+	  bla |= 64;
+	  mode = header_one.mode;
+	}
+	if (frequency != header_one.frequency)
+	{
+	  bla |= 128;
+	  frequency = header_one.frequency;
+	}
+
+	if (bla && bla != 4)
+	{
+	  char blub[100];
+	  sprintf(blub, "Bumped into a bad header: %d\n", bla);
+	  debug(blub);
+	  if (is_vbr) //a VBR mp3 with a bad header is too dangerous. Bail out!
+	    return seterrorcode(SOUND_ERROR_BADHEADER);
+	  if (bla & 4) /* assume this is not a VBR mp3... if it is, 
+	                * we'll probably crash. */
+	    bitrateindex = header_one.bitrateindex;
+	  //return seterrorcode(SOUND_ERROR_BADHEADER);
+	}
+	else if (bla == 4)
+		is_vbr = 1;
+  }
 // Making information
   inputstereo= (mode==single)?0:1;
   if(forcetomonoflag)outputstereo=0; else outputstereo=inputstereo;
@@ -516,6 +584,7 @@ bool Mpegtoraw::loadheader(void)
     getbyte();                      // CRC, Not check!!
     getbyte();
   }
+
 
   if(loader->eof())return seterrorcode(SOUND_ERROR_FINISH);
 
@@ -636,7 +705,6 @@ int  Mpegtoraw::getframesaved(void)
 // Convert mpeg to raw
 bool Mpegtoraw::run(int frames)
 {
-	seterrorcode(SOUND_ERROR_OK);
 
   clearrawdata();
   if(frames<0)lastfrequency=0;
@@ -654,31 +722,22 @@ bool Mpegtoraw::run(int frames)
       seterrorcode(SOUND_ERROR_FINISH);
       break;
     }
-    if(loadheader()==false)
-    {
-			if (geterrorcode() == SOUND_ERROR_BAD || geterrorcode() == 
-				SOUND_ERROR_BADHEADER)
-			{
-				suppress_sound = 0;
-				seterrorcode(SOUND_ERROR_OK); //prevent warnings
-				continue;
-			}
-			else
-				break;
-    }
-		else if (suppress_sound)
-			suppress_sound--;
+    if(loadheader()==false)break;
 
     if(frequency!=lastfrequency)
     {
-      if(lastfrequency>0)
+      if(lastfrequency>0) {
+	    debug("Bad file format: mpegtoraw.cc line 781\n");
 	    seterrorcode(SOUND_ERROR_BAD);
-      lastfrequency=frequency;
+	    lastfrequency = frequency;
+      }
+      else
+      	lastfrequency=frequency;
     }
     if(frames<0)
     {
       frames=-frames;
-      player->setsoundtype(outputstereo,AFMT_S16_NE,
+      player->setsoundtype(outputstereo,16,
 	frequencies[version][frequency]>>downfrequency);
       totaltime = (totalframe * framesize) / (getbitrate() * 125);
     }
@@ -693,7 +752,5 @@ bool Mpegtoraw::run(int frames)
     if(player->geterrorcode())seterrorcode(geterrorcode());
   }
 
-  return (geterrorcode()==SOUND_ERROR_OK ||
-		geterrorcode() == SOUND_ERROR_BAD ||
-		geterrorcode() == SOUND_ERROR_BADHEADER);
+  return (geterrorcode()==SOUND_ERROR_OK);
 }

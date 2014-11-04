@@ -1,4 +1,4 @@
-/* Copyright (C) Bram Avontuur (bram@avontuur.org)
+/* Copyright (C) Bram Avontuur (brama@stack.nl)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,6 +26,8 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <pwd.h>
+#include <fnmatch.h>
+#include <regex.h>
 #include <sys/types.h>
 #include "mp3blaster.h"
 
@@ -278,4 +280,142 @@ is_dir(const char *path)
 	}
 
 	return 0;
+}
+
+const char *
+chop_path(const char *a)
+{
+	const char
+		*last_slash = strrchr(a, '/');
+	int
+		begin;
+
+	if (!last_slash) /* no '/' in this->items[item_index] */
+		begin = 0;
+	else
+		begin = strlen(a) - strlen(last_slash) + 1;
+
+	return a + begin;
+}
+
+int
+is_mp3(const char *filename)
+{
+	int len;
+	
+	if (!filename || (len = strlen(filename)) < 5)
+		return 0;
+
+	if (fnmatch(".[mM][pP][23]", (filename + (len - 4)), 0))
+		return 0;
+	//if (strcasecmp(filename + (len - 4), ".mp3"))
+	//	return 0;
+	
+	return 1;
+}
+
+int
+is_sid(const char *filename)
+{
+#ifdef HAVE_SIDPLAYER
+	char *ext = strrchr(filename, '.');
+	if (ext) {
+		if (!strcasecmp(ext, ".psid")) return 1;
+		if (!strcasecmp(ext, ".sid")) return 1;
+		if (!strcasecmp(ext, ".dat")) return 1;
+		if (!strcasecmp(ext, ".inf")) return 1;
+		if (!strcasecmp(ext, ".info")) return 1;
+	}
+#else
+	if(filename); //prevent warning
+#endif
+	return 0;
+}
+
+int
+is_httpstream(const char *filename)
+{
+	if (!strncasecmp(filename, "http://", 7))
+		return 1;
+	return 0;
+}
+
+int
+is_audiofile(const char *filename)
+{
+	if (globalopts.extensions)
+	{
+		int i = 0;
+		while (globalopts.extensions[i] != NULL)
+		{
+			int doesmatch = 0;
+			regex_t dum;
+			regcomp(&dum, globalopts.extensions[i], 0);
+			doesmatch = regexec(&dum, filename, 0, 0, 0);
+			regfree(&dum);
+			if (!doesmatch) //regexec returns 0 for a match.
+				return 1;
+			i++;
+		}
+		return 0;
+	}
+	return (is_mp3(filename) || is_sid(filename) || is_httpstream(filename));
+}
+
+int
+is_playlist(const char *filename)
+{
+	int i = 0, loop = 1;
+
+	while (loop)
+	{
+		const char *ext;
+		int doesmatch;
+
+		if (!globalopts.plist_exts || !globalopts.plist_exts[i])
+		{
+			ext = "\\.lst$";
+			loop = 0;
+		}
+		else
+			ext = globalopts.plist_exts[i];
+
+		regex_t dum;
+		regcomp(&dum, ext, 0);
+		doesmatch = regexec(&dum, filename, 0, 0, 0);
+		regfree(&dum);
+		if (!doesmatch) //regexec returns 0 for a match.
+			return 1;
+		if (loop)
+			loop = (globalopts.plist_exts[++i] != NULL);
+	}
+	return 0;
+}
+
+/* crunch_string takes a string 'flname' and shortens it (if necessary) to
+ * length 'length', by chopping of the begin of the string, and replacing
+ * the first 3 characters of the new strings with dots.
+ * E.g. crunch_string("foobar", 5); will return "...ar".
+ */
+char *
+crunch_string(const char *flname, unsigned int length)
+{
+	char
+		*filename = NULL;
+
+	if (!flname || !strlen(flname) || length < 4)
+		return NULL;
+
+	if (strlen(flname) > length)
+	{
+		filename = new char[length+1];
+		strcpy(filename, flname+(strlen(flname)-length));
+		filename[0] = filename[1] = filename[2] = '.';
+	}
+	else
+	{
+		filename = new char[strlen(flname)+1];
+		strcpy(filename,flname);
+	}
+	return filename;
 }

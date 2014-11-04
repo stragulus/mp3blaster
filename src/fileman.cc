@@ -1,5 +1,5 @@
 /* MP3Blaster - An Mpeg Audio-file player for Linux
- * Copyright (C) Bram Avontuur (bram@avontuur.org)
+ * Copyright (C) Bram Avontuur (brama@stack.nl)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include "fileman.h"
+#include "global.h"
 
 extern struct _globalopts globalopts;
 
@@ -30,7 +31,7 @@ extern struct _globalopts globalopts;
  * used.
  */
 fileManager::fileManager(const char *ourpath, int lines, int ncols, int begin_y,
-                         int begin_x, short show_path, short x_offset)
+                         int begin_x, short color, short x_offset)
 {
 	DIR
 		*dir = NULL;
@@ -49,22 +50,22 @@ fileManager::fileManager(const char *ourpath, int lines, int ncols, int begin_y,
 		closedir(dir);
 
 	/* initialize window */
-	init(lines, ncols, begin_y,begin_x, show_path, x_offset);
+	init(lines, ncols, begin_y,begin_x, color, x_offset);
 	
 	readDir();
 }
 
 /* Returns the path used by the file-manager. Don't forget to delete[] it when
  * it's no longer used.
+ * TODO: return const char* undeep copu
  */
-char*
+const char*
 fileManager::getPath()
 {
 	if (!path)
 		return NULL;
 
-	char *tmppwd = new char[strlen(path) + 1];
-	return strcpy(tmppwd, path);
+	return path;
 }
 
 void
@@ -97,12 +98,19 @@ fileManager::getCurrentWorkingPath()
 int
 fileManager::changeDir(const char *newpath)
 {
+	int retval;
+
 	if (chdir(newpath) < 0)
 		return 0;
 
 	getCurrentWorkingPath(); /* new dir is stored in variable 'path' */
-	readDir();
-	return 1;
+
+	if (!readDir())
+		retval = 0;
+	else
+		retval = 1;
+	drawBorder(); //updates path in title
+	return retval;
 }
 
 int
@@ -114,7 +122,7 @@ sortme(const void *a, const void *b)
 		return (strcmp(*(char**)a, *(char**)b));
 }
 
-void
+int
 fileManager::readDir()
 {
 	struct dirent
@@ -133,8 +141,7 @@ fileManager::readDir()
 
 	if ( !(dir = opendir(path)) )
 	{
-		Error("Error opening directory!");
-		return;
+		return 0;
 	}
 
 	int diritems = 0;
@@ -165,7 +172,7 @@ fileManager::readDir()
 			entries[i] = (char *)realloc(entries[i], (strlen(entries[i]) + 2) *
 				sizeof(char));
 			strcat(entries[i], "/");
-			addItem(entries[i]);
+			addItem(entries[i], 0, CP_FILE_DIR);
 			free(entries[i]);
 			entries[i] = NULL;
 		}
@@ -174,20 +181,27 @@ fileManager::readDir()
 	for (i = 0; i < diritems; i++)
 	{
 		if (entries[i])
-			addItem(entries[i]);
+		{
+			short clr;
+			if (is_audiofile(entries[i]))
+				clr = CP_FILE_MP3;
+			else if (is_playlist(entries[i]))
+				clr = CP_FILE_LST;
+			else
+				clr = CP_DEFAULT;
+			addItem(entries[i], 0, clr);
+		}
 	}
 
 	setTitle(path);
 	swRefresh(0);
 
-	//set_header_title(file_window->sw_title);
-	//wrefresh(header_window);
-
-	//fw_set_default_fkeys();
 	for (i = 0; i < diritems; i++)
 		free(entries[i]);
 	if (entries)
 		free(entries);
+
+	return 1;
 }
 
 short

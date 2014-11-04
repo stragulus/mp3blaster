@@ -1,12 +1,6 @@
 bin_PROGRAMS		= mp3blaster mp3tag
 mp3blaster_SOURCES	= fileman.cc \
-			  gstack.cc \
 			  main.cc \
-			  mp3play.cc \
-			  mp3player.cc \
-			  sidplayer.cc \
-			  mp3stack.cc \
-			  playwindow.cc \
 			  scrollwin.cc \
 			  windows.cc \
 			  getopt.c \
@@ -14,18 +8,18 @@ mp3blaster_SOURCES	= fileman.cc \
 			  fileman.h \
 			  genretab.h \
 			  getopt.h \
-			  gstack.h \
 			  id3parse.h \
 			  mp3blaster.h \
-			  mp3play.h \
-			  mp3player.h \
-			  sidplayer.h \
-			  mp3stack.h \
-			  playwindow.h \
 			  global.cc \
 			  global.h \
 			  config.cc \
 			  scrollwin.h \
+			  winitem.cc \
+			  winitem.h \
+			  mp3win.cc \
+			  mp3win.h \
+			  mp3item.cc \
+			  mp3item.h \
 			  @MP3B_MODULES@
 mp3tag_SOURCES = id3parse.cc mp3tag.cc
 mp3tag_DEPENDENCIES = ../mpegsound/libmpegsound.a ../nmixer/libnmixer.a

@@ -1,4 +1,4 @@
-/* Copyright (C) Bram Avontuur (bram@avontuur.org)
+/* Copyright (C) Bram Avontuur (brama@stack.nl)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
 #include "global.h"
 #include NCURSES
 
-#define KEYMATCH(x) !strcasecmp(string, (x))
+#define WORDMATCH(x) !strcasecmp(string, (x))
 #define MP3BLASTER_RCFILE "~/.mp3blasterrc"
 
 extern short set_warn_delay(unsigned int);
@@ -32,6 +32,9 @@ extern short set_fpl(int);
 extern short set_audiofile_matching(const char**, int);
 extern void set_sound_device(const char*);
 extern short set_skip_frames(unsigned int);
+extern short set_mini_mixer(short);
+extern short set_playlist_matching(const char**, int);
+extern void bindkey(command_t,int);
 #ifdef PTHREADEDMPEG
 extern short set_threads(int);
 #endif
@@ -45,46 +48,123 @@ extern short set_threads(int);
  * are put in main.cc and not here!
  */
 
+//TODO: remove color-options bartoken/progressbar
 struct _confopts
 {
 	char *keyword;
 	unsigned short keyword_opts;
 } confopts[] = {
-{ "Threads", 0 },
+{ "Threads", 0 },               //0
 { "DownFrequency", 1 },
-{ "FramesPerLoop", 0 },
 { "SoundDevice", 15 },
 { "AudiofileMatching", 31 },
-{ "WarnDelay", 0 },
-{ "SkipFrames", 0 },
+{ "WarnDelay", 0 },             
+{ "SkipFrames", 0 },            //5
+{ "MiniMixer", 1 },
+{ "PlaylistMatching", 31 },
+{ "Color.Default.fg", 3 },
+{ "Color.Default.bg", 3 },
+{ "Color.Popup.fg", 3 },        //10
+{ "Color.Popup.bg", 3 },
+{ "Color.PopupInput.fg", 3 },
+{ "Color.PopupInput.bg", 3 },
+{ "Color.Error.fg", 3 },
+{ "Color.Error.bg", 3 },        //15
+{ "Color.Button.fg", 3 },
+{ "Color.Button.bg", 3 },
+{ "Color.ProgressBar.bg", 3 },
+{ "Color.BarToken.fg", 3 },
+{ "Color.BarToken.bg", 3 },     //20
+{ "Color.ShortCut.fg", 3 },
+{ "Color.ShortCut.bg", 3 },
+{ "Color.Label.fg", 3 },
+{ "Color.Label.bg", 3 },
+{ "Color.Number.fg", 3 },       //25
+{ "Color.Number.bg", 3 },
+{ "Color.FileMp3.fg", 3 },
+{ "Color.FileDir.fg", 3 },
+{ "Color.FileLst.fg", 3 },
+{ "Color.FileWin.fg", 3 },      //30
+{ "Key.SelectFiles", 2 },
+{ "Key.AddGroup", 2 },
+{ "Key.LoadPlaylist", 2 },
+{ "Key.WritePlaylist", 2 },
+{ "Key.SetGroupTitle", 2 },     //35
+{ "Key.ToggleRepeat", 2 },
+{ "Key.ToggleShuffle", 2 },
+{ "Key.TogglePlaymode", 2 },
+{ "Key.StartPlaylist", 2 },
+{ "Key.ChangeThread", 2 },      //40
+{ "Key.ToggleMixer", 2 },
+{ "Key.MixerVolDown", 2 },
+{ "Key.MixerVolUp", 2 },
+{ "Key.MoveAfter", 2 },
+{ "Key.MoveBefore", 2 },        //45
+{ "Key.QuitProgram", 2 },
+{ "Key.Help", 2 },
+{ "Key.Del", 2 },
+{ "Key.Select", 2 },
+{ "Key.Enter", 2 },             //50
+{ "Key.Refresh", 2 },
+{ "Key.PrevPage", 2 },
+{ "Key.NextPage", 2 },
+{ "Key.Up", 2 },
+{ "Key.Down", 2 },              //55
+{ "Key.File.Down", 2 },
+{ "Key.File.Up", 2 },
+{ "Key.File.PrevPage", 2 },
+{ "Key.File.NextPage", 2 },
+{ "Key.File.Enter", 2 },        //60
+{ "Key.File.Select", 2 },
+{ "Key.File.AddFiles", 2 },
+{ "Key.File.InvSelection", 2 },
+{ "Key.File.RecursiveSelect", 2 },
+{ "Key.File.SetPath", 2 },      //65
+{ "Key.File.DirsAsGroups", 2 },
+{ "Key.File.Mp3ToWav", 2 },
+{ "Key.File.AddURL", 2 },
+{ "Key.File.StartSearch", 2 },
+{ "Key.File.UpDir", 2 },        //70
+{ "Key.Play.Previous", 2 },
+{ "Key.Play.Play", 2 },
+{ "Key.Play.Next", 2 },
+{ "Key.Play.Rewind", 2 },
+{ "Key.Play.Stop", 2 },         //75
+{ "Key.Play.Forward", 2 },
+{ "Key.HelpPrev", 2 },
+{ "Key.HelpNext", 2 },
 { NULL, 0 }, /* last entry's keyword MUST be NULL */
 };
 
 /* This array is used to check if the value[s] for a keyword are syntactically
  * correct.
  * bit 0-3(1..8): allowed types of a value: 
- *                00=NUMBER, 01=YESNO, 10=KEY, 1111=ANYTHING (see below)
+ *                00=NUMBER, 01=YESNO, 10=KEY, 11=COLOUR, 1111=ANYTHING
+ *                (see below)
  * bit   4(16): 0: only 1 value allowed. 1: multiple values allowed.
- */
 const unsigned short keyword_opts[] = {
-	0, /* threads: 1 number */
-	1, /* downfrequency: 1 yesno */
-	0, /* framesperloop: 1 number */
-	15, /* 1 * anything */
-	31, /* multiple * anything */
-	0, /* warndelay: 1 number */
+	0, // threads: 1 number
+	1, // downfrequency: 1 yesno
+	0, // framesperloop: 1 number
+	15, // 1 * anything
+	31, // multiple * anything
+	0, // warndelay: 1 number
+	1, // minimixer: 1 yesno
+	31, // playlist matching: multiple * anything
 	};
+ */
 
 
 /* Definitions for all value types:
  * YESNO: yes|no | 1|0 | true|false (case-insensitive)
  * CHAR: [\[\]A-Za-z0-9,.<>/?;:'"{}`~!@#$%^&*()-_=+\\|]
- * KEY: 'space'|'enter'|'kpd_[0-9]'|'ins'|'home'|'del'|'end'|'pgup'|'pgdn'|
- *        'f[1..12]|'scancode_[0-9]+'|CHAR
+ * KEY: 'spc'|'ent'|'kp[0-9]'|'ins'|'hom'|'del'|'end'|'pup'|'pdn'|
+ *        'f[1..12]|'s[0-f]{2}'|up|dwn|lft|rig|bsp|CHAR
+ *      The s[0-f]{2} means scancode 0-255 (in hex!)
  * NUMBER: numerical value (int)
  * ANYTHING: any string will do. 
  */
-enum _kwdtype { NUMBER, YESNO, KEY, ANYTHING=15};
+enum _kwdtype { NUMBER, YESNO, KEY, COLOUR, ANYTHING=15};
 cf_error error;
 
 char errstring[256];
@@ -129,6 +209,29 @@ cf_type_char(const char *string)
 	return ERR;
 }
 
+short
+cf_type_colour(const char *string)
+{
+	if (WORDMATCH("black"))
+		return COLOR_BLACK;
+	else if (WORDMATCH("red"))
+		return COLOR_RED;
+	else if (WORDMATCH("green"))
+		return COLOR_GREEN;
+	else if (WORDMATCH("yellow"))
+		return COLOR_YELLOW;
+	else if (WORDMATCH("blue"))
+		return COLOR_BLUE;
+	else if (WORDMATCH("magenta"))
+		return COLOR_MAGENTA;
+	else if (WORDMATCH("cyan"))
+		return COLOR_CYAN;
+	else if (WORDMATCH("white"))
+		return COLOR_WHITE;
+	else
+		return -1;	
+}
+
 /* returns the (hopefully) correct scancode for a valid key descriptor.
  * (See 'KEY' definition in top of file for a list of valid descriptors)
  * If descriptor's invalid, ERR is returned.
@@ -138,28 +241,40 @@ cf_type_key(const char *string)
 {
 	int dum;
 
+	if ( strlen(string) == 1 && (dum=cf_type_char(string)) != ERR )
+		return dum;
 	//check literal matches first.
-	if (KEYMATCH("space"))
+	else if (WORDMATCH("spc"))
 		return (int)' ';
-	else if (KEYMATCH("enter") || KEYMATCH("return"))
-		return KEY_ENTER;
-	else if (KEYMATCH("ins"))
+	else if (WORDMATCH("ent") || WORDMATCH("ret"))
+		return 13;
+	else if (WORDMATCH("ins"))
 		return KEY_IL;
-	else if (KEYMATCH("del"))
+	else if (WORDMATCH("del"))
 		return KEY_DC;
-	else if (KEYMATCH("home"))
+	else if (WORDMATCH("hom"))
 		return KEY_HOME;
-	else if (KEYMATCH("end"))
+	else if (WORDMATCH("end"))
 		return KEY_END;
-	else if (KEYMATCH("pgup"))
+	else if (WORDMATCH("pup"))
 		return KEY_PPAGE;
-	else if (KEYMATCH("pgdn"))
+	else if (WORDMATCH("pdn"))
 		return KEY_NPAGE;
+	else if (WORDMATCH("up"))
+		return KEY_UP;
+	else if (WORDMATCH("dwn"))
+		return KEY_DOWN;
+	else if (WORDMATCH("lft"))
+		return KEY_LEFT;
+	else if (WORDMATCH("rig"))
+		return KEY_RIGHT;
+	else if (WORDMATCH("bsp"))
+		return KEY_BACKSPACE;
 
-	//check for function keys
+	//check for other types
 	if (sscanf(string, "f%d", &dum) && dum >= 0 && dum < 64)
 		return KEY_F(dum);
-	else if (sscanf(string, "kpd_%d", &dum) && dum >=0 && dum < 10)
+	else if (sscanf(string, "kp%d", &dum) && dum >=0 && dum < 10)
 	{
 		switch(dum)
 		{
@@ -174,9 +289,7 @@ cf_type_key(const char *string)
 		case '9': return KEY_A3;
 		}
 	}
-	else if (sscanf(string, "scancode_%d", &dum) && dum >=0 && dum < 256)
-		return dum;
-	else if ( (dum=cf_type_char(string)) != ERR )
+	else if (sscanf(string, "s%x", &((unsigned int)dum)) && dum >=0 && dum < 256)
 		return dum;
 
 	//bad key descriptor.
@@ -208,6 +321,12 @@ cf_checktype(const char *value, _kwdtype kwdtype)
 		if (dum == ERR)
 			return 0;
 	}
+	else if (kwdtype == COLOUR)
+	{
+		short clr = cf_type_colour(value);
+		if (clr < 0)
+			return 0;
+	}
 	else //unkown type
 		return 0;
 
@@ -218,10 +337,14 @@ cf_checktype(const char *value, _kwdtype kwdtype)
  * have already been run on the syntactical correctness of the keyword and
  * its values. For most keywords this function sets some global option for
  * mp3blaster.
+ * TODO: instead of constant numbers, use enum to determine what value
+ *       to set..
  */
 short
 cf_add_keyword(int keyword, const char **values, int nrvals)
 {
+	const char *v = values[0];
+
 	switch(keyword)
 	{
 	case 0: /* threads */
@@ -236,38 +359,119 @@ cf_add_keyword(int keyword, const char **values, int nrvals)
 	case 1: /* DownFrequency */
 		globalopts.downsample = cf_type_yesno(values[0]);
 		break;
-	case 2: /* FramesPerLoop */
-		if (!set_fpl(cf_type_number(values[0])))
-		{
-			error = BADVALUE;
-			return 0;
-		}
-		break;
-	case 3: /* SoundDevice */
+	case 2: /* SoundDevice */
 		set_sound_device(values[0]);
 		break;
-	case 4: /* AudiofileMatching */
+	case 3: /* AudiofileMatching */
 		if (!set_audiofile_matching(values, nrvals))
 		{
 			error = BADVALUE;
 			return 0;
 		}
 		break;
-	case 5: //WarnDelay
+	case 4: //WarnDelay
 		if (!set_warn_delay((unsigned int)cf_type_number(values[0])))
 		{
 			error = BADVALUE;
 			return 0;
 		}
 		break;
-	case 6: //SkipFrames
+	case 5: //SkipFrames
 		if (!set_skip_frames((unsigned int)cf_type_number(values[0])))
 		{
 			error = BADVALUE;
 			return 0;
 		}
 		break;
+	case 6: //MiniMixer
+		if (!set_mini_mixer(cf_type_yesno(values[0])))
+		{
+			error = BADVALUE;
+			return 0;
+		}
+		break;
+	case 7: //PlaylistMatching
+		if (!set_playlist_matching(values, nrvals))
+		{
+			error = BADVALUE;
+			return 0;
+		}
+		break;
+	//now the lot of colour settings.
+	case 8: globalopts.colours.default_fg = cf_type_colour(values[0]); break;
+	case 9: globalopts.colours.default_bg = cf_type_colour(values[0]); break;
+	case 10: globalopts.colours.popup_fg = cf_type_colour(values[0]); break;
+	case 11: globalopts.colours.popup_bg = cf_type_colour(values[0]); break;
+	case 12: globalopts.colours.popup_input_fg = cf_type_colour(values[0]); break;
+	case 13: globalopts.colours.popup_input_bg = cf_type_colour(values[0]); break;
+	case 14: globalopts.colours.error_fg = cf_type_colour(values[0]); break;
+	case 15: globalopts.colours.error_bg = cf_type_colour(values[0]); break;
+	case 16: globalopts.colours.button_fg = cf_type_colour(values[0]); break;
+	case 17: globalopts.colours.button_bg = cf_type_colour(values[0]); break;
+	case 18: globalopts.colours.progbar_bg = cf_type_colour(values[0]); break;
+	case 19: globalopts.colours.bartoken_fg = cf_type_colour(values[0]); break;
+	case 20: globalopts.colours.bartoken_bg = cf_type_colour(values[0]); break;
+	case 21: globalopts.colours.shortcut_fg = cf_type_colour(values[0]); break;
+	case 22: globalopts.colours.shortcut_bg = cf_type_colour(values[0]); break;
+	case 23: globalopts.colours.label_fg = cf_type_colour(values[0]); break;
+	case 24: globalopts.colours.label_bg = cf_type_colour(values[0]); break;
+	case 25: globalopts.colours.number_fg = cf_type_colour(values[0]); break;
+	case 26: globalopts.colours.number_bg = cf_type_colour(values[0]); break;
+	case 27: globalopts.colours.file_mp3_fg = cf_type_colour(values[0]); break;
+	case 28: globalopts.colours.file_dir_fg = cf_type_colour(values[0]); break;
+	case 29: globalopts.colours.file_lst_fg = cf_type_colour(values[0]); break;
+	case 30: globalopts.colours.file_win_fg = cf_type_colour(values[0]); break;
+	//keybindings
+	case 31: bindkey(CMD_SELECT_FILES, cf_type_key(v)); break;
+	case 32: bindkey(CMD_ADD_GROUP, cf_type_key(v)); break;
+	case 33: bindkey(CMD_LOAD_PLAYLIST, cf_type_key(v)); break;
+	case 34: bindkey(CMD_WRITE_PLAYLIST, cf_type_key(v)); break;
+	case 35: bindkey(CMD_SET_GROUP_TITLE, cf_type_key(v)); break;
+	case 36: bindkey(CMD_TOGGLE_REPEAT, cf_type_key(v)); break;
+	case 37: bindkey(CMD_TOGGLE_SHUFFLE, cf_type_key(v)); break;
+	case 38: bindkey(CMD_TOGGLE_PLAYMODE, cf_type_key(v)); break;
+	case 39: bindkey(CMD_START_PLAYLIST, cf_type_key(v)); break;
+	case 40: bindkey(CMD_CHANGE_THREAD, cf_type_key(v)); break;
+	case 41: bindkey(CMD_TOGGLE_MIXER, cf_type_key(v)); break;
+	case 42: bindkey(CMD_MIXER_VOL_DOWN, cf_type_key(v)); break;
+	case 43: bindkey(CMD_MIXER_VOL_UP, cf_type_key(v)); break;
+	case 44: bindkey(CMD_MOVE_AFTER, cf_type_key(v)); break;
+	case 45: bindkey(CMD_MOVE_BEFORE, cf_type_key(v)); break;
+	case 46: bindkey(CMD_QUIT_PROGRAM, cf_type_key(v)); break;
+	case 47: bindkey(CMD_HELP, cf_type_key(v)); break;
+	case 48: bindkey(CMD_DEL, cf_type_key(v)); break;
+	case 49: bindkey(CMD_SELECT, cf_type_key(v)); break;
+	case 50: bindkey(CMD_ENTER, cf_type_key(v)); break;
+	case 51: bindkey(CMD_REFRESH, cf_type_key(v)); break;
+	case 52: bindkey(CMD_PREV_PAGE, cf_type_key(v)); break;
+	case 53: bindkey(CMD_NEXT_PAGE, cf_type_key(v)); break;
+	case 54: bindkey(CMD_UP, cf_type_key(v)); break;
+	case 55: bindkey(CMD_DOWN, cf_type_key(v)); break;
+	case 56: bindkey(CMD_FILE_DOWN, cf_type_key(v)); break;
+	case 57: bindkey(CMD_FILE_UP, cf_type_key(v)); break;
+	case 58: bindkey(CMD_FILE_PREV_PAGE, cf_type_key(v)); break;
+	case 59: bindkey(CMD_FILE_NEXT_PAGE, cf_type_key(v)); break;
+	case 60: bindkey(CMD_FILE_ENTER, cf_type_key(v)); break;
+	case 61: bindkey(CMD_FILE_SELECT, cf_type_key(v)); break;
+	case 62: bindkey(CMD_FILE_ADD_FILES, cf_type_key(v)); break;
+	case 63: bindkey(CMD_FILE_INV_SELECTION, cf_type_key(v)); break;
+	case 64: bindkey(CMD_FILE_RECURSIVE_SELECT, cf_type_key(v)); break;
+	case 65: bindkey(CMD_FILE_SET_PATH, cf_type_key(v)); break;
+	case 66: bindkey(CMD_FILE_DIRS_AS_GROUPS, cf_type_key(v)); break;
+	case 67: bindkey(CMD_FILE_MP3_TO_WAV, cf_type_key(v)); break;
+	case 68: bindkey(CMD_FILE_ADD_URL, cf_type_key(v)); break;
+	case 69: bindkey(CMD_FILE_START_SEARCH, cf_type_key(v)); break;
+	case 70: bindkey(CMD_FILE_UP_DIR, cf_type_key(v)); break;
+	case 71: bindkey(CMD_PLAY_PREVIOUS, cf_type_key(v)); break;
+	case 72: bindkey(CMD_PLAY_PLAY, cf_type_key(v)); break;
+	case 73: bindkey(CMD_PLAY_NEXT, cf_type_key(v)); break;
+	case 74: bindkey(CMD_PLAY_REWIND, cf_type_key(v)); break;
+	case 75: bindkey(CMD_PLAY_STOP, cf_type_key(v)); break;
+	case 76: bindkey(CMD_PLAY_FORWARD, cf_type_key(v)); break;
+	case 77: bindkey(CMD_HELP_PREV, cf_type_key(v)); break;
+	case 78: bindkey(CMD_HELP_NEXT, cf_type_key(v)); break;
 	}
+
 	return 1;
 }
 
@@ -498,5 +702,3 @@ cf_parse_config_file(const char *flnam = NULL)
 	free(filename);
 	return no_error;
 }
-
-

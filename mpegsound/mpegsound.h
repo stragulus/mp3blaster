@@ -24,28 +24,6 @@
 #endif
 #endif
 
-#ifdef HAVE_SYS_SOUNDCARD_H
-#define SOUNDCARD_HEADERFILE <sys/soundcard.h>
-#elif HAVE_MACHINE_SOUNDCARD_H
-#define SOUNDCARD_HEADERFILE <machine/soundcard.h>
-#else
-#define SOUNDCARD_HEADERFILE <soundcard.h>
-#endif
-
-/* Not all OSS implementations define an endian-independant samplesize. 
- * This code is taken from linux' <sys/soundcard.h, OSS version 0x030802
- */
-#ifndef AFMT_S16_NE
-#if defined(_AIX) || defined(AIX) || defined(sparc) || defined(HPPA) || defined(PPC)
-/* Big endian machines */
-#  define _PATCHKEY(id) (0xfd00|id)
-#  define AFMT_S16_NE AFMT_S16_BE
-#else
-#  define _PATCHKEY(id) ((id<<8)|0xfd)
-#  define AFMT_S16_NE AFMT_S16_LE
-#endif
-#endif
-
 #ifndef _L__SOUND__
 #define _L__SOUND__
 
@@ -203,6 +181,22 @@ typedef struct
   unsigned int treelen;
   const unsigned int (*val)[2];
 }HUFFMANCODETABLE;
+
+struct song_info
+{
+	char songname[31];
+	char artist[31];
+	char comment[31];
+	char year[5];
+	char album[31];
+	unsigned char genre;
+	char mode[20];
+	int bitrate;
+	int mp3_layer;
+	int mp3_version;
+	int samplerate;
+	int totaltime;
+};
 
 /*********************************/
 /* Sound input interface classes */
@@ -501,6 +495,7 @@ private:
   /*************************/
   /* Initialization vars   */
   /*************************/
+  short first_header;
   struct mpeg_header
   {
     int layer;
@@ -524,8 +519,8 @@ public:
   // Stereo or not
   int  getmode(void)      const {return mode;};
   const char *getmodestring(void) const { return (mode == fullstereo ?
-  	"stereo" : (mode == joint ? "joint stereo" : (mode == dual ?
-	"dual channel" : "mono"))); };
+  	"Stereo" : (mode == joint ? "JointStereo" : (mode == dual ?
+	"DualChannel" : "Mono"))); };
   bool isstereo(void)     const {return (getmode()!=single);};
   // Frequency and bitrate
   int  getfrequency(void) const {return frequencies[version][frequency];};
@@ -642,7 +637,6 @@ private:
   /********************/
 private:
   int lastfrequency,laststereo;
-	int suppress_sound;
 
   // for Layer3
   int layer3slots,layer3framestart,layer3part2start;
@@ -661,6 +655,7 @@ private:
   /* Decoding functions for each layer */
   /*************************************/
 private:
+  bool isvalidheader(int,int,int,int);
   bool loadheader(void);
 
   //
@@ -769,17 +764,25 @@ public:
   virtual ~Fileplayer();
 
   int geterrorcode(void)        {return __errorcode;};
-
+	struct song_info getsonginfo() { return info;};
   virtual bool openfile(char *filename,char *device, soundtype write2file=NONE)=0;
   virtual void closefile(void)                       =0;
   virtual void setforcetomono(short flag)            =0;
   virtual void set8bitmode()                         =0;
   virtual bool playing()                             =0;
-
+	virtual bool run(int)                              =0;
+	virtual void skip(int)                             =0;
+	virtual bool initialize()                          =0;
+	virtual bool forward(int)                          =0;
+	virtual bool rewind(int)                           =0;
+	virtual int elapsed_time()                         =0;
+	virtual int remaining_time()                       =0;
+  
 protected:
   bool opendevice(char *device, soundtype write2file=NONE);
   bool seterrorcode(int errorno){__errorcode=errorno;return false;};
   Soundplayer *player;
+	struct song_info info;
 
 private:
   int __errorcode;
@@ -798,6 +801,13 @@ public:
   void setforcetomono(short flag);
   void set8bitmode() { if(player) player->set8bitmode(); }
   bool playing();
+	bool run(int);
+	bool initialize();
+	bool forward(int frames) { return frames==frames; } //TODO: implement
+	bool rewind(int frames) { return frames==frames; } //TODO: implement
+	int elapsed_time() { return 0; } //TODO: implement
+	int remaining_time() { return 0; } //TODO: implement
+	void skip(int) {} //TODO: implement
   
 private:
   Soundinputstream *loader;
@@ -820,6 +830,13 @@ public:
   void set8bitmode() { if (server) server->set8bitmode(); }
   void setdownfrequency(int value);
   bool playing();
+	bool run(int);
+	void skip(int);
+	bool initialize();
+	bool forward(int);
+	bool rewind(int);
+	int elapsed_time();
+	int remaining_time();
 #if PTHREADEDMPEG
   bool playingwiththread(int framenumbers);
 #endif
@@ -832,7 +849,7 @@ protected:
 };
 
 #ifdef HAVE_SIDPLAYER
-
+//This is broken due to lack of functions
 #include <sidplay/player.h>
 #include <sidplay/myendian.h>
 #include <sidplay/fformat.h>
@@ -850,6 +867,9 @@ public:
 	void set8bitmode() {}
 	bool run(int frames);
 	bool playing();
+	void skip(int) {}
+	int elapsed_time();
+	int remaining_time();
 protected:
 	emuEngine emu;
 	struct emuConfig emuConf;

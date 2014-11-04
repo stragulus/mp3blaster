@@ -47,9 +47,19 @@ inline int Mpegbitwindow::getbit(void)
 inline int Mpegbitwindow::getbits9(int bits)
 {
   register unsigned short a;
-  int offset=bitindex>>3;
 
-  a=(((unsigned char)buffer[offset])<<8) | ((unsigned char)buffer[offset+1]);
+#ifndef WORDS_BIGENDIAN
+  {
+    //    int offset=(bitindex>>3)&(WINDOWSIZE-1);
+    int offset=bitindex>>3;
+
+    a=(((unsigned char)buffer[offset])<<8) | ((unsigned char)buffer[offset+1]);
+  }
+#else
+  //  a=((unsigned short *)(buffer+((bixindex>>3)&(WINDOWSIZE-1))));
+  //a=((unsigned short *)(buffer+((bitindex>>3))));
+  a=((unsigned short *)(buffer+((bitindex>>3))));
+#endif
 
   a<<=(bitindex&7);
   bitindex+=bits;

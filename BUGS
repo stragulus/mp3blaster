@@ -1,3 +1,6 @@
--Commandline options threads/playbackmode don't show in interface
- <G. Gautam>
--FreeBSD w/threads needs to link with libc_r i/o libc. (Michael Vasilen)
+-Apparently, files that are very short hang mp3blaster when threading is used.
+-On my own box, with NAS support compiled in, mp3blaster crashes when changing
+ to a next mp3 in a playlist
+-Broke NAS in 2.0b18
+-bad default SOUND_DEVICE ?
+-'sound device busy' w/new buffering

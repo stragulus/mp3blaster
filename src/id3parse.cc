@@ -15,6 +15,7 @@ id3Parse::id3Parse(const char *filename)
 	memset(song->year, 0, 5 * sizeof (char));
 	memset(song->etc, 0, 31 * sizeof (char));
 	song->genre = '\0';
+	song->track = -1;
 	//memset(song->genre_txt, 0, 41 * sizeof (char));
 	//strncpy(song->genre_txt, "Not supported yet!",40);
 }
@@ -112,6 +113,11 @@ id3Parse::parseID3()
 	{
 		strncpy(song->etc, buf, 30);
 		song->etc[30] = '\0';
+		if (buf[28] == '\0' && buf[29] != '\0')
+		{
+			//ID3V1.1 Standard - specify track in last byte of comment field
+			song->track = buf[29];
+		}
 		success++;
 	}
 	if (fread(buf, 1, sizeof(char), fp) == sizeof(char))
@@ -136,14 +142,10 @@ id3Parse::appendNewID3Header(FILE *fp)
 		return success;
 
 	char c[] = {
-		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 		0x54, 0x41, 0x47 };
 
 	printf("Writing header..\n");
-	if ( fwrite((void*)c, sizeof(char), 31, fp) != 31)
+	if ( fwrite((void*)c, sizeof(char), 3, fp) != 3)
 		return success;
 	
 	return (success = 1);
@@ -154,6 +156,7 @@ id3Parse::writeID3(struct id3header *newID3)
 {
 	int success = 0;
 	FILE *fp = fopen(flnam, "r+");
+	int genre_size = 30;
 
 	if (!fp)
 		return success;
@@ -164,10 +167,19 @@ id3Parse::writeID3(struct id3header *newID3)
 		return success;
 	}
 
-	size_t c;
+	if (newID3->track != -1)
+	{
+		//ID3V1.1 standard.
+		newID3->etc[28] = '\0';
+		newID3->etc[29] = newID3->track;
+	}
+
+	//In ANSI C it's required to do an intervening file positioning function
+	//before mixing read/write on a stream..
+	fseek(fp, ftell(fp), SEEK_SET);
 
 	if (
-		((c = fwrite(newID3->songname, sizeof(char), 30, fp)) == 30) &&
+		(fwrite(newID3->songname, sizeof(char), 30, fp) == 30) &&
 		(fwrite(newID3->artist, sizeof(char), 30, fp) == 30) &&
 		(fwrite(newID3->type, sizeof(char), 30, fp) == 30) &&
 		(fwrite(newID3->year, sizeof(char), 4, fp) == 4) &&
@@ -175,7 +187,6 @@ id3Parse::writeID3(struct id3header *newID3)
 		(fwrite(&(newID3->genre), sizeof(char), 1, fp) == 1))
 		success = 1;
 
-	printf("c=%d\n", c); fflush(stdout);
 	fclose(fp);
 	return success;
 }

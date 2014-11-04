@@ -1,11 +1,21 @@
-V2.0b18: 2001/01/21
+V3.0b1 2000/08/28
 ===================
--Several changes in the mpegsound libary that fix numerous SIGFPU/SIGSEGV's.
--Using non-blocking I/O to soundcard which reduces CPU-load (esp. on FreeBSD).
--Nmixer program can view/set recording devices now.
--Fixed compilation errors
--Should produce normal audio on big-endian machines - couldn't test though.
- (thanks go once again to Martijn van Buul)
+-By popular demand, simultaneous playlist editing and sound playback.
+ You can even play a playlist while occasionally listening to
+ another mp3 you select during playback.
+-Interface and lots of code have been completely redone.
+-Configurable colour support
+-mp3=>wav conversion glitch fixed, and it's more intuitive.
+-mp3tag now accepts multiple mp3's on the commandline. Option '-f' is no
+ longer needed / supported. ID3v1.1 tags are supported as well (tracknr
+ in comment field).
+-Much improved randomness in random playlist playback.
+-Alternate configfiles can be used with commandline option '-c'.
+-commandline option --quit is now --dont-quit (functionality is not changed)
+-the keyword FramesPerLoop is no longer supported in the configfile since
+ it's no longer needed.
+-playlists (*.pls by default) can be loaded from within the file browser.
+-Many more minor changes
 
 V2.0b17: 1900/01/18
 ===================

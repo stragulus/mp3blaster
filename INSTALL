@@ -1,4 +1,4 @@
-MP3Blaster is (C) Bram Avontuur (bram@avontuur.org)
+MP3Blaster is (C) Bram Avontuur (brama@stack.nl)
 This program can be redistributed under the terms of GPL (see 'COPYING')
 Please report any changes you make to this program to me by e-mail so that
 I know what's going on.
@@ -17,7 +17,7 @@ This should suffice on most systems. If you experience problems running
 mp3blaster, read these TIPS:
 
 -If you're not using ncurses 4.2 (ls /usr/lib/libncurses*), then install
- it. Ncurses-3.* and ncurses-5.*(BETA) are no good.
+ it. Ncurses-3.* and ncurses-5.* are no good.
 -If mp3blaster gets killed with a segmentation fault, then reconfigure with
  -D__NO_MATH_INLINES (CPPFLAGS="-D__NO_MATH_INLINES" ./configure) and
  remake.
@@ -39,6 +39,6 @@ Linux/Alpha
 If you have an SGI Indy eating dust and you don't have a use for it; I'm 
 interested in one! Sun SparcStations are welcome too ;-)
 
-Any comments, ideas, praises, bugreports and cheques => EMAIL bram@avontuur.org.
+Any comments, ideas, praises, bugreports and cheques => EMAIL brama@stack.nl.
 Check http://www.stack.nl/~brama/mp3blaster.html for the latests updates, or
 visit http://freshmeat.net/ and search for mp3blaster.

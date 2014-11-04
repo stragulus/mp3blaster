@@ -111,7 +111,7 @@ main(int argc, char *argv[])
 	mvprintw(0, (COLS - strlen(MYVERSION)) / 2, MYVERSION);
 
 	if (!strstr(argv[0], "nasmixer"))
-		bla = new NMixer(stdscr, (const char*)NULL, 2, LINES - 4);
+		bla = new NMixer(stdscr, (const char*)NULL, 0, 2,  LINES - 4);
 	else //use NAS-mixer!
 	{
 		const char *devnam = getenv("DISPLAY");
@@ -123,7 +123,7 @@ main(int argc, char *argv[])
 			exit(1);
 		}
 #if defined(HAVE_NASPLAYER)
-		bla = new NMixer(stdscr, "NAS", 2, LINES - 4);
+		bla = new NMixer(stdscr, "NAS", 0, 2, LINES - 4);
 #else
 		endwin();
 		fprintf(stderr, "Nmixer was not compiled with NAS support.\n");

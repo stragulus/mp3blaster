@@ -4,16 +4,6 @@
 
 #include <mpegsound.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#include SOUNDCARD_HEADERFILE
-
-#ifdef __cplusplus
-}
-#endif
-
 #ifdef HAVE_SIDPLAYER
 SIDfileplayer::SIDfileplayer()
 {
@@ -39,19 +29,14 @@ SIDfileplayer::~SIDfileplayer()
 
 bool SIDfileplayer::openfile(char *filename, char *device, soundtype write2file)
 {
-	int ssize;
-
 	if (!opendevice(device, write2file))
 		return seterrorcode(SOUND_ERROR_DEVOPENFAIL);
 	if (tune) delete tune;
 	tune = new sidTune(filename);
 	if ((!tune) || (!*tune))
 		return seterrorcode(SOUND_ERROR_FILEOPENFAIL);
-	
-	ssize = (emuConf.bitsPerSample == 16 ? AFMT_S16_NE : AFMT_U8);
-
 	player->setsoundtype((emuConf.channels == SIDEMU_STEREO),
-				ssize, emuConf.frequency);
+				emuConf.bitsPerSample, emuConf.frequency);
 	emu.setConfig(emuConf);
 	if (bufSize != player->getblocksize()) {
 		bufSize = player->getblocksize();

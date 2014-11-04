@@ -7,6 +7,7 @@ mp3play.cc      :   class that plays mp3lists
 mp3stack.cc     :   extension to gstack-class, for mp3's specifically.
 playwindow.cc   :   interface-class (shown when playing mp3's)
 scrollwin.cc    :   class for a scrollable [ncurses]window
+winitem.cc      :   class for items in scrollwin
 windows.cc      :   A few general popup-windows.
 id3parse.cc     :   C++ class for reading/writing ID3 tags.
 mp3tag.cc       :   Command-line interface to id3parse.cc.

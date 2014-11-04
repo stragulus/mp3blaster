@@ -1,5 +1,5 @@
 /* MP3Blaster - An Mpeg Audio-file player for Linux
- * Copyright (C) Bram Avontuur (bram@avontuur.org)
+ * Copyright (C) Bram Avontuur (brama@stack.nl)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -55,8 +55,9 @@ void popupWindow(const char *txt, int colour_pair = 1, int ypos = -1,
 	mvwprintw(a, 4, (columns - 28) / 2, "Program will auto-continue..");
 	box(a, 0, 0);
 	wrefresh(a);
-	if (globalopts.warndelay)
-		sleep(globalopts.warndelay);
+	//TODO: In a threaded environment, one DOESN"T SLEEP!!
+	//if (globalopts.warndelay)
+	//	sleep(globalopts.warndelay);
 	delwin(a);
 	refresh(); // update screen
 }

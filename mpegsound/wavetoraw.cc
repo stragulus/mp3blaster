@@ -17,16 +17,6 @@
 
 #include "mpegsound.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#include SOUNDCARD_HEADERFILE
-
-#ifdef __cplusplus
-}
-#endif
-
 Wavetoraw::Wavetoraw(Soundinputstream *loader,Soundplayer *player)
 {
   __errorcode=SOUND_ERROR_OK;
@@ -58,7 +48,6 @@ bool Wavetoraw::initialize(void)
 bool Wavetoraw::run(void)
 {
   int c;
-	int ssize = (samplesize == 16 ? AFMT_S16_NE : AFMT_U8);
 
   if(initialized)
   {
@@ -88,7 +77,7 @@ bool Wavetoraw::run(void)
     }
 
     if(!testwave(buffer))return false;
-    if(player->setsoundtype(stereo,ssize,speed)==false)return false;
+    if(player->setsoundtype(stereo,samplesize,speed)==false)return false;
     currentpoint=0;
     initialized=true;
   }

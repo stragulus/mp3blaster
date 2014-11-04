@@ -38,6 +38,8 @@
 #define RIGHT_CHANNEL 0x10
 #define LEFT_CHANNEL  0x01
 
+enum mixer_cmd_t { MCMD_NEXTDEV, MCMD_PREVDEV, MCMD_VOLUP, MCMD_VOLDN };
+
 struct volume
 {
 	short left;
@@ -53,9 +55,6 @@ public:
 	bool SetMixer(int device, struct volume *vol);
 	bool GetMixer(int device, struct volume *vol);
 	const char *GetMixerLabel(int device);
-	virtual bool CanRecord(int device) = 0;
-	virtual bool GetRecord(int device) = 0;
-	virtual bool SetRecord(int device, bool set) = 0;
 protected:
 	void AddDevice(int device);
 	virtual bool Set(int device, struct volume *vol) = 0;
@@ -72,9 +71,6 @@ class OSSMixer : public baseMixer
 public:
 	OSSMixer(baseMixer *next = 0);
 	~OSSMixer();
-	bool CanRecord(int device);
-	bool GetRecord(int device);
-	bool SetRecord(int device, bool set);
 protected:
 	bool Set(int device, struct volume *vol);
 	bool Get(int device, struct volume *vol);
@@ -89,9 +85,6 @@ class NASMixer : public baseMixer
 public:
 	NASMixer(baseMixer *next = 0);
 	~NASMixer();
-	bool CanRecord(int device) { return false; }
-	bool GetRecord(int device) { return false; }
-	bool SetRecord(int device, bool set) { return false; }
 protected:
 	bool Set(int device, struct volume *vol);
 	bool Get(int device, struct volume *vol);
@@ -106,8 +99,9 @@ private:
 class NMixer
 {
 public:
-	NMixer(WINDOW* mixwin, const char *mixdev=NULL, int yoffset=0,
-		int nrlines=0, int *pairs=0, int bgcolor=0);
+	NMixer(WINDOW* mixwin, const char *mixdev=NULL, int xoffset=0, 
+		int yoffset=0, int nrlines=0, const int *pairs=0, int bgcolor=0,
+		short minimode=0);
 	~NMixer();
 
 	short NMixerInit();
@@ -115,28 +109,36 @@ public:
 	void ChangeBar(short bar, short amount, short absolute, short channels,
 		short update=1);
 	void RedrawBars();
+	void setMixerCommandKey(mixer_cmd_t, int);
+	void setDefaultCmdKeys();
 	short ProcessKey(int key);
 	/* functions for each well-known mixertype */
 	void SetMixer(int device, struct volume value, short update=1);
 	bool GetMixer(int device, struct volume *vol);
+	void redraw();
 	
 private:
+	void DrawFixedStuff();
+
 	baseMixer *mixers;
 	const int *supported;
 	char *mixdev;
 	int
+		xoffset,
 		yoffset,
 		nrlines,
 		maxx, maxy,
 		nrbars,
 		*cpairs,
-		bgcolor;
+		bgcolor,
+		cmdkeys[4];
 	WINDOW
 		*mixwin;
 	short
 		currentbar,
 		minbar, /* index-nr. of topmost on-screen bar. */
 		maxspos, /* index-nr. of bottommost on-screen bar. */
-		currentspos; /* index-nr. of screen-position of current bar */
+		currentspos, /* index-nr. of screen-position of current bar */
+		minimode; /* 1 for mini-mode, 0 for large mode */
 };
 #endif
