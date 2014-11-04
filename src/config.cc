@@ -35,6 +35,7 @@ extern short set_skip_frames(unsigned int);
 extern short set_mini_mixer(short);
 extern short set_playlist_matching(const char**, int);
 extern short set_playlist_dir(const char*);
+extern short set_sort_mode(const char*);
 extern void bindkey(command_t,int);
 #ifdef PTHREADEDMPEG
 extern short set_threads(int);
@@ -138,6 +139,8 @@ struct _confopts
 { "PlaylistDir", 15 },          //80
 { "Key.ClearPlaylist", 2 },
 { "Key,DeleteMark", 2 },
+{ "HideOtherFiles", 1 },
+{ "File.SortMode", 15 },
 { NULL, 0 }, /* last entry's keyword MUST be NULL */
 };
 
@@ -147,16 +150,6 @@ struct _confopts
  *                00=NUMBER, 01=YESNO, 10=KEY, 11=COLOUR, 1111=ANYTHING
  *                (see below)
  * bit   4(16): 0: only 1 value allowed. 1: multiple values allowed.
-const unsigned short keyword_opts[] = {
-	0, // threads: 1 number
-	1, // downfrequency: 1 yesno
-	0, // framesperloop: 1 number
-	15, // 1 * anything
-	31, // multiple * anything
-	0, // warndelay: 1 number
-	1, // minimixer: 1 yesno
-	31, // playlist matching: multiple * anything
-	};
  */
 
 
@@ -489,6 +482,10 @@ cf_add_keyword(int keyword, const char **values, int nrvals)
 	break;
 	case 81: bindkey(CMD_CLEAR_PLAYLIST, cf_type_key(v)); break;
 	case 82: bindkey(CMD_DEL_MARK, cf_type_key(v)); break;
+	case 83: globalopts.fw_hideothers = cf_type_yesno(values[0]); break;
+	case 84:
+		if (!set_sort_mode(values[0])) { error = BADVALUE; return 0; }
+	break;
 	}
 
 	return 1;

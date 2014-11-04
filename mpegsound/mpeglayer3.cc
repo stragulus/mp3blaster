@@ -964,7 +964,15 @@ void Mpegtoraw::layer3dequantizesample(int ch,int gr,
 	}
       }
       {
-	int t_index=(index-cb_begin)/cb_width;
+        int t_index = 0;
+        if (cb_width)
+        {
+	  t_index=(index-cb_begin)/cb_width;
+          if (t_index > 2)
+	    t_index = 0;
+        }
+        else
+          debug("Very bad mp3 data\n");
 	out[0][index]*=layer3twopow2_1(gi->subblock_gain[t_index],
 				       gi->scalefac_scale,
 				       scalefactors[ch].s[t_index][cb]);

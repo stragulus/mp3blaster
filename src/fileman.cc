@@ -28,6 +28,8 @@
 
 extern struct _globalopts globalopts;
 
+sortmodes_t tmpsort;
+
 /* initialize filemanager. If path is NULL, the current working path will be
  * used.
  */
@@ -116,10 +118,50 @@ fileManager::changeDir(const char *newpath)
 int
 sortme(const void *a, const void *b)
 {
-	if (!globalopts.fw_sortingmode)
-		return (strcasecmp(*(char**)a, *(char**)b));
-	else
-		return (strcmp(*(char**)a, *(char**)b));
+	sortmodes_t smode = tmpsort;
+	const char
+		*fa = *(char**)a, 
+		*fb = *(char**)b;
+
+	if (smode == FW_SORT_ALPHA) //case-insenstive alphabetical sort
+		return (strcasecmp(fa, fb));
+	if (smode == FW_SORT_ALPHA_CASE) //case-sensitive "" ""
+		return (strcmp(fa, fb));
+	if (smode == FW_SORT_NONE) //don't sort
+		return 0;
+
+	struct stat sa, sb;
+
+	if (stat(fa, &sa) < 0 || stat(fb, &sb) < 0) //can't stat one o/t files
+		return 0;
+		
+	if (smode == FW_SORT_MODIFY_NEW || smode == FW_SORT_MODIFY_OLD)
+	{
+		time_t
+			time_a = sa.st_mtime,
+			time_b = sb.st_mtime;
+
+		if (time_a < time_b)
+			return (smode == FW_SORT_MODIFY_OLD ? -1 : 1);
+		else if (time_a > time_b)
+			return (smode == FW_SORT_MODIFY_OLD ? 1 : -1);
+		return 0;
+	}
+
+	if (smode == FW_SORT_SIZE_SMALL || smode == FW_SORT_SIZE_BIG)
+	{
+		off_t
+			size_a = sa.st_size,
+			size_b = sb.st_size;
+
+		if (size_a < size_b)
+			return (smode == FW_SORT_SIZE_SMALL ? -1 : 1);
+		else if (size_a > size_b)
+			return (smode == FW_SORT_SIZE_SMALL ? 1 : -1);
+		return 0;
+	}
+
+	return 0;
 }
 
 int
@@ -159,7 +201,15 @@ fileManager::readDir()
 	
 	/* sort char **entries */
 	if (diritems > 1)
+	{
+		tmpsort = globalopts.fw_sortingmode;
 		qsort(entries, diritems, sizeof(char*), sortme);
+	}
+
+	char *dirs[diritems];
+	unsigned int dircount = 0;
+	for (i = 0; i < diritems; i++)
+		dirs[i] = NULL;
 
 	for (i = 0; i < diritems; i++)
 	{
@@ -169,34 +219,54 @@ fileManager::readDir()
 		if ( (dir2 = opendir(entries[i])) ) /* path is a dir */
 		{
 			closedir(dir2);
-			entries[i] = (char *)realloc(entries[i], (strlen(entries[i]) + 2) *
+			dirs[dircount] = (char *)malloc((strlen(entries[i]) + 2) *
 				sizeof(char));
-			strcat(entries[i], "/");
-			addItem(entries[i], 0, CP_FILE_DIR);
+			strcpy(dirs[dircount], entries[i]);
+			strcat(dirs[dircount], "/");
 			free(entries[i]);
 			entries[i] = NULL;
+			dircount++;
 		}
 	}
 
+	tmpsort = FW_SORT_ALPHA;
+	qsort(dirs, dircount, sizeof(char*), sortme);
+
+	//add subdirs first.
+	unsigned int j;
+
+	for (j = 0; j < dircount; j++)
+	{
+		addItem(dirs[j], 0, CP_FILE_DIR);
+		free(dirs[j]);
+		dirs[j] = NULL;
+	}
+
+
+	const char
+		*bla[3],
+		*fsizedescs[] = { "B", "K", "M", "G" },
+		*fsizedesc = NULL;
+	char
+		*fdesc = NULL;
+	short
+		foo[2] = { 0, 1 },
+		fsize,
+		clr;
+	struct stat
+		buffy;
+	
 	for (i = 0; i < diritems; i++)
 	{
 		if (entries[i])
 		{
-			const char
-				*bla[3],
-				*fsizedescs[] = { "B", "K", "M", "G" },
-				*fsizedesc = NULL;
-			char
-				*fdesc = NULL;
-			short
-				foo[2] = { 0, 1 },
-				fsize,
-				clr;
-			struct stat
-				buffy;
-	
-			if (stat(entries[i], &buffy) == -1)
+			if (stat(entries[i], &buffy) == -1 ||
+				(globalopts.fw_hideothers && !is_audiofile(entries[i]) &&
+				!is_playlist(entries[i])) )
 				continue;
+
+			fsizedesc = NULL;
+			fdesc = NULL;
 
 			if (buffy.st_size < (10 * 1024)) //10 Kb
 			{

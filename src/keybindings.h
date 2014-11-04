@@ -20,6 +20,7 @@ keybind_t keys[] =
 	{ KEY_F(6), CMD_FILE_MP3_TO_WAV, PM_FILESELECTION, "Convert MP3 To WAV" },
 	{ KEY_F(7), CMD_FILE_ADD_URL, PM_FILESELECTION, "Add URL(shoutcast)" },
 	{ '/', CMD_FILE_START_SEARCH, PM_FILESELECTION, "Start File Search" },
+	{ 's', CMD_FILE_TOGGLE_SORT, PM_FILESELECTION, "Toggle File Sort" },
 	{ KEY_BACKSPACE, CMD_FILE_UP_DIR, PM_FILESELECTION, "Go Up One Dir" },
 	{ ' ', CMD_FILE_SELECT, PM_FILESELECTION, "Select File" },
 	{ KEY_F(6), CMD_TOGGLE_REPEAT, PM_NORMAL, "Toggle Repeat" },

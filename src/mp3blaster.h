@@ -39,7 +39,18 @@ enum command_t {
 	CMD_FILE_UP_DIR, CMD_PLAY_PREVIOUS, CMD_PLAY_PLAY, CMD_PLAY_NEXT,
 	CMD_PLAY_REWIND, CMD_PLAY_STOP, CMD_PLAY_FORWARD, CMD_NONE,
 	CMD_FILE_SELECT, CMD_HELP_PREV, CMD_HELP_NEXT, CMD_FILE_MARK_BAD,
-	CMD_CLEAR_PLAYLIST, CMD_DEL_MARK
+	CMD_CLEAR_PLAYLIST, CMD_DEL_MARK, CMD_FILE_TOGGLE_SORT
+};
+
+/* how to sort files in dirs ? */
+enum sortmodes_t {
+	FW_SORT_NONE = 0,
+	FW_SORT_ALPHA,
+	FW_SORT_ALPHA_CASE,
+	FW_SORT_MODIFY_NEW,
+	FW_SORT_MODIFY_OLD,
+	FW_SORT_SIZE_SMALL,
+	FW_SORT_SIZE_BIG
 };
 
 enum playmode {
@@ -75,7 +86,8 @@ struct _globalopts /* global options, exported for other classes */
 	short downsample; /* non-zero => downsampling */
 	short eightbits;
 	char *sound_device;
-	short fw_sortingmode; /* 0: case-insensitive (default), 1: case sensitive */
+	sortmodes_t fw_sortingmode;
+	short fw_hideothers; /* 0: show all files, 1: hide non-audiofiles */
 	short layout; /* different ncurses layouts are possible */
 	playmode play_mode;
 	unsigned int warndelay;

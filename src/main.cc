@@ -156,6 +156,8 @@ void update_songinfo(playstatus_t, short);
 void update_ncurses();
 void end_program();
 const char *get_error_string(int);
+void fw_toggle_sort();
+void fw_draw_sortmode(sortmodes_t);
 
 #ifdef TEMPIE
 #define LOCK_NCURSES (!pthread_mutex_trylock(&ncurses_mutex))
@@ -413,6 +415,23 @@ main(int argc, char *argv[])
 		}
 	}
 
+	if (options & OPT_DEBUG) 
+	{
+		globalopts.debug = 1;
+		debug("Debugging of mp3blaster started.\n");
+	}
+
+	char bla[100];sprintf(bla,"sm:%d!\n",(unsigned int)globalopts.fw_sortingmode);debug(bla);
+	//read .mp3blasterrc
+	if (!cf_parse_config_file(config_file) &&
+		(config_file || cf_get_error() != NOSUCHFILE))
+	{
+		fprintf(stderr, "%s\n", cf_get_error_string());
+		exit(1);
+	}
+	if (config_file)
+		free(config_file);
+
 	if (optind < argc) /* assume all other arguments are mp3's */
 	{
 		/* this is not valid if a playlist is loaded from commandline */
@@ -438,22 +457,7 @@ main(int argc, char *argv[])
 		options |= OPT_PLAYMP3;
 	}	
 
-	if (options & OPT_DEBUG) 
-	{
-		globalopts.debug = 1;
-		debug("Debugging of mp3blaster started.\n");
-	}
-
-	//read .mp3blasterrc
-	if (!cf_parse_config_file(config_file) &&
-		(config_file || cf_get_error() != NOSUCHFILE))
-	{
-		fprintf(stderr, "%s\n", cf_get_error_string());
-		exit(1);
-	}
-	if (config_file)
-		free(config_file);
-	signal(SIGALRM, SIG_IGN);
+	//signal(SIGALRM, SIG_IGN);
 
 	//Initialize NCURSES
 	initscr();
@@ -723,6 +727,7 @@ fw_begin()
 {
 	quit_after_playlist = 0;
 	change_program_mode(PM_FILESELECTION);
+	fw_draw_sortmode(globalopts.fw_sortingmode);
 	if (file_window)
 		delete file_window;
 	if (!globalopts.layout)
@@ -1095,6 +1100,7 @@ refresh_screen()
 	if (popup);
 	else if (progmode == PM_FILESELECTION)
 	{
+		fw_draw_sortmode(globalopts.fw_sortingmode);
 		if (file_window)
 			file_window->swRefresh(2);
 		draw_static(1);
@@ -2363,7 +2369,13 @@ start_song(short was_playing)
 
 	void *init_args = NULL;
 
-	if (is_mp3(song) || is_httpstream(song))
+	if (is_wav(song))
+		playopts.player = new Wavefileplayer();
+#ifdef HAVE_SIDPLAYER
+	else if (is_sid(song))
+		playopts.player = new SIDFileplayer();
+#endif
+	else if (is_audiofile(song))
 	{
 #ifdef PTHREADEDMPEG
 		int draadjes = globalopts.threads;
@@ -2372,12 +2384,6 @@ start_song(short was_playing)
 #endif
 		playopts.player = new Mpegfileplayer();
 	}
-	else if (is_wav(song))
-		playopts.player = new Wavefileplayer();
-#ifdef HAVE_SIDPLAYER
-	else if (is_sid(song))
-		playopts.player = new SIDFileplayer();
-#endif
 
 	if (!playopts.player)
 	{
@@ -2986,6 +2992,7 @@ handle_input(short no_delay)
 		case CMD_FILE_SELECT: fm->selectItem(); fm->changeSelection(1); break;
 		case CMD_FILE_UP_DIR: fw_changedir(".."); break;
 		case CMD_FILE_START_SEARCH: fw_start_search(); break;
+		case CMD_FILE_TOGGLE_SORT: fw_toggle_sort(); fw_changedir("."); break;
 		case CMD_FILE_MARK_BAD:
 		{
 			char *fullpath = NULL;
@@ -4177,7 +4184,8 @@ init_globalopts()
 	globalopts.sound_device = NULL; /* default sound device */
 	globalopts.downsample = 0; /* no downsampling */
 	globalopts.eightbits = 0; /* 8bits audio off by default */
-	globalopts.fw_sortingmode = 0; /* case insensitive dirlist */
+	globalopts.fw_sortingmode = FW_SORT_ALPHA; /* case insensitive dirlist */
+	globalopts.fw_hideothers = 0; /* show all files */
 	globalopts.play_mode = PLAY_GROUPS;
 	globalopts.warndelay = 2; /* wait 2 seconds for a warning to disappear */
 	globalopts.skipframes=100; /* skip 100 frames during music search */
@@ -4490,3 +4498,105 @@ end_program()
 	pthread_mutex_unlock(&ncurses_mutex);
 	exit(0);
 };
+
+void
+fw_toggle_sort()
+{
+	sortmodes_t newmode = globalopts.fw_sortingmode;
+
+	switch(globalopts.fw_sortingmode)
+	{
+	case FW_SORT_ALPHA: newmode = FW_SORT_ALPHA_CASE; break;
+	case FW_SORT_ALPHA_CASE: newmode = FW_SORT_MODIFY_NEW; break;
+	case FW_SORT_MODIFY_NEW: newmode = FW_SORT_MODIFY_OLD; break;
+	case FW_SORT_MODIFY_OLD: newmode = FW_SORT_SIZE_SMALL; break;
+	case FW_SORT_SIZE_SMALL: newmode = FW_SORT_SIZE_BIG; break;
+	case FW_SORT_SIZE_BIG: newmode = FW_SORT_NONE; break;
+	case FW_SORT_NONE: newmode = FW_SORT_ALPHA; break;
+	}
+	globalopts.fw_sortingmode = newmode;
+	fw_draw_sortmode(newmode);
+}
+
+void
+fw_draw_sortmode(sortmodes_t sm)
+{
+	const char *dsc[] = {
+		"Sort alphabetically, case-insensitive",
+		"Sort alphabetically, case-sensitive",
+		"Sort by modification date, newest first",
+		"Sort by modification date, oldest first",
+		"Sort by file size, smallest first",
+		"Sort by file size, biggest first",
+		"Don't sort",
+		NULL,
+	};
+	short
+		idx = 0,
+		long_idx = 2; //longest char* in dsc[].
+	int maxlen = strlen(dsc[long_idx]);
+	
+	char emptyline[maxlen + 1];
+	memset(emptyline, ' ', maxlen * sizeof(char));
+	emptyline[maxlen] = '\0';
+
+	switch(sm)
+	{
+	case FW_SORT_ALPHA:      idx = 0; break;
+	case FW_SORT_ALPHA_CASE: idx = 1; break;
+	case FW_SORT_MODIFY_NEW: idx = 2; break;
+	case FW_SORT_MODIFY_OLD: idx = 3; break;
+	case FW_SORT_SIZE_SMALL: idx = 4; break;
+	case FW_SORT_SIZE_BIG:   idx = 5; break;
+	case FW_SORT_NONE:       idx = 6; break;
+	}
+	move(8, 2); printw("Sorting mode   : %s", emptyline);
+	move(8, 2); printw("Sorting mode   : %s", dsc[idx]);
+}
+
+short
+set_sort_mode(const char *mstring)
+{
+	//TODO: make a nice struct with canonical name, enum, indexNR
+	const char *dsc[] = {
+		"alpha",
+		"alpha-case",
+		"modify-new",
+		"modify-old",
+		"size-small",
+		"size-big",
+		"none",
+		NULL
+	};
+	unsigned int i = 0;
+	short found_it = -1;
+
+	while (dsc[i])
+	{
+		if (!strcasecmp(mstring, dsc[i]))
+		{
+			found_it = i;
+			break;
+		}
+		i++;
+	}
+	if (found_it < 0)
+		return 0;
+	
+	sortmodes_t smode = globalopts.fw_sortingmode;
+
+	switch(found_it)
+	{
+	case 0: smode = FW_SORT_ALPHA; break;
+	case 1: smode = FW_SORT_ALPHA_CASE; break;
+	case 2: smode = FW_SORT_MODIFY_NEW; break;
+	case 3: smode = FW_SORT_MODIFY_OLD; break;
+	case 4: smode = FW_SORT_SIZE_SMALL; break;
+	case 5: smode = FW_SORT_SIZE_BIG; break;
+	case 6: smode = FW_SORT_NONE; break;
+	}
+	globalopts.fw_sortingmode = smode;
+	if (progmode == PM_FILESELECTION)
+		fw_draw_sortmode(smode);
+	return found_it;
+}

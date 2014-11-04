@@ -1,3 +1,14 @@
+V3.0pre6 2001/01/27
+===================
+-Mp3blaster honours AudiofileMatching config parameter for command-line
+ supplied mp3's now
+-Fixed another bug in the mpegsound lib that could cause crashes. Playing
+ 2.4 linux kernel images doesn't crash mp3blaster anymore ;=)
+-New configfile option 'HideOtherFiles', which can hide non-audiofiles in the
+ file manager.
+-Sort order of files can be toggled within file manager. Default sort order
+ can be set with config file keyword 'File.SortOrder'
+
 V3.0pre5 2001/01/25
 ===================
 -Fixed a bug that caused recursive file selecting to loop forever.
