@@ -105,6 +105,8 @@ expand_path(const char *org_path)
 
 	if (!org_path)
 		return NULL;
+	if (!strlen(org_path))
+			return strdup(org_path);
 
 	if (!strncmp(org_path, "~/", 2) || (!strcmp(org_path, "~")) )
 		mode = 1;
@@ -117,12 +119,14 @@ expand_path(const char *org_path)
 	{
 		char *hd = get_homedir(NULL);	
 		if (!hd)
-			return NULL;
+				hd = strdup("");
 
 		new_path = (char*)malloc((strlen(hd) + strlen(org_path) + 2) *
 			sizeof(char));
 		strcpy(new_path, hd);
-		strcat(new_path, "/");
+		// org_path has at least chars (since it must have a string length) */
+		if (org_path[1] != '/')
+			strcat(new_path, "/");
 		strcat(new_path, org_path+1);
 		free(hd);
 		return new_path;

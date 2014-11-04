@@ -1,6 +1,5 @@
 #include "nmixer.h"
 #include <string.h>
-#define MIXER_DEVICE "/dev/mixer"
 
 #define BOTH_CHANNELS 0x11
 #define RIGHT_CHANNEL 0x10

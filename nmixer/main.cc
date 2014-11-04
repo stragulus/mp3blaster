@@ -4,6 +4,11 @@
 #include "nmixer.h"
 #include <string.h>
 #include <stdlib.h>
+#ifdef HAVE_GETOPT_H
+#  include <getopt.h>
+#else
+#  include "getopt.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -23,19 +28,24 @@ extern "C" {
 
 /* Prototypes */
 short is_mixer_device(const char *mdev);
-void usage(const char *);
+void usage();
+void parse_setting(const char *arg);
 
 extern char **environ; //needed for getenv!
+
+int
+	*initdevs = NULL,
+	*initsets = NULL,
+	initnr = 0;
 
 int
 main(int argc, char *argv[])
 {
 	NMixer *bla;
 	int
-		*initdevs = NULL,
-		*initsets = NULL,
-		initnr = 0,
 		no_interface = 0;
+	char
+		*sound_device = NULL;
 
 	/* initialize curses screen management */
 	initscr();
@@ -61,57 +71,46 @@ main(int argc, char *argv[])
 	}
 
 	/* parse arguments */
-	for (int i = 1; i < (argc); i++)
+	while (1)
 	{
-		char soundlabel[10];
-		int soundvol, devindex;
+		int
+			c;
 
-		if (sscanf(argv[i], "%9[^=]=%d", soundlabel, &soundvol) != 2)
-		{
-			if (!strcmp(argv[i], "-q"))
-			{
-				no_interface=1;
-				continue;
-			}
-			else
-			{
-				endwin();
-				usage(argv[0]);
-				exit(1);
-			}
-		}
-		if ((devindex = is_mixer_device(soundlabel)) < 0)
-		{
-			endwin();
-			fprintf(stderr, "%s is not a valid mixer-device.\n", soundlabel);
-			usage(argv[0]);
-			exit(1);
-		}
+		c = getopt(argc, argv, "s:d:q");
 	
-		if (soundvol <0 || soundvol > 100)
-		{
-			endwin();
-			fprintf(stderr, "Volume for %s out of range (range is 0..100)\n",
-				soundlabel);
-			exit(1);
-		}
+		if (c == EOF)
+			break;
 
-		/* device exists, whow whow whow yippee yo yippee yay */
-		if (!(initdevs = (int*)realloc(initdevs, (++initnr * sizeof(int)))) ||
-			!(initsets = (int*)realloc(initsets, (initnr * sizeof(int)))))
+		switch(c)
 		{
-			endwin();
-			fprintf(stderr, "Allocation error!\n");
-			exit(1);
+		case '?':
+		case ':':
+			usage();
+			break;
+		case 'd':
+			if (sound_device)
+				free(sound_device);
+			sound_device = strdup(optarg);
+			break;
+		case 'q':
+			no_interface = 1;
+			break;
+		case 's':
+			parse_setting(optarg);
+			break;
+		default:
+			usage();
+			break;
 		}
-		initdevs[initnr-1] = devindex;
-		initsets[initnr-1] = soundvol;
 	}
 
 	mvprintw(0, (COLS - strlen(MYVERSION)) / 2, MYVERSION);
 
+	if (!sound_device)
+		sound_device = strdup(MIXER_DEVICE);
+
 	if (!strstr(argv[0], "nasmixer"))
-		bla = new NMixer(stdscr, (const char*)NULL, 0, 2,  LINES - 4);
+		bla = new NMixer(stdscr, sound_device, 0, 2,  LINES - 4);
 	else //use NAS-mixer!
 	{
 		const char *devnam = getenv("DISPLAY");
@@ -173,15 +172,67 @@ is_mixer_device(const char *mdev)
 	return isdev;
 }
 
+/* Function   : usage
+ * Description: Prints help on command line usage and exits program.
+ *            : Program must have initialized ncurses when calling this fun.
+ * Parameters : None.
+ * Returns    : Nothing.
+ * SideEffects: Ends ncurses, and program.
+ */
 void
-usage(const char *progname)
+usage()
 {
-	fprintf(stderr, "Usage: %s [<mixerdevice=volume> ...]\n\n" \
+	endwin();
+	fprintf(stderr, "Usage: nmixer [-q] [-d device] [[-s <mixerdevice=volume>] ...]\n\n" \
+		"\t-d  device   Mixer hardware device (default = %s)\n"\
+		"\t-q           Quit program (combine with -s)\n"\
+		"\t-s  dev=vol  Set volume for mixer device\n\n"\
 		"Valid mixer-devices for your system (not necessarily supported " \
-		"by your sound hardware!) are:", progname);
+		"by your sound hardware!) are:", MIXER_DEVICE);
 
 	const char *devs[] = SOUND_DEVICE_NAMES;
 	for (int i = 0; i < SOUND_MIXER_NRDEVICES; i++)
 		fprintf(stderr, " %s", devs[i]);
 	fprintf(stderr, ".\n");
+	exit(1);
+}
+
+void
+parse_setting(const char *arg)
+{
+	char soundlabel[10];
+	int
+		soundvol,
+		devindex;
+
+	if (sscanf(arg, "%9[^=]=%d", soundlabel, &soundvol) != 2)
+	{
+		usage();
+		return;
+	}
+
+	if ((devindex = is_mixer_device(soundlabel)) < 0)
+	{
+		fprintf(stderr, "%s is not a valid mixer-device.\n", soundlabel);
+		usage();
+		return;
+	}
+	if (soundvol <0 || soundvol > 100)
+	{
+		fprintf(stderr, "Volume for %s out of range (range is 0..100)\n",
+			soundlabel);
+		usage();
+		return;
+	}
+
+	/* device exists, whow whow whow yippee yo yippee yay */
+	if (!(initdevs = (int*)realloc(initdevs, (++initnr * sizeof(int)))) ||
+		!(initsets = (int*)realloc(initsets, (initnr * sizeof(int)))))
+	{
+		fprintf(stderr, "Allocation error!\n");
+		usage();
+		exit(1);
+	}
+	initdevs[initnr-1] = devindex;
+	initsets[initnr-1] = soundvol;
 }

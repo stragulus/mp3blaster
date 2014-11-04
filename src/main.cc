@@ -2196,13 +2196,19 @@ play_list(void *arg)
 
 			if (!playopts.song_played) //let's start one then
 			{
-				short start_song_result = start_song();
+				short
+						start_song_result;
+
 				debug("No song to play, let's find one!\n");
+
+				start_song_result = start_song();
+
 				if (start_song_result == -1) //nothing more to play
 				{
 					short allow_repeat = playopts.allow_repeat;
 
-					debug("End of playlist reached.\n");
+					debug("End of playlist reached.\nI want to repeat: %d\n" \
+						"Am I allowed to?: %d\n", globalopts.repeat, allow_repeat);
 					stop_list();
 					//end the program?
 					if (quit_after_playlist)
@@ -2272,13 +2278,11 @@ play_list(void *arg)
 				update_songinfo(PS_PAUSE, 16|4);
 				(playopts.player)->pause();
 			}
-			/*29-10-2000: This isn't really necessary..the next loop will fix this.
 			else if (!playopts.song_played)
 			{
-				if (!start_song())
-					stop_list();
+				playopts.allow_repeat = 0;
+				debug("AC_PLAY: allow_repeat = 0");
 			}
-			 */
 		break;
 		case AC_NEXTGRP:
 			if ((globalopts.play_mode == PLAY_GROUP || globalopts.play_mode ==
@@ -2377,6 +2381,7 @@ stop_list()
 {
 	playopts.playing = 0;
 	playopts.playing_one_mp3 = 0;
+	debug("stop_list() : allow_repeat = 0\n");
 	playopts.allow_repeat = 0;
 	next_song = -1;
 	reset_playlist(1);
@@ -2437,12 +2442,20 @@ stop_song()
 		vaut = (playopts.player)->geterrorcode();
 	}
 	else
+	{
 		vaut = SOUND_ERROR_FINISH;
+		debug("stop_song(): no playopts.player\n");
+	}
 
 	if (vaut == SOUND_ERROR_OK || vaut == SOUND_ERROR_FINISH)
 	{
 		debug("Allowing playlist repeat\n");
 		playopts.allow_repeat = 1;
+	}
+	else
+	{
+		debug("stop_song() ended in error (allow_repeat = %d)\n",
+			playopts.allow_repeat);
 	}
 
 	//generate warning
@@ -4506,6 +4519,8 @@ myrand(int max_nr)
 void
 reset_playlist(int full)
 {
+	debug("reset_playlist(%d)\n", full);
+
 	if (!full) //only reset currently played group
 	{
 		if (playing_group)
@@ -4532,9 +4547,6 @@ reset_playlist(int full)
 		delete history;
 		history = new History();
 	}
-	
-	//new start of playlist could contain only buggy songs. 
-	playopts.allow_repeat = 0;
 }
 
 void
@@ -4776,6 +4788,7 @@ void
 init_playopts()
 {
 	playopts.song_played = 0;
+	debug("init_playopts():  allow_repeat = 0\n");
 	playopts.allow_repeat = 0;
 	playopts.playing_one_mp3 = 0;
 	playopts.pause = 0;

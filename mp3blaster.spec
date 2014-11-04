@@ -1,6 +1,6 @@
 Name: mp3blaster
 Summary: Mp3blaster is a text console audio player with an interactive interface
-Version: 3.1.1
+Version: 3.1.3
 Release: 1
 Group: Applications/Multimedia
 Copyright: GPL
@@ -37,6 +37,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/splay
 %{_bindir}/nmixer
 %{_datadir}/mp3blaster/*
-%{_mandir}/man1/mp3blaster.1.gz
-%{_mandir}/man1/nmixer.1.gz
-%{_mandir}/man1/splay.1.gz
+%{_mandir}/man1/mp3blaster.1*
+%{_mandir}/man1/nmixer.1*
+%{_mandir}/man1/splay.1*

@@ -3,8 +3,8 @@
 nmixer - An interactive text-based sound-mixer control program
 .SH SYNOPSIS
 .TP
-\fBnmixer\fR [\fB-q\fR] [\fBmixdev=setting ...\fR]
-\fBnasmixer\fR [\fB-q\fR] [\fBmixdev=setting ...\fR]
+\fBnmixer\fR [\fB-q\fR] [[\fB-s mixdev=setting] ...\fR]
+\fBnasmixer\fR [\fB-q\fR] [[\fB-s mixdev=setting] ...\fR]
 .SH DESCRIPTION
 .I NMixer 
 is an interactive text-based sound-mixer control program that you can
@@ -31,7 +31,9 @@ device.
 
 .SH OPTIONS
 .TP
-.B mixdev=setting
+.B -d device
+Setst the mixer device to use (default = /dev/mixer)
+.B -s mixdev=setting
 Sets a specific mixer device to the volume specified by setting. 
 Example: bass=100
 .TP
@@ -42,7 +44,7 @@ the interface is drawn while setting the mixer, and removed afterwards, which
 might be annoying, but it's in the way of being changed :)
 .SH BUGS
 .PP
-If you find bugs, please send reports to bram@avontuur.org.
+If you find bugs, please send reports to mp3blaster-devel@stack.nl.
 .PP
 .SH AUTHOR
 .I nmixer

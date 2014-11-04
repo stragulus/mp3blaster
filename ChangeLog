@@ -1,3 +1,14 @@
+V3.1.3 2002/10/20
+=================
+-Changed RPM .spec file such that all compression methods for man files will
+ be honoured
+-Fixed a bug that could cause the playlist repeat to stop (thanks to
+ Alex Rasmussen for finding the bug)
+-Command line options for nmixer changed, and it's now possible to select a
+ different hardware mixer device.
+-Fixed a bug that caused mp3blaster to quit when the user's homedir could
+ not be determined.
+
 V3.1.2 2002/09/03
 =================
 -Compiles on gcc-3.* without errors

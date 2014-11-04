@@ -1,5 +1,7 @@
 Instructions:
 
+make -f makefile.charmap
+
 ./chargen > koi8-r.map
 cat koi8-r.map | koi2win > win1251.map
 ./maketbl win1251.map koi8-r.map > win2koi.tbl
