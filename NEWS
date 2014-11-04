@@ -1,8 +1,1 @@
--Check the ChangeLog file to see what's been done. (somehow, automake 
- requires this file exists.....)
--From 2.0b4 on, mp3blaster uses autoconf (and automake) to configure,
- compile and install. You don't need those packages yourself though;
- everything's just a lot easier now for you (and me).
--From 2.0b4 on, the mpegsound-library used can handle more mp3-formats. Not
- all though, yet (any mp3 that's made from a sample that's not 22/32/44Khz
- will crash mp3blaster).
+Check the ChangeLog file.

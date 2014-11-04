@@ -1,3 +1,24 @@
+V2.0b6: 1999/03/XX
+==================
+-path to mp3 put in border of playwindow which leaves more room for the
+ playlist (that's still got to be put in)
+-(noise-bug!)
+-(Save group's playorder in playlist!)
+-(compatible with WinAmp playlist)
+-(play single group playmode)
+-(``cold start'' option)
+-(add elapsed/remaining time/position_indicator)
+-(add browsable playlist in playwindow)
+-(add wav/http support)
+-(include getopt.c/getopt.h from GNU site so all OS's support getopt_long)
+-Applied a patch from Jukka Honkela that should reduce the audible "snap"
+ between numbers while playing. If you still here snaps between songs
+ that are played in a playlist without user intervention, please tell me!
+-Both DEL and d remove a song from the playlist now(in playlist editor)
+-Added "'q' to return" msg in playlist window
+-Added menu with key functions ('h')
+-Changed minimum size to 80x24 to support more consoles.
+
 V2.0b5: 1999/03/XX
 ==================
 

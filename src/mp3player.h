@@ -17,6 +17,7 @@ class mp3Player : public Mpegfileplayer
 {
 public:
 	mp3Player(mp3Play *calling, playWindow *interface, int threads);
+	~mp3Player(){};
 	bool playing(int verbose);
 
 #ifdef PTHREADEDMPEG

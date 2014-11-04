@@ -41,15 +41,13 @@ playWindow::playWindow()
 	wbkgd(interface, COLOR_PAIR(4)|A_BOLD);
 	wborder(interface, 0, 0, 0, 0, 0, 0, 0, 0);
 	char header[100];
-	sprintf(header, "MP3Blaster V%s (C)1999 Bram Avontuur (brama@stack.nl)",
-		VERSION);
+	sprintf(header, "MP3Blaster V%s (press 'q' to return to Playlist "\
+		"Editor)", VERSION);
 	mvwaddch(interface, nrlines - 3, 0, ACS_LTEE|COLOR_PAIR(4)|A_BOLD);
 	mvwaddch(interface, nrlines - 3, nrcols -1, ACS_RTEE|COLOR_PAIR(4)|A_BOLD);
 	mvwaddstr(interface, nrlines - 2, 2, header);
 	for (int i = 1; i < nrcols - 1; i++)
 		mvwaddch(interface, nrlines - 3, i, ACS_HLINE|COLOR_PAIR(4)|A_BOLD);
-	mvwaddstr(interface, 1, 2, "File:");
-	mvwaddstr(interface, 2, 2, "Path:");
 
 	//draw buttons
 	short offset = (nrcols - 20) / 2;
@@ -63,19 +61,22 @@ playWindow::playWindow()
 
 	//draw empty progress-bar
 	progress[0] = progress[1] = 0;
-	mvwchgat(interface, 5, 2, 50, A_BOLD, 3, NULL);
+	mvwchgat(interface, 2, 2, 50, A_BOLD, 3, NULL);
 
 	int color_pairs[4] = { 7,8,9,10 };
 	mixer = NULL;
 	if (!no_mixer)
 	{
-		mixer = new NMixer(interface, 10, nrlines - 10 - 5, color_pairs);
+		mixer = new NMixer(interface, 7, nrlines - 7 - 5, color_pairs);
 		if (!(mixer->NMixerInit()))
 		{
 			delete mixer;
 			mixer = NULL;
 		}
 	}
+	//remove the ugly 0 1 2 3 4 5 bar nmixer displays
+	mvwaddstr(interface, 7, 8, "                                           "\
+		"         ");
 	touchwin(interface); /* to get the colours right */
 	wrefresh(interface);
 }
@@ -83,51 +84,46 @@ playWindow::playWindow()
 playWindow::~playWindow()
 {
 	delwin(interface);
+	if (mixer)
+		delete mixer;
 }
 
 void
 playWindow::setFileName(const char *flname)
 {
 	char
-		*filepath = NULL;
-	const char
 		*filename = NULL;
+	int borderlen = 0;
 
 	if (!flname || !strlen(flname))
 		return;
 
-
-	if ( !(filename = strrchr(flname, '/')) )
+	if (strlen(flname) > (nrcols-4))
 	{
-		filename = flname;
-		filepath = new char[3];
-		strcpy(filepath, "./");
+		filename = new char[(nrcols-4)+1];
+		strcpy(filename, flname+(strlen(flname)-(nrcols-4)));
+		filename[0] = filename[1] = filename[2] = '.';
 	}
 	else
 	{
-		filename = filename + 1;
-		int fplen = strlen(flname) - strlen(filename);
-		filepath = new char[fplen + 1];
-		strncpy(filepath, flname, fplen);
-		filepath[fplen] = '\0';
+		filename = new char[strlen(flname)+1];
+		strcpy(filename,flname);
 	}
 
-	// erase possibly old filenames from interface
-	for (int i = 8; i < nrcols - 1; i++)
-	{
-		mvwaddch(interface, 1, i, ' ');
-		mvwaddch(interface, 2, i, ' ');
-	}
-	//touchline(interface, 1, 2);
-	mvwaddnstr(interface, 1, 8, filename, nrcols - 10);
-	mvwchgat(interface, 1, 8, MIN(strlen(filename), nrcols - 10), A_BOLD,
-		1, NULL);
-	mvwaddstr(interface, 2, 2, "Path:");
-	mvwaddnstr(interface, 2, 8, filepath, nrcols - 10);
-	mvwchgat(interface, 2, 8, MIN(strlen(filepath), nrcols - 10), A_BOLD,
-		1, NULL);
-	
-	delete[] filepath;
+	borderlen = ((nrcols-4)-strlen(filename))/2;
+	//put path in upper border like "-|...this/is/the/path.mp3|-"
+	for (int i=1; i < (1+borderlen); i++)
+		mvwaddch(interface, 0, i, ACS_HLINE);
+	mvwaddch(interface, 0, 1+borderlen, ACS_RTEE);
+	mvwaddstr(interface, 0, 2+borderlen, filename);
+	int roffset = nrcols - borderlen - 2;
+	if (borderlen+2+strlen(filename) == (roffset-1))
+		mvwaddch(interface, 0, roffset - 1, ' ');
+	mvwaddch(interface, 0, roffset, ACS_LTEE);
+	for (int i = roffset + 1; i < roffset + 1 + borderlen; i++)
+		mvwaddch(interface, 0, i, ACS_HLINE);
+
+	delete[] filename;
 	wrefresh(interface);
 }
 
@@ -162,7 +158,7 @@ void
 playWindow::setProperties(int mpeg_version, int layer, int freq, int bitrate,
 	bool stereo)
 {
-	mvwprintw(interface, 4, 2, "Mpeg-%d layer %d at %dhz, %d kb/s (%s)",
+	mvwprintw(interface, 1, 2, "Mpeg-%d layer %d at %dhz, %d kb/s (%s)",
 		mpeg_version, layer, freq, bitrate, (stereo ? "stereo" : "mono"));
 	wrefresh(interface);
 }
@@ -189,9 +185,9 @@ playWindow::setProgressBar(int percentage)
 		int amount = progress[1] - progress[0];
 		progress[0] = progress[1];
 		for (int i = offset; i < offset + amount; i++)
-			mvwaddch(interface, 5, i, '#');
-		mvwchgat(interface, 5, offset, amount, A_BOLD, 5, NULL);
-		touchline(interface, 5, 1);
+			mvwaddch(interface, 2, i, '#');
+		mvwchgat(interface, 2, offset, amount, A_BOLD, 5, NULL);
+		touchline(interface, 2, 1);
 	}
 	else if (progress[0] > progress[1])
 	{
@@ -199,9 +195,9 @@ playWindow::setProgressBar(int percentage)
 		int amount = progress[0] - progress[1];
 		progress[0] = progress[1];
 		for (int i = offset; i < offset + amount; i++)
-			mvwaddch(interface, 5, i, ' ');
-		mvwchgat(interface, 5, offset, amount, A_BOLD, 3, NULL);
-		touchline(interface, 5, 1);
+			mvwaddch(interface, 2, i, ' ');
+		mvwchgat(interface, 2, offset, amount, A_BOLD, 3, NULL);
+		touchline(interface, 2, 1);
 	}
 	wrefresh(interface);
 }
@@ -209,44 +205,44 @@ playWindow::setProgressBar(int percentage)
 void
 playWindow::setSongName(const char *sn)
 {
-	mvwaddstr(interface, 6, 2, "Songname: ");
-	mvwaddnstr(interface, 6, 12, "                              ", 30);
-	mvwaddnstr(interface, 6, 12, sn, 30);
+	mvwaddstr(interface, 3, 2, "Songname: ");
+	mvwaddnstr(interface, 3, 12, "                              ", 30);
+	mvwaddnstr(interface, 3, 12, sn, 30);
 	wrefresh(interface);
 }
 
 void
 playWindow::setArtist(const char *ar)
 {
-	mvwaddstr(interface, 7, 2, "Artist  : ");
-	mvwaddnstr(interface, 7, 12, "                              ", 30);
-	mvwaddnstr(interface, 7, 12, ar, 30);
+	mvwaddstr(interface, 4, 2, "Artist  : ");
+	mvwaddnstr(interface, 4, 12, "                              ", 30);
+	mvwaddnstr(interface, 4, 12, ar, 30);
 	wrefresh(interface);
 }
 
 void
 playWindow::setAlbum(const char *tp)
 {
-	mvwaddstr(interface, 8, 2, "Album   : ");
-	mvwaddnstr(interface, 8, 12, "                              ", 30);
-	mvwaddnstr(interface, 8, 12, tp, 30);
+	mvwaddstr(interface, 5, 2, "Album   : ");
+	mvwaddnstr(interface, 5, 12, "                              ", 30);
+	mvwaddnstr(interface, 5, 12, tp, 30);
 	wrefresh(interface);
 }
 
 void
 playWindow::setSongYear(const char *yr)
 {
-	mvwaddstr(interface, 6, 43, "Year  : ");
-	mvwaddnstr(interface, 6, 51, "       ", 4);
-	mvwaddnstr(interface, 6, 51, yr, 4);
+	mvwaddstr(interface, 3, 43, "Year  : ");
+	mvwaddnstr(interface, 3, 51, "       ", 4);
+	mvwaddnstr(interface, 3, 51, yr, 4);
 }
 
 void
 playWindow::setSongInfo(const char *inf)
 {
-	mvwaddstr(interface, 9, 2, "Info    :");
-	mvwaddnstr(interface, 9, 12, "                              ", 30);
-	mvwaddnstr(interface, 9, 12, inf, 30);
+	mvwaddstr(interface, 6, 2, "Info    :");
+	mvwaddnstr(interface, 6, 12, "                              ", 30);
+	mvwaddnstr(interface, 6, 12, inf, 30);
 	wrefresh(interface);
 }
 
@@ -254,9 +250,9 @@ playWindow::setSongInfo(const char *inf)
 void
 playWindow::setFrames(int frames)
 {
-	mvwaddstr(interface, 7, 43, "Frames:");
-	mvwaddnstr(interface, 7, 51, "        ", 7);
-	mvwprintw(interface, 7, 51, "%d", frames);
+	mvwaddstr(interface, 4, 43, "Frames:");
+	mvwaddnstr(interface, 4, 51, "        ", 7);
+	mvwprintw(interface, 4, 51, "%d", frames);
 	wrefresh(interface);
 }
 #endif

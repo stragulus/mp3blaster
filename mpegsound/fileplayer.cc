@@ -103,6 +103,7 @@ Mpegfileplayer::Mpegfileplayer()
 {
   loader=NULL;
   server=NULL;
+  player=NULL;
 };
 
 Mpegfileplayer::~Mpegfileplayer()
@@ -114,20 +115,22 @@ Mpegfileplayer::~Mpegfileplayer()
 bool Mpegfileplayer::openfile(char *filename,char *device)
 {
 // Player
-  if(device==NULL)device=Rawplayer::defaultdevice;
-
-  if(device[0]=='/')player=new Rawplayer;
-  else 
+  if (!player)
   {
-    if(device[0]=='-')device=NULL;
-    player=new Rawtofile;
+    if(device==NULL)device=Rawplayer::defaultdevice;
+
+    if(device[0]=='/')player=new Rawplayer;
+    else 
+    {
+      if(device[0]=='-')device=NULL;
+     player=new Rawtofile;
+    }
+
+    if(player==NULL)
+      return seterrorcode(SOUND_ERROR_MEMORYNOTENOUGH);
+    if(!player->initialize(device))
+      return seterrorcode(player->geterrorcode());
   }
-
-  if(player==NULL)
-    return seterrorcode(SOUND_ERROR_MEMORYNOTENOUGH);
-  if(!player->initialize(device))
-    return seterrorcode(player->geterrorcode());
-
 // Loader
   {
     int err;

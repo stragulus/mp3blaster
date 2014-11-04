@@ -33,6 +33,9 @@ NMixer::~NMixer()
 {
 	if (supported)
 		delete[] supported;
+	if (cpairs)
+		delete[] cpairs;
+	close(mixer);
 }
 
 short
@@ -40,7 +43,6 @@ NMixer::NMixerInit()
 {
 	int
 		i;
-	char *sources[] = SOUND_DEVICE_LABELS;
 	unsigned int setting;
 	unsigned int j;
 
@@ -50,9 +52,8 @@ NMixer::NMixerInit()
 	
 	if ( (mixer = open(MIXER_DEVICE, O_RDWR)) < 0)
 	{
-		fprintf(stderr, "Can't open /dev/mixer: ");
-		perror("");
-		mixer = NULL;
+		perror("Can't open /dev/mixer");
+		mixer = 0;
 		return 0;
 	}
 
@@ -61,12 +62,10 @@ NMixer::NMixerInit()
 	/* Determine supported devices */
 	for (j = 0; j < SOUND_MIXER_NRDEVICES; j++)
 	{
-		if (setting & (1 << j)) /*Device sources[j] is supported.*/
+		if (setting & (1 << j)) /*Device SOUND_DEV_LABELS[j] is supported.*/
 		{
 			supported = (int *)realloc(supported, (++nrbars) * sizeof(int));
 			supported[nrbars - 1] = j;
-			//fprintf(stderr, "Device %s is supported.\n", sources[j]);
-			//fflush(stderr);
 		}
 	}
 
@@ -194,10 +193,12 @@ NMixer::DrawScrollbar(int i, int spos)
  *         : value (0<=value<=100) to change to.
  * absolute: !0 if amount is an absolute value (and not relative to current
  *         : setting)
+ * update  : Wether to update the screen or not..
  * channels: One of LEFT_CHANNEL/RIGHT_CHANNEL/BOTH_CHANNELS
  */
 void
-NMixer::ChangeBar(short bar, short amount, short absolute, short channels)
+NMixer::ChangeBar(short bar, short amount, short absolute, short channels,
+	short update)
 {
 	int
 		volumes[2],
@@ -242,7 +243,8 @@ NMixer::ChangeBar(short bar, short amount, short absolute, short channels)
 	}
 	setting = (volumes[1]<<8) + volumes[0];
 	ioctl(mixer, MIXER_WRITE(supported[bar]), &setting);
-	DrawScrollbar(bar, currentspos);
+	if (update)
+		DrawScrollbar(bar, currentspos);
 }
 
 void
@@ -348,4 +350,43 @@ NMixer::ProcessKey(int key)
 			break;
 	}
 	return 1;
+}
+
+void
+NMixer::SetMixer(int device, struct volume value, short update)
+{
+	for (int i = 0; i < nrbars; i++)
+		if (supported[i] == device)
+		{
+			ChangeBar(i, value.left, 1, LEFT_CHANNEL, update);
+			ChangeBar(i, value.right, 1, RIGHT_CHANNEL, update);
+			break;
+		}
+}
+
+short
+NMixer::GetMixer(int device, struct volume *vol)
+{
+	short gotit = 0;
+	struct volume tmp;
+
+	for (int i = 0; i < nrbars; i++)
+		if (supported[i] == device)
+		{
+			int setting;
+			ioctl(mixer, MIXER_READ(supported[i]), &setting);
+			tmp.left = setting & 0x000000FF;
+			tmp.right = (setting & 0x0000FF00)>>8;
+			gotit = 1;
+			break;
+		}
+
+	if (gotit)
+	{
+		vol->left = tmp.left;
+		vol->right = tmp.right;
+		return 1;
+	}
+	else
+		return 0;
 }

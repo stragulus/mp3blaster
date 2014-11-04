@@ -1,35 +1,17 @@
 MP3Blaster is (C) Bram Avontuur (brama@stack.nl)
 This program can be redistributed under the terms of GPL (see 'COPYING')
-Please report any changes you make to this program to me by e-mail so that
-I know what's going on.
+If you have any suggestions about it, please drop me a mail.
 ------------------------------------------------------------------------
 
 Information about compiling and installing MP3Blaster on your system is listed
 in the file called 'INSTALL'.
 
-This version of MP3Blaster is tested on a linux box using kernel 2.2.0-pre7
-and above, with an Intel processor. It will probably work on other platforms
-with some changing. I'm working on it but if you are willing to do please tell
-me! 
+This version of MP3Blaster is tested on:
+Linux/i386 (libc6)
+Linux/i386 (libc5)
+Linux/alpha 
+OpenBSD/alpha
+FreeBSD/i386
 
-There's no manual or built-in help yet, but I hope the interface is intuitive
-enough to get you going. There are some keys that are not listed in the program
-you might like:
-
--ENTER:
-    If you press enter when an mp3 is highlighted the mp3 will be played.
-    If a directory is highlighted while selecting files, it will change to
-    that dir.
--SPACE:
-    While playing MP3's it will stop playing the current MP3 and skip to the
-	next song in the playlist.
-	If not playing MP3's it will select a file to be added to the playlist
-	when you're in the file-selection menu. It highlights an mp3 too when you
-	are not selecting files, but currently that doesn't do anything.
--'q' :
-    Leaves MP3Blaster or leaves the playing interface (blue screen)
--CURSOR KEYS:
-    Moves around the highlighted bar in selection mode 
--'1' - '10': They act like their respectively numbered function-keys, in case 
- the function-keys do not work or are mapped to do something else in your
- windowmanager. 
+There's no manual yet, but you can press 'h' in mp3blaster at startup
+to get an overview of all the keypresses.

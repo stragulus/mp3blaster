@@ -232,7 +232,7 @@ inline void stripfilename(char *dtr,char *str,int max)
 }
 
 // Convert mpeg to raw
-// Mpeg headder class
+// Mpeg header class
 void Mpegtoraw::initialize(char *filename)
 {
   static bool initialized=false;
@@ -664,8 +664,20 @@ bool Mpegtoraw::run(int frames)
 
     if(frequency!=lastfrequency)
     {
-      if(lastfrequency>0)seterrorcode(SOUND_ERROR_BAD);
-      lastfrequency=frequency;
+      if(lastfrequency>0) {
+	  seterrorcode(SOUND_ERROR_BAD);
+	  //fprintf(stderr, "frequency/last: %d/%d", frequency, lastfrequency);
+	  //fflush(stderr);
+	  /* assume buggy mp3: reset frequency to last known frequency 
+	   * Note that this loses support for variable (free) bitrate
+	   * mp3's, but I have never seen one of those anyway.
+	   */
+      //frequency=lastfrequency;
+	  lastfrequency = frequency;
+	  //break;
+      }
+      else
+      	lastfrequency=frequency;
     }
     if(frames<0)
     {

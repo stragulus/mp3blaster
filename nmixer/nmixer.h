@@ -52,6 +52,12 @@ extern "C" {
 
 #define MYVERSION "<<MixIt 2.0>>"
 
+struct volume
+{
+	short left;
+	short right;
+}; 
+
 class NMixer
 {
 public:
@@ -60,9 +66,13 @@ public:
 
 	short NMixerInit();
 	void DrawScrollbar(int i, int spos);
-	void ChangeBar(short bar, short amount, short absolute, short channels);
+	void ChangeBar(short bar, short amount, short absolute, short channels,
+		short update=1);
 	void RedrawBars();
 	short ProcessKey(int key);
+	/* functions for each well-known mixertype */
+	void SetMixer(int device, struct volume value, short update=1);
+	short GetMixer(int device, struct volume *vol);
 	
 private:
 	int
@@ -73,8 +83,6 @@ private:
 		mixer,
 		nrbars,
 		*cpairs;
-//	char
-//		**sources;
 	WINDOW
 		*mixwin;
 	short

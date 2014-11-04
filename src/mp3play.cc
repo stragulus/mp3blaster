@@ -21,9 +21,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/ioctl.h>
 #include "mp3play.h"
 #include "mp3player.h"
 #include "playwindow.h"
+
+#ifdef HAVE_SYS_SOUNDCARD_H
+#include <sys/soundcard.h>
+#elif HAVE_MACHINE_SOUNDCARD_H
+#include <machine/soundcard.h>
+#elif HAVE_SOUNDCARD_H
+#include <soundcard.h>
+#endif
 
 /* prototypes */
 //extern int handle_input(short);
@@ -115,6 +124,11 @@ int mp3Play::playMp3List()
 	int
 		retval = 1,
 		mp3play_downfrequency = 0;
+	unsigned int
+		next_to_play = 0;
+	short
+		play = 1;
+	mp3Player *player;
 
 	if (!nmp3s) /* nothing to play. Whaaah. */
 		return -1;
@@ -122,24 +136,30 @@ int mp3Play::playMp3List()
 	interface = new playWindow();
 	interface->setStatus(PS_NORMAL);
 
-	//for (unsigned int i = 0; i < nmp3s; i++)
-	unsigned int next_to_play = 0;
-	short play = 1;
+#define BOTTE_HACK 0
+#ifdef BOTTE_HACK
+		/* quick hack to avoid ``snap''s, turn down the volume */
+		int volume, mixer = -1;
+		if ( (mixer = open(MIXER_DEVICE, O_RDWR)) >= 0)
+		{
+			ioctl(mixer, MIXER_READ(SOUND_MIXER_VOLUME), &volume);
+			ioctl(mixer, MIXER_WRITE(SOUND_MIXER_VOLUME), 0);
+		}
+#endif 
 
+	player = new mp3Player(this, interface, threads);
+	
+	//for (unsigned int i = 0; i < nmp3s; i++)
 	while (play)
 	{
-		mp3Player
-			*player;
 		unsigned int
 			i = next_to_play;
 		char
 			*filename = mp3s[i];
-	
+
 		next_to_play++; //default is to play next mp3 in list after this one.
 		action = AC_NEXT; //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-		player = new mp3Player(this, interface, threads);
-   
 		if( !(player->openfile(filename, SOUND_DEVICE)) )
 		{
 			error(player->geterrorcode());
@@ -148,7 +168,12 @@ int mp3Play::playMp3List()
 		{
 			interface->setFileName(filename);
 			player->setdownfrequency(mp3play_downfrequency);
-	
+
+#ifdef BOTTE_HACK
+		if (mixer > -1)
+			ioctl(mixer, MIXER_WRITE(SOUND_MIXER_VOLUME), &volume);
+#endif
+
 #ifdef PTHREADEDMPEG
 			if ( !(player->playingwiththread(1)) )
 				error(player->geterrorcode());
@@ -172,13 +197,14 @@ int mp3Play::playMp3List()
 			else if (action == AC_SAMESONG) /* play that song again, sam */
 				next_to_play--;
 		}
-		delete player;
 		
 		if (next_to_play >= nmp3s)
 			play = 0;
-	}
 
+	}
+	
+	delete player;
 	delete interface;
+
 	return retval;
 }
-

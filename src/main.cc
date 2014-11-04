@@ -36,14 +36,14 @@
  * an OS plz. contact me! I don't think the interface needs a lot of 
  * changing, but about the actual mp3-decoding algorithm I'm not sure since
  * I didn't code it and don't know how sound's implemented on other OS's.
- * Current version is 2.0b4. It probably contains a lot of bugs, but I've
+ * Current version is 2.0b6. It probably contains a lot of bugs, but I've
  * completely rewritten the code from the 1.* versions into somewhat readable
  * C++ classes. It's not yet as object-oriented as I want it, but it's a
  * start..
  * KNOWN BUGS:
- * -Might coredump when an attempt to play an unsupported mp3 is made
- *  (judging from the source-code of the mpegsound-lib it seems it only 
- *  supports 22/32/44Khz audiofiles with a min. bitrate of 56kbit/s)
+ * -Might coredump when an attempt to play an unsupported mp3 is made..
+ *  although I think it plays all mp3's now. If you can reproduce a bug,
+ *  PLEASE email me.
  */
 #include "mp3blaster.h"
 #include NCURSES
@@ -101,6 +101,7 @@ void add_selected_file(const char*);
 char *get_current_working_path();
 void play_one_mp3(const char*);
 void usage();
+void show_help();
 
 #define OPT_LOADLIST 1
 #define OPT_DEBUG 2
@@ -260,9 +261,9 @@ main(int argc, char *argv[])
 
 	startup_path = get_current_working_path();
 
-	if (LINES < 25 || COLS < 80)
+	if (LINES < 24 || COLS < 80)
 	{
-		mvaddstr(0, 0, "You'll need at least an 80x25 screen, sorry.\n");
+		mvaddstr(0, 0, "You'll need at least an 80x24 screen, sorry.\n");
 		getch();
 		endwin();
 		exit(1);
@@ -317,12 +318,13 @@ main(int argc, char *argv[])
 	wbkgd(message_window, ' '|COLOR_PAIR(1)|A_BOLD);
 	leaveok(message_window, TRUE);
 	wborder(message_window, 0, 0, ' ', 0, ACS_VLINE, ACS_VLINE, 0, 0);
+	mw_settxt("Press 'h' to get a screen with key functions.");
 	wrefresh(message_window);
 
 	/* display play-mode in command_window */
-	mvwaddstr(command_window, 14, 1, "Current group's mode:");
+	mvwaddstr(command_window, 13, 1, "Current group's mode:");
 	cw_toggle_group_mode(1);
-	mvwaddstr(command_window, 17, 1, "Current play-mode: ");
+	mvwaddstr(command_window, 16, 1, "Current play-mode: ");
 	cw_toggle_play_mode(1);
 
 	progmode = PM_NORMAL;
@@ -1046,7 +1048,7 @@ read_playlist(const char *filename)
 	while (read_group_from_file(f))
 		;
 
-	mw_settxt("Added playlist!");
+	//mw_settxt("Added playlist!");
 
 #if 0
 	/* Why the F*CK did I ever add this crap??????????????? */
@@ -1127,9 +1129,9 @@ cw_toggle_group_mode(short notoggle)
 	getmaxyx(command_window, maxy, maxx);
 	
 	for (i = 1; i < maxx - 1; i++)
-		mvwaddch(command_window, 15, i, ' ');
+		mvwaddch(command_window, 14, i, ' ');
 
-	mvwaddstr(command_window, 15, 1, modes[sw->sw_playmode]);
+	mvwaddstr(command_window, 14, 1, modes[sw->sw_playmode]);
 	wrefresh(command_window);
 }
 
@@ -1149,7 +1151,7 @@ cw_toggle_play_mode(short notoggle)
 			case PLAY_GROUP:  play_mode = PLAY_GROUPS; break;
 			case PLAY_GROUPS: play_mode = PLAY_GROUPS_RANDOMLY; break;
 			case PLAY_GROUPS_RANDOMLY: play_mode = PLAY_SONGS; break;
-			case PLAY_SONGS: play_mode = PLAY_GROUPS; break;
+			case PLAY_SONGS: play_mode = PLAY_GROUP; break;
 			default: play_mode = PLAY_GROUP;
 		}
 	}
@@ -1158,8 +1160,8 @@ cw_toggle_play_mode(short notoggle)
 	
 	for (i = 1; i < maxx - 1; i++)
 	{	
+		mvwaddch(command_window, 17, i, ' ');
 		mvwaddch(command_window, 18, i, ' ');
-		mvwaddch(command_window, 19, i, ' ');
 	}
 
 	desc = playmodes_desc[play_mode];
@@ -1180,12 +1182,12 @@ cw_toggle_play_mode(short notoggle)
 		desc3 = strrchr(desc2, ' ');
 		index = strlen(desc) - (strlen(desc3) + (strlen(desc) - 
 			strlen(desc2))) + 1;
-		mvwaddnstr(command_window, 18, 1, desc, index - 1);
-		mvwaddstr(command_window, 19, 1, desc + index);
+		mvwaddnstr(command_window, 17, 1, desc, index - 1);
+		mvwaddstr(command_window, 18, 1, desc + index);
 		free(desc2);
 	}
 	else
-		mvwaddstr(command_window, 18, 1, playmodes_desc[play_mode]);
+		mvwaddstr(command_window, 17, 1, playmodes_desc[play_mode]);
 	wrefresh(command_window);
 }
 
@@ -1204,7 +1206,7 @@ play_list()
 
 	progmode = PM_MP3PLAYING;
 	set_default_fkeys(progmode);
-	mw_settxt("Use 'q' to return to the playlist-editor.");
+	//mw_settxt("Use 'q' to return to the playlist-editor.");
 	mp3Play
 		*player = new mp3Play((const char**)mp3s, nmp3s);
 #ifdef PTHREADEDMPEG
@@ -1236,7 +1238,7 @@ play_one_mp3(const char *filename)
 	strcpy(mp3s[0], filename);
 	progmode = PM_MP3PLAYING;
 	set_default_fkeys(progmode);
-	mw_settxt("Use 'q' to return to the playlist-editor.");
+	//mw_settxt("Use 'q' to return to the playlist-editor.");
 	mp3Play
 		*player = new mp3Play((const char **)mp3s, 1);
 #ifdef PTHREADEDMPEG
@@ -1407,7 +1409,7 @@ change_threads()
 {
 	if ( (threads += 50) > 500)
 		threads = 0;
-	mvwprintw(command_window, 21, 1, "Threads: %03d", threads);
+	mvwprintw(command_window, 20, 1, "Threads: %03d", threads);
 	wrefresh(command_window);
 }
 #endif
@@ -1473,8 +1475,10 @@ handle_input(short no_delay)
 		switch(key)
 		{
 			case 'q': retval = -1; break;
+			case 'h': show_help(); break;
 			case KEY_DOWN: sw->changeSelection(1); break;
 			case KEY_UP: sw->changeSelection(-1); break;
+			case 'd':
 			case KEY_DC: sw->delItem(sw->sw_selection); break;
 			case KEY_NPAGE: sw->pageDown(); break;
 			case KEY_PPAGE: sw->pageUp(); break;
@@ -1529,10 +1533,6 @@ handle_input(short no_delay)
 #endif
 #ifdef DEBUG
 			case 'c': sw->addItem("Hoei.mp3"); sw->swRefresh(1); break;
-			case 'd':
-				for (int i = 0; i < sw->getNitems(); i++)
-					Error(sw->getItem(i));
-				break;
 			case 'f': fprintf(stderr, "Garbage alert!"); break;
 #endif
 		}
@@ -1545,6 +1545,7 @@ handle_input(short no_delay)
 		switch(key)
 		{
 			case 'q': retval = -1; break;
+			case 'h': show_help(); break;
 			case KEY_DOWN: sw->changeSelection(1); break;
 			case KEY_UP: sw->changeSelection(-1); break;
 			case KEY_NPAGE: sw->pageDown(); break;
@@ -1581,4 +1582,57 @@ handle_input(short no_delay)
 	}
 	
 	return retval;
+}
+
+void
+show_help()
+{
+	short h=(COLS/2)+1;
+	WINDOW *helpwin = NULL;
+
+	wclear(stdscr);
+	touchwin(stdscr);
+	helpwin = stdscr;
+	wborder(helpwin, 0, 0, 0, 0, 0, 0, 0, 0);
+	/* Playlist Editor keys */
+	mvwaddstr(helpwin, 1, (COLS-15)/2, "Playlist Editor");
+	mvwaddstr(helpwin, 2,  1, "F1/1  : Enter file browser");
+	mvwaddstr(helpwin, 3,  1, "F2/2  : Add a group to playlist");
+	mvwaddstr(helpwin, 4,  1, "F3/3  : Select next group");
+	mvwaddstr(helpwin, 5,  1, "F4/4  : Set current group's title");
+	mvwaddstr(helpwin, 6,  1, "F5/5  : Load/Add playlist");
+	mvwaddstr(helpwin, 7,  1, "F6/6  : Write playlist");
+	mvwaddstr(helpwin, 8,  1, "Space : Select MP3 (useless)");
+	mvwaddstr(helpwin, 9,  1, "q     : Exit Mp3blaster");
+	mvwaddstr(helpwin, 2,  h, "F7/7  : Toggle this group's play order");
+	mvwaddstr(helpwin, 3,  h, "F8/8  : Toggle global play order");
+	mvwaddstr(helpwin, 4,  h, "F9/9  : Enter Playing Mode");
+	mvwaddstr(helpwin, 5,  h, "F10/0 : Change threads (buffering)");
+	mvwaddstr(helpwin, 6,  h, "Enter : Play only highlighted MP3");
+	mvwaddstr(helpwin, 7,  h, "Del/d : Remove hilited MP3 from group");
+	mvwaddstr(helpwin, 8,  h, "h     : This screen(exit by keypress)");
+	
+	/* File Browser keys */
+	mvwaddstr(helpwin, 11, (COLS-12)/2, "File Browser");
+	mvwaddstr(helpwin, 12,  1, "F1/1  : Add select files to group");
+	mvwaddstr(helpwin, 13,  1, "        and return to Playlist Editor");
+	mvwaddstr(helpwin, 14,  1, "F2/2  : Invert current selection");
+	mvwaddstr(helpwin, 12,  h, "F3/3  : Recursively select&add MP3's");
+	mvwaddstr(helpwin, 13,  h, "Enter : (if on dir) change directory");
+	mvwaddstr(helpwin, 14,  h, "q     : Exit Mp3blaster");
+
+	/* Play Mode keys */
+	mvwaddstr(helpwin, 16, (COLS-12)/2, "Playing Mode");
+	mvwaddstr(helpwin, 17,  1, "1..6  : CD-Style playlist control");
+	mvwaddstr(helpwin, 18,  1, "Arrows: Operates Mixer (if enabled)");
+	mvwaddstr(helpwin, 19,  1, "Space : Play next MP3 (same as '5')");
+	mvwaddstr(helpwin, 17,  h, "q     : Return to Playlist Editor");
+
+	mvwaddstr(helpwin, LINES-2, (COLS-24)/2, "Press a key to exit help");
+
+	wrefresh(helpwin);
+	getch();
+	//delwin(helpwin);
+	refresh_screen();
+	return;
 }

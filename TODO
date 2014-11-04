@@ -1,50 +1,33 @@
- -path/filename in bovenste rand playwindow (als niet past:...../bla.mp3)
- -plugin support
- -"no mixer" support
- -chrooted environment
- -"press q to return to playlist" msg
- -init_color for mixer 
- -"multiple del"
- -if no mixer-device is detected, don't try to do anything with the
-  mixer in playwindow.cc..
- -NAS (Network Audio System) support!!
- -find out why many mp3's give 'Can't make thread' near the end of the song.
-  (because of  id3tag perhaps?)
- -improve writing/reading of playlist code.
- -Add support for playing wav files too
- -refresh_screen() that actually works at all times.
- -simple volume control within the program
- -fix a memory-leak. After each played song, 4kb is lost(oops) (but 
-  regained if you leave the playlist by F1 :) So far I can't find anything
-  causing it in my program..
- -Allowing user to change group-order (and mp3-order afterwards)
- -when paused, show this on the interface.
- -update border in refresh_screen() too
- -Don't close and reopen sound-device - better open the sound-device at
-  startup and close it afterwards. Avoids irritating cracks&hisses at the
-  beginning of each song played.
- -Forward/Rewind while playing in relative amounts.
- -Save playing status when program is interrupted, so the playlist can be 
-  resumed when mp3blaster is restarted (useful for *big* playlists)
- -On my cleanly-installed debian-2.0 linux box the blue play-window's layout
-  is fucked up bad. Probably due to the ncurses-lib on it (and perhaps because
-  I do some unsupported tricks with ncurses, to work around `features' *cough*)
-  Gotta look into that..
- -built-in helpmenu
-
-DONE:
- -save path at startup for playlist reading/saving
- -be consistent about .lst extension (i.e., don't add it automagically
-  when writing a playlist)
- -!! After group is added, CHANGE to the new group!! (and mention it)
-  (same case after reading a playlist->update add_group code)
- -fix bug when playlist is read from a file, it doesn't display the
-  correct contents for the current group
- -glibc2-compliant. (dunno if glibc1 still works)
- -Don't wait for keypress after warning/error: Just wait 1/2 seconds
- -Implemented autoconf/automake
- -Get/hack source that plays mp2's too. (22Khz 56kbit/s & some more modes)
-  This problem was fixed with splay-0.8.2's mpegsound-lib.
-
-BUGS:
- -screen clears after 'invalid filename (should end with .mp3/mp2)'
+-(Save group's playorder in playlist!)
+-(compatible with WinAmp playlist)
+-(play single group playmode)
+-(``cold start'' option)
+-(add elapsed/remaining time/position_indicator)
+-(add browsable playlist in playwindow)
+-(add wav/http support)
+-(include getopt.c/getopt.h from GNU site so all OS's support getopt_long)
+-InfraRed support!
+-path/filename in upper border playwindow
+-plugin support
+-better chrooted environment
+-"multiple del"
+-if no mixer-device is detected, don't try to do anything with the
+ mixer in playwindow.cc..
+-NAS (Network Audio System) support!!
+-find out why many mp3's give 'Can't make thread' near the end of the song.
+ (because of  id3tag perhaps?)
+-improve writing/reading of playlist code.
+-refresh_screen() that actually works at all times.
+-fix a memory-leak. After each played song, 4kb is lost(oops) (but 
+ regained if you leave the playlist by F1 :) So far I can't find anything
+ causing it in my program..
+-Allowing user to change group-order (and mp3-order afterwards)
+-when paused, show this on the interface.
+-update border in refresh_screen() too
+-Forward/Rewind while playing in relative amounts.
+-Save playing status when program is interrupted, so the playlist can be 
+ resumed when mp3blaster is restarted (useful for *big* playlists)
+-On my cleanly-installed debian-2.0 linux box the blue play-window's layout
+ is f*cked up bad. Probably due to the ncurses-lib on it (and perhaps because
+ I do some unsupported tricks with ncurses, to work around `features' *cough*)
+ Gotta look into that.. (appears to be an ncurses ``feature'')

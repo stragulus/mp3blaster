@@ -5,6 +5,7 @@
 // Rawplayer.cc
 // Playing raw data with sound type.
 // It's for only Linux
+// (Bram)Ahem..also for FreeBSD & OpenBSD & perhaps more.
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -67,6 +68,13 @@ int Rawplayer::setvolume(int volume)
 /* Rawplayer class */
 /*******************/
 // Rawplayer class
+Rawplayer::Rawplayer()
+{
+	//need to do this when object of this class is used for more than one
+	//mp3.
+	rawstereo = rawsamplesize = rawspeed = 0;
+}
+
 Rawplayer::~Rawplayer()
 {
   close(audiohandle);
@@ -116,13 +124,16 @@ int Rawplayer::getprocessed(void)
 
 bool Rawplayer::setsoundtype(int stereo,int samplesize,int speed)
 {
-  rawstereo=stereo;
-  rawsamplesize=samplesize;
-  rawspeed=speed;
+  int changed = 0;
+
+  if (rawstereo != stereo) { rawstereo = stereo; changed++; }
+  if (rawsamplesize != samplesize) { rawsamplesize = samplesize; changed++; }
+  if (rawspeed != speed) { rawspeed = speed; changed++; }
   forceto8 = false;
   forcetomono = 0;
-
-  return resetsoundtype();
+  if (changed)
+  	return resetsoundtype();
+  return true;
 }
 
 bool Rawplayer::resetsoundtype(void)

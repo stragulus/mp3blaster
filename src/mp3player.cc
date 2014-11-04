@@ -73,7 +73,7 @@ bool mp3Player::playing(int verbose)
 	while(should_play)
 	{
 		if (status == PS_PLAYING)
-			should_play = (server->run(5));
+			should_play = (server->run(1));
 		else 
 			usleep(100); //cause a little delay to reduce system overhead
 
@@ -217,7 +217,7 @@ bool mp3Player::playingwiththread(int verbose)
 	while(should_play)
 	{
 		if (status == PS_PLAYING)
-			should_play = (server->run(5));
+			should_play = (server->run(1));
 		else if (status == PS_PAUSED)
 		{
 			if (server->getframesaved() < nthreads - 1)
@@ -338,7 +338,6 @@ bool mp3Player::playingwiththread(int verbose)
 
 	if (status != PS_STOPPED)
 		server->freethreadedplayer();
-
 	interface->setStatus( (status = PS_NORMAL) );
   
 	return ( (geterrorcode() == SOUND_ERROR_FINISH) || (geterrorcode() ==

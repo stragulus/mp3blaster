@@ -299,6 +299,7 @@ private:
 class Rawplayer : public Soundplayer
 {
 public:
+  Rawplayer();
   ~Rawplayer();
 
   bool initialize(char *filename);
