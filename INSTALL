@@ -1,0 +1,46 @@
+MP3Blaster is (C) Bram Avontuur (brama@mud.stack.nl)
+This program can be redistributed under the terms of GPL (see 'COPYING')
+Please report any changes you make to this program to me by e-mail so that
+I know what's going on.
+------------------------------------------------------------------------
+
+To install MP3Blaster on your system, you will need a few more packages,
+all of which you can find on my homepage (http://www.stack.nl/~brama/).
+These are:
+
+-linuxthreads (libpthreads-library for linux)
+-splay-0.5 (only the mpegsound-lib from this program is used)
+
+Unpack these files in the same dir as the archive this file was in, then change
+to the mp3blaster directory.
+Check the Makefile to adjust the settings for your system, although they are
+probably okay the way they are. 
+
+First, make and install the libpthreads-package. The library you've now 
+installed should be in the default library-path (LD_LIBRARY_PATH). If it is
+installed in /usr/local/lib, that's okay too since that's already being looked
+after by the Makefile. If it does not, make sure the path to it is present in
+your LD_LIBRARY_PATH variable!
+
+Now make the splay-0.5 package (see its INSTALL file), since this program
+needs the library that will be produced by its configure script.
+You don't have to build the entire splay-package. If you only want to be able
+to use MP3Blaster, go to the splay-0.5 dir and do:
+
+./configure --with-pthreads
+cd mpegsound
+make
+
+The mpegsound library should be compiled now.
+
+To build mp3blaster change to this directory (mp3blaster-VERSION) and do:
+
+make
+make install (as root, or as user if you changed the paths in the makefile to
+              point to your homedir)
+
+If everything went alright, you should be able to run the player now by typing
+'mp3blaster' on your command prompt. (it's a good idea to link this file to
+something shorter like 'mp3play', with the command 'ln -sf mp3blaster mp3play'
+in the right dir)
+See 'README' for additional help on the program.

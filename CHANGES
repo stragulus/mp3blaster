@@ -1,3 +1,32 @@
+V1.0.0: 1997/09/07
+==================
+
+This is the very first version I considered worthy distributing. Most major
+features I planned have actually be implemented now though there's still a
+lot of room for improvement..but since I like to get opinions from other 
+people who use it I released it. Some changes since the previous version:
+
+-Loading a playlist now is possible, though it can only load it's own generated
+ playlists. If you already have playlists that are nothing more than a list
+ of filenames(+paths!) of *.mp3-files (mp2 not yet supported) then you can try
+ to insert 1 line at the top of the file reading: "GROUPNAME: Default" 
+ (without the double quotes).
+-Problems with file-selection fixed. File-selection should be pretty reliable
+ now.
+-cosmetic bug-fixes (mostly text that could be written past a boundary)
+
+V0.9.5.1: 1997/09/07
+--------------------
+
+Fixed a bug that caused selected items following a deleted item to shift up one
+item.
+
+V0.9.5: 1997/09/07
+------------------
+
+Added pageup/pagedown support for sw_window selection windows.
+Some minor bugfixes.
+
 V0.9.4: 1997/09/04
 ------------------
 
@@ -17,17 +46,17 @@ to the current group they won't be lost (as before) but stored and added to
 the group-window when you press F1(add files)
 
 V0.9.2: 1997/08/26
--------
+------------------
 
 'Select all' feature changed into 'invert selection' feature.
 
 V0.9.1: 1997/08/25
--------
+------------------
 
 'Select all' feature built in for the file selection window.
 
 V0.9.0: 1997/08/22
--------
+------------------
 
 This is the first 'working' version that can play mp3's in group in any random
 order, etc. It's still not ready to be released because of lacking features that

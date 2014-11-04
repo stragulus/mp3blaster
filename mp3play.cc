@@ -1,4 +1,6 @@
-/* Mp3Play v0.9.3.1 (C) 1997 Bram Avontuur (brama@mud.stack.nl)
+/* Mp3Blaster (C) 1997 Bram Avontuur (brama@mud.stack.nl)
+ * This program may be distributed under the terms of GPL (see 'COPYING')
+ *
  * This is an MP3 (Mpeg layer 3 audio) player. Although there are many 
  * mp3-players around for almost any platform, none of the others have the
  * ability of dividing a playlist into groups. Having groups is very useful,
@@ -7,17 +9,33 @@
  * new-age album on one CD, you probably wouldn't like to mix those!). With
  * this program you can shuffle the entire playlist, play groups(albums) in
  * random order, play in a predefined order, etc. etc.
- * Thanks go out to Jung woo-jae (jwj95@eve.kaist.ac.kr) who made the 
- * mpegsound library used by this program.
+ * Thanks go out to Jung woo-jae (jwj95@eve.kaist.ac.kr) and some other people
+ * who made the mpegsound library used by this program. (see source-code from
+ * splay-0.5)
  * If you like this program, or if you have any comments, tips for improve-
- * ment, money, etc, you can e-mail me at the following address:
- * brama@mud.stack.nl.
+ * ment, money, etc, you can e-mail me at brama@mud.stack.nl or visit my
+ * homepage (http://www.stack.nl/~brama/).
+ * If you want this program for another platform (like Win95) there's some
+ * hope. I'm currently trying to get the hang of programming interfaces for
+ * that OS (may I be forgiven..). Maybe other UNIX-flavours will be supported
+ * too (SunOS f.e.). If you'd like to take a shot at converting it to such
+ * an OS plz. contact me! I think the interface shouldn't need a lot of 
+ * changing, but about the actual mp3-decoding algorithm I'm not sure since
+ * I didn't code it and don't know how sound's implemented on other OS's.
+ * Current version is 1.0.0, the very first distributable version. It probably
+ * contains a lot of bugs, and the code is far from reable/optimized. I am
+ * working on it so don't bother me with it :) Advice on interesting improve-
+ * ments ofcourse is nice..
  * TODO:
- * 02-loading a playlist (snicker)
- * 11-Pageup/down support
+ * 16-A MANUAL. 
  * 12-fix ctrl+l
- * 04-fix a memory-leak. After each played song, 16kb is lost(oops)
- * 06-Allowing user to change group-order
+ * 14-Separate the interface from the actual mp3-playing code so that you still
+ *    can scroll etc. during playback.
+ * 15-implement simple volume control within the program.
+ * 04-fix a memory-leak. After each played song, 16kb is lost(oops) (but 
+ * regained if you leave the playlist by F1 :) So far I can't find anything
+ * causing it in my program so maybe it's the mpegsound-library I'm using..
+ * 06-Allowing user to change group-order (and mp3-order afterwards)
  * 08-Split code in more logical chunks.
  * 09-Get/hack source that plays mp2's too. (22Khz 56kbit/s & some more modes)
  * 10-Get rid of the annoying blinking cursor!
@@ -26,7 +44,6 @@
  *  (can't fix that, the playing-bit is not my code ;-)
  */
 #include <curses.h>
-#include <unistd.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,11 +51,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>
-#include <errno.h>
 #include <time.h>
 
 /* define this when the program's not finished (i.e. stay off :-) */
 #undef UNFINISHED
+
+/* version of this program */
+#define VERSION "0.9.5.1"
 
 #define MAX_FILE_LEN 200
 #define MIN(x,y) ( (x) < (y) ? (x) : (y) )
@@ -100,6 +119,7 @@ void sw_endwin(struct sw_window*);
 void sw_additem(struct sw_window*, const char *);
 void sw_delitem(struct sw_window*, int);
 void sw_pagedown(struct sw_window*);
+void sw_pageup(struct sw_window*);
 int sw_is_selected(struct sw_window *, int);
 int sw_write_to_file(struct sw_window *, FILE *);
 void fw_create(void);
@@ -122,12 +142,14 @@ void select_group();
 void set_group_name(struct sw_window *);
 void mw_clear();
 void mw_settxt(const char*);
+void read_playlist();
 void write_playlist();
 void play_list();
 void play_set_default_fkeys();
 void add_selected_file(const char *);
 void recsel_files(const char *);
 void change_threads();
+void get_current_working_path();
 
 /* global vars */
 
@@ -167,12 +189,19 @@ short
 int
 main(int argc, char *argv[])
 {
-	int i;
+	int
+		i,
+		key;
 	char
 		*grps[] = { "01" },
-		*dummy = NULL;
+		*dummy = NULL,
+		version_string[79];
 
-	int key;
+	/* avoid annoying 'unused variable' messages */
+	if (argc > 74654)
+		;
+	if (strlen(argv[0]) > 283746)
+		;
 
 	initscr();
 	start_color();
@@ -237,6 +266,9 @@ main(int argc, char *argv[])
 	/* initialize message window */
 	message_window = newwin(2, COLS, LINES - 2, 0);
 	wborder(message_window, 0, 0, ' ', 0, ACS_VLINE, ACS_VLINE, 0, 0);
+	sprintf(version_string, "MP3Blaster V%s (C)1997 Bram Avontuur "\
+		"(http://www.stack.nl/~brama/)", VERSION);
+	mw_settxt(version_string);
 	wrefresh(message_window);
 
 	/* display play-mode in command_window */
@@ -279,11 +311,17 @@ main(int argc, char *argv[])
 						sw->sw_selection);
 				}
 				break;
-			case KEY_PPAGE:
+			case KEY_NPAGE:
 				if (file_window)
 					sw_pagedown(file_window);
 				else
 					sw_pagedown(group_stack[current_group - 1]);
+				break;
+			case KEY_PPAGE:
+				if (file_window)
+					sw_pageup(file_window);
+				else
+					sw_pageup(group_stack[current_group - 1]);
 				break;
 			case ' ':
 				if (file_window)
@@ -298,32 +336,52 @@ main(int argc, char *argv[])
 				}
 				break;
 			case 12: /* ^l - refresh screen */
+			case 'l':
+			case KEY_REFRESH:
 				refresh_screen();
 				break;
 			case 13: /* enter */
-				if (!file_window)
+				if (!file_window || (file_window && !fw_isdir(
+					file_window->sw_selection)) )
 				{
-					/* in test-phase ! ! */
-					if (group_stack[current_group - 1]->nitems > 0)
-					{
-						const char
-							header[] = "Now playing: ";
-						char
-							*filename = group_stack[current_group - 1]->
-								items[group_stack[current_group - 1]->
-								sw_selection],
-							*message = (char *)malloc(strlen(filename) +
-								strlen(header) + 1);
+					const char 
+						header[] = "Now playing: ";
+					char
+						*filename = NULL,
+						*message = NULL;
 
-						strcpy(message, header);
-						strcat(message, filename);
-						mw_settxt(message);
-						free(message);
-						play_set_default_fkeys();
-						playmp3(filename, threads);
-						cw_set_default_fkeys();
-						mw_clear();
+					if (!file_window && group_stack[current_group - 1]->
+						nitems > 0)
+					{
+						filename = group_stack[current_group - 1]->
+							items[group_stack[current_group - 1]->
+							sw_selection];
 					}
+					else if (file_window && file_window->nitems > 0)
+					{
+						filename = file_window->items[file_window->
+							sw_selection];
+					}
+					else
+						break;
+
+					if (!is_mp3(filename))
+						break;
+
+					message = (char *)malloc(strlen(filename) +
+						strlen(header) + 1);
+					strcpy(message, header);
+					strcat(message, filename);
+					mw_settxt(message);
+					free(message);
+					play_set_default_fkeys();
+					playmp3(filename, threads);
+
+					if (!file_window)
+						cw_set_default_fkeys();
+					else
+						fw_set_default_fkeys();
+					mw_clear();
 				}
 				else if (fw_isdir(file_window->sw_selection))
 				{
@@ -372,23 +430,26 @@ main(int argc, char *argv[])
 				if (!file_window)
 					set_group_name(group_stack[current_group - 1]);
 				break;
-			case KEY_F(5): /* F5 - write playlist */
-				if (file_window)
-					break;
-				write_playlist();
+			case KEY_F(5): /* F5 - read playlist */
+				if (!file_window)
+					read_playlist();
 				break;
-			case KEY_F(6): /* F6 - toggle group's mode */
+			case KEY_F(6): /* F6 - write playlist */
+				if (!file_window)
+					write_playlist();
+				break;
+			case KEY_F(7): /* F7 - toggle group's mode */
 				cw_toggle_group_mode(0);
 				playlist->update_list = 1;
 				break;
-			case KEY_F(7): /* F7 - toggle play mode */
+			case KEY_F(8): /* F8 - toggle play mode */
 				cw_toggle_play_mode(0);
 				break;
-			case KEY_F(8): /* F8 - play list */
+			case KEY_F(9): /* F9 - play list */
 				playlist->update_list = 1;
 				play_list();
 				break;
-			case KEY_F(9): /* F9 - change #threads */
+			case KEY_F(10): /* F10 - change #threads */
 				change_threads();
 				break;
 			case 'c': /* another test-key */
@@ -396,9 +457,18 @@ main(int argc, char *argv[])
 				sw_refresh(group_stack[current_group - 1], 1);
 				break;
 			case 'd': /* another test-key */
-				for ( i = 0; i < group_stack[current_group - 1]->nitems; i++)
-					Error(group_stack[current_group - 1]->items[i]);
+			{
+				struct sw_window *bla;
+
+				if (file_window)
+					bla = file_window;
+				else
+					bla = group_stack[current_group - 1];
+
+				for ( i = 0; i < bla->nitems; i++)
+					Error(bla->items[i]);
 				break;
+			}
 			case 'e': /* even another test-key */
 			{
 				char a[100];
@@ -556,6 +626,7 @@ sw_deselect_item(struct sw_window *sw, int which)
 }
 
 /* sw_delitem removes sw->sw_items[item_index] and redraws selection window
+ * 1997.09.07: Now also updates sw_selected_items.
  */
 void
 sw_delitem(struct sw_window *sw, int item_index)
@@ -568,6 +639,13 @@ sw_delitem(struct sw_window *sw, int item_index)
 
 	if ( sw_is_selected(sw, item_index) )
 		sw_deselect_item(sw, item_index);
+
+	/* update sw_selected_items */
+	for (i = 0; i < sw->nselected; i++)
+	{
+		if (sw->sw_selected_items[i] > item_index)
+			--(sw->sw_selected_items[i]);
+	}
 	
 	for (i = item_index; i < (sw->nitems - 1); i++)
 	{
@@ -646,12 +724,19 @@ sw_settitle(struct sw_window *sw, const char *tmp)
  * Arguments    : sw    : the selection-window to redraw
  *              : scroll: Whether or not the contents of the window scroll 
  *              :       : up/down (non-zero if they do), or if the window 
- *              :       : needs to be redrawn.
+ *              :       : needs to be redrawn. If scroll == 2 the window will
+ *              :       : be erased completely before anything's added to it.
  */
 void
 sw_refresh(struct sw_window *sw, short scroll)
 {
 	int i;
+
+	if (scroll == 2)
+	{
+		werase(sw->sw_win);
+		wborder(sw->sw_win, 0, 0, 0, 0, ACS_LTEE, ACS_RTEE, ACS_BTEE, ACS_BTEE);
+	}
 
 	for (i = 1; i < MIN((sw->height) - 1, sw->nitems -
 		sw->shown_range[0] + 1); i++)
@@ -661,7 +746,7 @@ sw_refresh(struct sw_window *sw, short scroll)
 		char *item_name;
 
 		/* erase current line if needed */
-		if ((item_index == sw->sw_selection) || scroll)
+		if (scroll != 2 && ((item_index == sw->sw_selection) || scroll))
 			mvwaddstr(sw->sw_win, i, sw->xoffset, sw->sw_emptyline);
 
 		if (sw->showpath)
@@ -682,23 +767,37 @@ sw_refresh(struct sw_window *sw, short scroll)
 		mvwaddnstr(sw->sw_win, i, sw->xoffset, item_name, sw->width - 1 -
 			sw->xoffset);
 
-		if ( sw_is_selected(sw, item_index) )
+		if ( item_index != sw->sw_selection && sw_is_selected(sw, item_index) )
 		{
-			mvwchgat(sw->sw_win, i, sw->xoffset, strlen(item_name),
-				A_BOLD, 1, NULL);
+			unsigned int
+				maxx, maxy,
+				drawlen;
+			
+			getmaxyx(sw->sw_win, maxy, maxx);
+
+			drawlen = MIN(strlen(item_name), (maxx - 1 -sw->xoffset));
+
+			mvwchgat(sw->sw_win, i, sw->xoffset, drawlen, A_BOLD, 1, NULL);
 		}
 
 		if (item_index == sw->sw_selection)
 		{
-			int colour = 1;
-#ifdef DEBUG
-			mvprintw(16, 1, "item_index = %d", item_index);
-			refresh();
-#endif
+			int
+				maxx, maxy,
+				drawlen,
+				colour = 1;
+			unsigned int
+				tmp;
+			
+			getmaxyx(sw->sw_win, maxy, maxx);
+			tmp = maxx - 1 - sw->xoffset;
+
+			drawlen = MIN(strlen(item_name), tmp);
+
 			/* draw highlighted selection bar */
 			if ( sw_is_selected(sw, item_index) )
 				++colour;
-			mvwchgat(sw->sw_win, i, sw->xoffset, strlen(item_name),
+			mvwchgat(sw->sw_win, i, sw->xoffset, drawlen,
 				A_REVERSE, colour, NULL);
 		}
 	}
@@ -808,26 +907,109 @@ sw_select_item(struct sw_window *sw)
 }
 
 void
-sw_pagedown(struct sw_window *sw)
+sw_pageup(struct sw_window *sw)
 {
 	int
-		maxx, maxy, selected_item;
+		maxx, maxy,
+		sw_relative_sel,
+		old_selection, new_selection;
+
+	if (!(sw->nitems))
+		return;
+
+	/* 1 special case */
+	if (sw->shown_range[0] == 0)
+	{
+		int change = 0 - sw->sw_selection;
+		sw_change_selection(sw, change);
+		return;
+	}
 
 	getmaxyx(sw->sw_win, maxy, maxx);
 
-	selected_item = sw->shown_range[0];
-	selected_item += (maxy - 2);
-	if (selected_item > sw->nitems - 1)
-		selected_item = sw->nitems - 1;
-	if (selected_item < 0)
-		selected_item = 0;
+	sw_relative_sel = sw->sw_selection - sw->shown_range[0];
+	old_selection = sw->sw_selection;
+	if (sw_relative_sel < 0) /* can't really happen.. */
+		sw_relative_sel = 0;
 
-	selected_item -= sw->sw_selection;
+	//sprintf(dummy, "[0]=%d,[1]=%d", sw->shown_range[0], sw->shown_range[1]);
+	//Error(dummy);
 
-	if (selected_item < 0)
-		selected_item = 0;
+	sw->shown_range[0] -= (maxy - 3);
+	sw->shown_range[1] = sw->shown_range[0] + (maxy - 3);
+	new_selection = sw->shown_range[0] + sw_relative_sel;
 
-	sw_change_selection(sw, selected_item - sw->sw_selection);
+	if (sw->shown_range[0] < 0)
+	{
+		sw->shown_range[0] = 0;
+		sw->shown_range[1] = maxy - 3;
+		new_selection = sw_relative_sel;
+	}
+	if (sw->shown_range[1] > (sw->nitems - 1))
+		sw->shown_range[1] = sw->nitems - 1;
+	if (sw->shown_range[1] < 0)
+		sw->shown_range[1] = 0;
+	if (new_selection > sw->shown_range[1] || new_selection <
+		sw->shown_range[0])
+		new_selection = sw->shown_range[1];
+	//sprintf(dummy, "[0]=%d,[1]=%d", sw->shown_range[0], sw->shown_range[1]);
+	//Error(dummy);
+
+	sw_change_selection(sw, new_selection - old_selection);
+
+	sw_refresh(sw, 2);
+}
+
+void
+sw_pagedown(struct sw_window *sw)
+{
+	int
+		maxx, maxy,
+		sw_relative_sel,
+		old_selection, new_selection;
+
+	if (!(sw->nitems))
+		return;
+
+	/* 1 special case */
+	if (sw->shown_range[1] == sw->nitems - 1)
+	{
+		int change = ( sw->nitems - 1 ) - sw->sw_selection;
+		if (change < 0)
+			change = 0;
+		sw_change_selection(sw, change);
+		return;
+	}
+
+	getmaxyx(sw->sw_win, maxy, maxx);
+
+	sw_relative_sel = sw->sw_selection - sw->shown_range[0];
+	old_selection = sw->sw_selection;
+	if (sw_relative_sel < 0) /* can't really happen.. */
+		sw_relative_sel = 0;
+
+	//sprintf(dummy, "[0]=%d,[1]=%d", sw->shown_range[0], sw->shown_range[1]);
+	//Error(dummy);
+
+	sw->shown_range[0] += (maxy - 3);
+	sw->shown_range[1] = sw->shown_range[0] + (maxy - 3);
+	new_selection = sw->shown_range[0] + sw_relative_sel;
+
+	if (sw->shown_range[0] < 0)
+		sw->shown_range[0] = 0;
+	if (sw->shown_range[1] > (sw->nitems - 1))
+		sw->shown_range[1] = sw->nitems - 1;
+	if (sw->shown_range[1] < 0)
+		sw->shown_range[1] = 0;
+	if (new_selection > sw->shown_range[1] || new_selection <
+		sw->shown_range[0])
+		new_selection = sw->shown_range[1];
+	//sprintf(dummy, "[0]=%d,[1]=%d", sw->shown_range[0], sw->shown_range[1]);
+	//Error(dummy);
+
+	sw_change_selection(sw, new_selection - old_selection);
+
+	sw_refresh(sw, 2);
 }
 
 /* Function Name: set_header_title
@@ -879,34 +1061,18 @@ fw_create()
 		*dir = NULL;
 	
 	if (!pwd)
-	{	
-		char *tmppwd = (char *)malloc(65 * sizeof(char));
-		int size = 65;
-
-		while ( !(getcwd(tmppwd, size - 1)) )
-		{
-			size += 64;
-			tmppwd = (char *)realloc(tmppwd, size * sizeof(char));
-		}
-
-		pwd = (char *)malloc(strlen(tmppwd) + 2);
-		strcpy(pwd, tmppwd);
-		
-		if (strcmp(pwd, "/")) /* pwd != "/" */
-			strcat(pwd, "/");
-		free(tmppwd);
-	}
+		get_current_working_path();
 	
 	if (!pwd)
 	{
-		fprintf(stderr, "Error reading directory!\n");
-		exit(1);
+		Error("Error reading directory!");
+		return;
 	}
 
 	if ( !(dir = opendir(pwd)) )
 	{
-		fprintf(stderr, "Error opening directory!\n");
-		exit(1);
+		Error("Error opening directory!");
+		return;
 	}
 
 	if (is_dir)
@@ -917,18 +1083,19 @@ fw_create()
 
 	while ( (entry = readdir(dir)) )
 	{
-		char *path = (char *)malloc(strlen(pwd) + entry->d_reclen + 1);
-		DIR *dir2 = NULL;
+		/*char *path = (char *)malloc(strlen(pwd) + entry->d_reclen + 1);*/
 		
 		entries = (char **)realloc (entries, (++nitems) * sizeof(char *));
-		
+	
+		/*
 		strcpy(path, pwd);
 		strcat(path, entry->d_name);
+		*/
 
 		entries[nitems - 1] = (char *)malloc( ((entry->d_reclen) + 1) *
 			sizeof(char));
 		strcpy(entries[nitems - 1], entry->d_name);
-		free(path);
+		/*free(path);*/
 	}
 	
 	closedir(dir);
@@ -952,7 +1119,7 @@ fw_create()
 		DIR
 			*dir2;
 
-		if ( (dir2 = opendir(entries[i])) ) /* path is a dir! */
+		if ( (dir2 = opendir(entries[i])) ) /* path is a dir */
 		{
 			closedir(dir2);
 			is_dir[i] = 1;
@@ -1002,10 +1169,10 @@ fw_end()
 
 	for ( i = 0; i < file_window->nselected; i++)
 	{
-		char
-			*itemname = NULL;
 		int
 			item_index = file_window->sw_selected_items[i];
+		char
+			*itemname = NULL;
 
 		if (is_dir[item_index])
 			continue;
@@ -1094,8 +1261,20 @@ fw_changedir(const char *path)
 		int i;
 
 		for (i = 0; i < file_window->nselected; i++)
-			add_selected_file(file_window->items[file_window->
+		{
+			char *file = (char *)malloc((strlen(pwd) + strlen(file_window->
+				items[file_window->sw_selected_items[i]]) + 1) *
+				sizeof(char));
+
+			strcpy(file, pwd);
+			strcat(file, file_window->items[file_window->
 				sw_selected_items[i]]);
+
+			if (is_mp3(file))
+				add_selected_file(file);
+
+			free(file);
+		}
 	}
 
 	strcpy(newpath, path);	
@@ -1142,8 +1321,22 @@ void
 Error(const char *txt)
 {
 	int
-		offset = (COLS - 2 - strlen(txt)) / 2,
+		offset = (COLS - 2 - strlen(txt)),
 		i;
+
+	if (offset <= 1)
+		offset = 1;
+	else
+		offset = offset / 2;
+
+	if (offset > 40)
+	{
+		char a[100];
+		sprintf(a, "offset=%d,strlen(txt)=%d",offset,strlen(txt));
+		mw_settxt(a);
+		wgetch(message_window);
+		offset = 0;
+	}
 
 	for (i = 1; i < COLS - 1; i++)
 	{
@@ -1321,6 +1514,144 @@ mw_settxt(const char *txt)
 	wrefresh(message_window);
 }
 
+/* PRE: f is open 
+ * Function returns NULL when EOF(f) else the next line read from f, terminated
+ * by \n. The line is malloc()'d so don't forget to free it ..
+ */
+char *
+readline(FILE *f)
+{
+	short
+		not_found_endl = 1;
+	char *
+		line = NULL;
+
+	while (not_found_endl)
+	{
+		char tmp[256];
+		char *index;
+		
+		if ( !(fgets(tmp, 255, f)) )
+			break;
+
+		index = (char*)rindex(tmp, '\n');
+		
+		if (index && strlen(index) == 1) /* terminating \n found */
+			not_found_endl = 0;
+
+		if (!line)	
+		{
+			line = (char*)malloc(sizeof(char));
+			line[0] = '\0';
+		}
+			
+		line = (char*)realloc(line, (strlen(line) + strlen(tmp) + 1) *
+			sizeof(char));
+		strcat(line, tmp);
+	}
+
+	if (line && line[strlen(line) - 1] != '\n') /* no termin. \n! */
+	{
+		line = (char*)realloc(line, (strlen(line) + 2) * sizeof(char));
+		strcat(line, "\n");
+	}
+
+	return line;
+}
+
+/* PRE: f is opened
+ * POST: if a group was successfully read from f, non-zero will be returned
+ *       and the group is added.
+ */
+int
+read_group_from_file(FILE *f)
+{
+	int
+		linecount = 0;
+	char
+		*line = NULL;
+	short
+		read_ok = 1,
+		group_ok = 0;
+	struct sw_window 
+		*sw = NULL;
+
+	while (read_ok)
+	{
+		line = readline(f);
+
+		if (!line)
+		{
+			read_ok = 0;
+			continue;
+		}
+		
+		if (linecount == 0)
+		{
+			char
+				*tmp = (char*)malloc((strlen(line) + 1) * sizeof(char));
+			int
+				success = sscanf(line, "GROUPNAME: %[^\n]s", tmp);	
+
+			if (success < 1) /* bad group-header! */
+			{
+				read_ok = 0;
+			}
+			else /* valid group - add it */
+			{
+				char
+					*title;
+
+				group_ok = 1;
+				sw = group_stack[current_group - 1];
+
+				/* if there are no entries in the current group, the first
+				 * group will be read into that group.
+				 */
+				if (sw->nitems)
+				{	
+					add_group();
+					sw = group_stack[current_group - 1];
+				}
+				title = (char*)malloc((strlen(tmp) + 16) * sizeof(char));
+				sprintf(title, "%02d:%s", current_group, tmp);
+				sw_settitle(sw, tmp);
+				sw_refresh(sw, 0);
+				set_header_title(title);
+				free(title);
+			}
+
+			free(tmp);
+		}
+		else
+		{
+			if (!strcmp(line, "\n")) /* line is empty, great. */
+				read_ok = 0;
+			else
+			{
+				char *songname = (char*)malloc((strlen(line) + 1) *
+					sizeof(char));
+					
+				sscanf(line, "%[^\n]s", songname);
+
+				if (is_mp3(songname))
+					sw_additem(sw, songname);
+
+				free(songname);
+			}
+			/* ignore non-mp3 entries.. */
+		}
+
+		free(line);
+		++linecount;
+	}
+
+	if (group_ok)
+		sw_refresh(sw, 1);
+
+	return group_ok;
+}
+
 /* write the contents of sw to a file (f, which must be opened for writing).
  * This is how the contents are written to the file:
  * GROUPNAME: <name>
@@ -1357,35 +1688,90 @@ sw_write_to_file(struct sw_window *sw, FILE *f)
 	return 1; /* everything succesfully written. */
 }
 
-void
-write_playlist()
+/* PRE : txt = NULL, An inputbox asking for a filename will be given to the
+ *       user.
+ * Post: txt contains text entered by the user. txt is malloc()'d so don't
+ *       forget to free() it.
+ * TODO: change it so question/max txt-length can be given as parameter
+ */
+char *
+gettext()
 {
-	int i;
-	FILE *f;
 	WINDOW
-		*gname = newwin(5, 69, (LINES - 5) / 2, (COLS - 69) / 2);
+		*gname = newwin(6, 69, (LINES - 6) / 2, (COLS - 69) / 2);
 	char
-		name[53];
+		name[53],
+		*txt = NULL,
+		*pstring;
+		
+	if (!pwd)
+		get_current_working_path();
+
+	pstring = (char*)malloc((strlen(pwd) + 7) * sizeof(char));
+	strcpy(pstring, "Path: ");
+	strcat(pstring, pwd);
 
 	keypad(gname, TRUE);
 	wbkgd(gname, COLOR_PAIR(4)|A_BOLD);
 	wborder(gname, 0, 0, 0, 0, 0, 0, 0, 0);
 
-	mvwaddstr(gname, 2, 2, "Enter filename:");
-	mvwchgat(gname, 2, 19, 48, A_BOLD, 5, NULL);
+	mvwaddnstr(gname, 2, 2, pstring, 65);
+	free(pstring);
+	mvwaddstr(gname, 3, 2, "Enter filename:");
+	mvwchgat(gname, 3, 19, 48, A_BOLD, 5, NULL);
 	touchwin(gname);
 	wrefresh(gname);
-	wmove(gname, 2, 19);
+	wmove(gname, 3, 19);
 	echo();
 	wattrset(gname, COLOR_PAIR(5)|A_BOLD);
 	wgetnstr(gname, name, 48);
 	noecho();
 	delwin(gname);
 	refresh_screen();
+	txt = (char*)malloc((strlen(name) + 1) * sizeof(char));
+	strcpy(txt, name);
+	return txt;
+}
 
+void
+read_playlist()
+{
+	FILE
+		*f;
+	char 
+		*name = NULL;
+
+	name = gettext();
+
+	f = fopen(name, "r");
+	free(name);
+
+	if (!f)
+	{
+		Error("Couldn't open playlist-file.");
+		return;
+	}
+	while (read_group_from_file(f))
+		;
+
+	mw_settxt("Added playlist!");
+}
+
+void
+write_playlist()
+{
+	int i;
+	FILE *f;
+	char *name = NULL;
+	
+	name = gettext();
+	name = (char*)realloc(name, (strlen(name) + 5) * sizeof(char));
 	strcat(name, ".lst");
 
-	if ( !(f = fopen(name, "w")) )
+	f = fopen(name, "w");
+	free(name);
+
+	if (!f)
 	{
 		Error("Error opening playlist for writing!");
 		return;
@@ -1434,8 +1820,9 @@ cw_toggle_group_mode(short notoggle)
 void
 cw_toggle_play_mode(short notoggle)
 {
-	int
-		i, maxy, maxx;
+	unsigned int
+		i,
+		maxy, maxx;
 	char
 		*desc;
 
@@ -1519,10 +1906,11 @@ play_entire_list()
 		strcat(message, filename);
 		mw_settxt(message);
 		free(message);
-		keypress = playmp3(filename, 100);
+		keypress = playmp3(filename, threads);
 		switch(keypress)
 		{
 			case KEY_F(1):
+				mw_clear();
 				return;
 		}
 		mw_clear();
@@ -1689,16 +2077,16 @@ play_list()
 void
 cw_set_default_fkeys()
 {
-	cw_set_fkey(1, "Select files");
+	cw_set_fkey(1, "Select files/plist");
 	cw_set_fkey(2, "Add group");
 	cw_set_fkey(3, "Select group");
 	cw_set_fkey(4, "Set group's title");
-	cw_set_fkey(5, "Write playlist");
-	cw_set_fkey(6, "Toggle group mode");
-	cw_set_fkey(7, "Toggle play mode");
-	cw_set_fkey(8, "Play");
-	cw_set_fkey(9, "Change #threads");
-	cw_set_fkey(10, "");
+	cw_set_fkey(5, "load/add playlist");
+	cw_set_fkey(6, "Write playlist");
+	cw_set_fkey(7, "Toggle group mode");
+	cw_set_fkey(8, "Toggle play mode");
+	cw_set_fkey(9, "Play list");
+	cw_set_fkey(10, "Change #threads");
 	cw_set_fkey(11, "");
 	cw_set_fkey(12, "");
 }
@@ -1852,7 +2240,8 @@ recsel_files(const char *path)
 			sizeof(char));
 
 		strcpy(newpath, path);
-		strcat(newpath, "/");
+		if (path[strlen(path) - 1] != '/')
+			strcat(newpath, "/");
 		strcat(newpath, entry->d_name);
 
 		if ( (dir2 = opendir(newpath)) )
@@ -1916,4 +2305,27 @@ change_threads()
 		threads = 0;
 	mvwprintw(command_window, 21, 1, "Threads: %03d", threads);
 	wrefresh(command_window);
+}
+
+void
+get_current_working_path()
+{
+	if (!pwd)
+	{	
+		char *tmppwd = (char *)malloc(65 * sizeof(char));
+		int size = 65;
+
+		while ( !(getcwd(tmppwd, size - 1)) )
+		{
+			size += 64;
+			tmppwd = (char *)realloc(tmppwd, size * sizeof(char));
+		}
+
+		pwd = (char *)malloc(strlen(tmppwd) + 2);
+		strcpy(pwd, tmppwd);
+		
+		if (strcmp(pwd, "/")) /* pwd != "/" */
+			strcat(pwd, "/");
+		free(tmppwd);
+	}
 }
