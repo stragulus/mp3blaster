@@ -44,25 +44,23 @@
 #include "global.h"
 #include "scrollwin.h"
 
-/* Function Name: scrollWin::scrollWin
- * Description  : Creates a new selection-window, setting width and
- *              : height, items in this window, and whether or not the 
- *              : entire path to each item should be displayed.
- * Arguments    : sw      : selection-window to create
- *              : lines   : amount of lines for this window
- *              : ncols   : amount of columns for this window
- *              : begin_y : y-coordinate of topleft corner from this window
- *              :         : in stdscr.
- *              : begin_x : as begin_y, but now x-coordinate.
- *              : items   : array of strings containing items for this window
- *              : nitems  : amount of items.
- *              : color   : Default colourpair to use
- *              : x_offset: 1 if window has a (left-)border of 1, 0 otherwise.
- */
+char * createEmptyLine(int width, int xoffset) {
+	int allocSize = (width - (xoffset ? 2 : 0)) + 1;
+
+	char *sw_emptyline = new char[allocSize];
+	memset((void*)sw_emptyline, ' ', (width - (xoffset ? 2 : 0)) * sizeof(char));
+	sw_emptyline[width - (xoffset?2:0)] = '\0';
+
+	return sw_emptyline;
+}
+
+
 scrollWin::scrollWin(int lines, int ncols, int begin_y, int begin_x,
                      char **arr, int narr, short color, short x_offset)
 {
 	int i;
+
+	checkSize(lines, ncols, x_offset);
 
 	init(lines, ncols, begin_y, begin_x, color, x_offset);
 
@@ -80,6 +78,15 @@ scrollWin::scrollWin(int lines, int ncols, int begin_y, int begin_x,
 	panoffset = 0;
 }	
 
+//throws an exception when the minimum size requirements are not met
+void
+scrollWin::checkSize(const int lines, const int ncols, const int x_offset)
+{
+	if (ncols < 1 || (x_offset && ncols < 3)) {
+		throw IllegalArgumentsException("window width too small");
+	}
+}	
+
 scrollWin::~scrollWin()
 {
 	winItem *tmp = first;
@@ -93,6 +100,17 @@ scrollWin::~scrollWin()
 	delete[] sw_emptyline;
 	if (sw_title)
 		free(sw_title);
+}
+
+/*
+ * Resize window. Reinitializes all internal variables.
+ */
+void scrollWin::resize(int width, int height) {
+	checkSize(height, width, xoffset);
+	this->width = width;
+	this->height = height;
+	delete[] sw_emptyline;
+	sw_emptyline = createEmptyLine(width, xoffset);
 }
 
 /* deletes *all* items in the scroll-window. */
@@ -140,9 +158,7 @@ void scrollWin::init(int lines, int ncols, int begin_y, int begin_x,
 	//wbkgd(sw_win, COLOR_PAIR(colour)|A_BOLD);
 
 	/* create empty line */
-	sw_emptyline = new char[(width - (xoffset ? 2 : 0)) + 1];
-	memset((void*)sw_emptyline, ' ', (width - (xoffset ? 2 : 0)) * sizeof(char));
-	sw_emptyline[width - (xoffset?2:0)] = '\0';
+	sw_emptyline = createEmptyLine(width, xoffset);
 
 	nselected = 0;
 	for (int i = 0; i < 8; i++)
@@ -1072,6 +1088,8 @@ scrollWin::drawBorder()
 		int lpad, rpad, i, len;
 		char *nt = crunch_string(sw_title, width - 4);
 		len = (width - 4 - strlen(nt));
+		if (len < 0)
+			len = 0;
 		lpad = rpad = len / 2;
 		rpad += len%2;
 		move(by,bx+1);

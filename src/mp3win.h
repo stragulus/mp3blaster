@@ -38,6 +38,8 @@ public:
 	int getUnplayedGroups(short recursive=1);
 	void setAllSongsPlayed(short recursive=0);
 
+	void resize(int width, int height, int recursive = 1);
+
 private:
 	int getUnplayedItems(short type=0,short recursive=1);
 

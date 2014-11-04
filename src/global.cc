@@ -468,6 +468,9 @@ is_playlist(const char *filename)
  * length 'length', by chopping of the begin of the string, and replacing
  * the first 3 characters of the new strings with dots.
  * E.g. crunch_string("foobar", 5); will return "...ar".
+ *
+ * If the input string is shorter than 4 characters, a copy of the (unmodified)
+ * string will be returned.
  */
 char *
 crunch_string(const char *flname, unsigned int length)
@@ -475,8 +478,16 @@ crunch_string(const char *flname, unsigned int length)
 	char
 		*filename = NULL;
 
-	if (!flname || !strlen(flname) || length < 4)
+	if (!flname) 
 		return NULL;
+
+	if (!strlen(flname) || length < 4)
+	{
+		//too short, return the thing itself.
+		filename = new char[strlen(flname) + 1];
+		strcpy(filename, flname);
+		return filename;
+	}
 
 	if (strlen(flname) > length)
 	{

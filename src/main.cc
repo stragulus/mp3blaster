@@ -63,6 +63,7 @@
 #include "scrollwin.h"
 #include "mp3win.h"
 #include "fileman.h"
+#include "exceptions.h"
 #include <mpegsound.h>
 #include <nmixer.h>
 //load keybindings
@@ -82,6 +83,9 @@
 #define FILENAME_MAX 1024
 #endif
 
+#define MIN_SCREEN_WIDTH 80
+#define MIN_SCREEN_HEIGHT 23
+
 /* values for global var 'window' */
 enum _action { AC_NONE, AC_REWIND, AC_FORWARD, AC_NEXT, AC_PREV,
 	AC_STOP, AC_ONE_MP3, AC_PLAY,
@@ -98,8 +102,6 @@ extern cf_error cf_get_error();
 extern const char *cf_get_error_string();
 
 /* Prototypes */
-void refresh_screen(void);
-int handle_input(short);
 void cw_toggle_group_mode();
 void cw_draw_group_mode();
 void cw_draw_play_mode(short cleanit=0);
@@ -157,7 +159,6 @@ void get_label(command_t, char *);
 void set_keylabel(int k, char *label);
 void init_playopts();
 void init_globalopts();
-command_t get_command(int, unsigned short);
 void draw_next_song(const char*);
 void set_next_song(int);
 void reset_next_song();
@@ -169,7 +170,7 @@ void get_mainwin_borderchars(chtype*, chtype*, chtype*, chtype*,
 void change_program_mode(unsigned short pm);
 void end_help();
 void update_songinfo(playstatus_t, short);
-void update_ncurses();
+void update_ncurses(int update_all);
 void end_program();
 const char *get_error_string(int);
 void fw_toggle_sort();
@@ -215,6 +216,11 @@ void *lirc_loop(void *);
 #define OPT_REPEAT 16384
 
 /* global vars */
+
+/* songinf contains info about the currently playing audio file.
+ * Access to songinf may only occur when a lock has been acquired on the
+ * ncurses mutex (see LOCK_NCURSES)
+ */
 struct song_t
 {
 	struct song_info songinfo;
@@ -310,466 +316,6 @@ getInput
 #ifdef INCLUDE_LIRC
 	command_t lirc_cmd = CMD_NONE;
 #endif
-int
-main(int argc, char *argv[], char *envp[])
-{
-	int
-		c,
-		long_index,
-		key,
-		options = 0,
-		playmp3s_nr = 0;
-	time_t t;
-	char
-		**playmp3s = NULL,
-		*init_playlist = NULL,
-		*chroot_dir = NULL,
-		*config_file = NULL;
-	struct _tmp
-	{
-		char *play_mode;
-		char *sound_device;
-		char *mixer_device;
-		int fpl;
-#ifdef PTHREADEDMPEG
-		int threads;
-#endif
-	} tmp;
-
-#ifdef LIBPTH
-	pth_init();
-#endif
-	
-	tmp.sound_device = NULL;
-	tmp.mixer_device = NULL;
-	tmp.play_mode = NULL;
-	tmp.fpl = 5;
-	tmp.threads = 10;
-	
-	environment = envp;
-
-	songinf.update = 0;
-	songinf.path = NULL;
-	songinf.next_song = NULL;
-	songinf.warning = NULL;
-	playing_group = NULL;
-	status_file = NULL;
-	mixer = NULL;
-	helpwin = NULL;
-	bighelpwin = NULL;
-	mp3_groupwin = NULL;
-	history = new History();
-	long_index = 0;
-	played_songs = (char**)malloc(sizeof(char*));
-	played_songs[0] = NULL;
-	nr_played_songs = 1;
-	current_song = -1;
-	srand((unsigned int)time(&t));
-	init_globalopts();
-	init_playopts();
-	set_default_colours(); // fill globalopts.colours with default values.
-	/* parse arguments */
-	while (1)
-	{
-		static struct option long_options[] = 
-		{
-			{ "downsample", 0, 0, '2'},
-			{ "8bits", 0, 0, '8'},
-			{ "autolist", 1, 0, 'a'},
-			{ "config-file", 1, 0, 'c'},
-			{ "debug", 0, 0, 'd'},
-			{ "help", 0, 0, 'h'},
-			{ "list", 1, 0, 'l'},
-			{ "mixer-device", 1, 0, 'm' },
-			{ "no-mixer", 0, 0, 'n'},
-			{ "chroot", 1, 0, 'o'},
-			{ "playmode", 1, 0, 'p'},
-			{ "dont-quit", 0, 0, 'q'},
-			{ "repeat", 0, 0, 'R'},
-			{ "runframes", 1, 0, 'r'},
-			{ "sound-device", 1, 0, 's'},
-			{ "status-file", 1, 0, 'f'},
-			{ "threads", 1, 0, 't'},
-			{ "version", 0, 0, 'v'},
-			{ 0, 0, 0, 0}
-		};
-		
-		c = getopt_long_only(argc, argv, "28a:c:df:hl:m:no:p:qRr:s:t:v", long_options,
-			&long_index);
-
-		if (c == EOF)
-			break;
-		
-		switch(c)
-		{
-		case ':':
-		case '?':
-			usage();
-			break;
-		case '2': /* downsample */
-			options |= OPT_DOWNSAMPLE;
-			break;
-		case '8': /* 8bit audio */
-			options |= OPT_8BITS;
-			break;
-		case 'a': /* load playlist and play */
-			options |= OPT_AUTOLIST;
-			if (init_playlist)
-				delete[] init_playlist;
-			init_playlist = new char[strlen(optarg)+1];
-			strcpy(init_playlist, optarg);
-			break;
-		case 'c': /* configuration file */
-			if (config_file) free(config_file);
-			config_file = strdup(optarg);
-			break;
-		case 'd':
-			options |= OPT_DEBUG;
-			break;
-		case 'f': /* status file */
-			if (status_file)
-				free(status_file);
-			status_file = strdup(optarg);
-			break;
-		case 'h': /* help */
-			usage();
-			break;
-		case 'l': /* load playlist */
-			options |= OPT_LOADLIST;
-			if (init_playlist)
-				delete[] init_playlist;
-			init_playlist = new char[strlen(optarg)+1];
-			strcpy(init_playlist, optarg);
-			break;
-		case 'm': /* mixer device */
-			options |= OPT_MIXERDEV;
-			if (tmp.mixer_device)
-				free(tmp.mixer_device);
-			tmp.mixer_device = strdup(optarg);
-			break;
-		case 'n': /* disable mixer */
-			options |= OPT_NOMIXER;
-			break;
-		case 'o': /* chroot */
-			options |= OPT_CHROOT;
-			if (chroot_dir)
-				delete[] chroot_dir;
-			chroot_dir = new char[strlen(optarg)+1];
-			strcpy(chroot_dir, optarg);
-			break;
-		case 'p': /* set initial playmode */
-			options |= OPT_PLAYMODE;
-			tmp.play_mode = new char[strlen(optarg)+1];
-			strcpy(tmp.play_mode, optarg);
-			break;
-		case 'q': /* don't quit after playing 1 mp3/playlist */
-			options |= OPT_QUIT;
-			break;
-		case 'R': /* playlist repeat */
-			options |= OPT_REPEAT;
-			break;
-		case 'r': /* numbers of frames to decode in 1 loop 1<=fpl<=10 */
-			options |= OPT_FPL;
-			tmp.fpl = atoi(optarg);
-			break;
-		case 's': /* sound-device other than the default /dev/{dsp,audio} ? */
-			options |= OPT_SOUNDDEV;
-			if (tmp.sound_device)
-				free(tmp.sound_device);
-			tmp.sound_device = strdup(optarg);
-			break;
-		case 't': /* threads */
-			options |= OPT_THREADS;
-#ifdef PTHREADEDMPEG
-			tmp.threads = atoi(optarg);
-#endif
-			break;
-		case 'v': /* version info */
-			printf("%s version %s - http://mp3blaster.sourceforge.net/\n",
-				argv[0], VERSION);
-			printf("Supported audio formats: " BUILDOPTS_AUDIOFORMATS "\n");
-			printf("Supported audio output drivers: " BUILDOPTS_AUDIODRIVERS "\n");
-			printf("Build features: " BUILDOPTS_FEATURES "\n");
-			exit(0);
-			break;
-		default:
-			usage();
-		}
-	}
-
-	if (options & OPT_DEBUG) 
-	{
-		globalopts.debug = 1;
-		debug("Debugging of mp3blaster started.\n");
-	}
-
-	//read .mp3blasterrc
-	if (!cf_parse_config_file(config_file) &&
-		(config_file || cf_get_error() != NOSUCHFILE))
-	{
-		fprintf(stderr, "%s\n", cf_get_error_string());
-		exit(1);
-	}
-	if (config_file)
-		free(config_file);
-
-	if (optind < argc) /* assume all other arguments are mp3's */
-	{
-		/* this is not valid if a playlist is loaded from commandline */
-		if ( (options&OPT_LOADLIST) || (options&OPT_AUTOLIST) )
-			usage();
-
-		if (!(playmp3s = (char**)malloc((argc - optind) * sizeof(char*))))
-		{
-			fprintf(stderr, "Cannot allocate enough memory.\n"); exit(1);
-		}
-		/* Build a playlist from the remaining arguments */
-		for (int i = optind ; i < argc; i++)
-		{
-			if (!is_audiofile(argv[i]))
-			{
-				fprintf(stderr, "%s is not a valid audio file!\n", argv[i]);
-				usage();
-			}
-			playmp3s[i - optind] = (char*)malloc((strlen(argv[i])+1) * 
-				sizeof(char));
-			strcpy(playmp3s[i - optind], argv[i]);
-		}
-		options |= OPT_PLAYMP3;
-	}	
-
-	//signal(SIGALRM, SIG_IGN);
-
-	//Initialize NCURSES
-	initscr();
- 	start_color();
-	set_inout_opts();
-
-	startup_path = get_current_working_path();
-
-	if (LINES < 23 || COLS < 80)
-	{
-		mvaddstr(0, 0, "You'll need at least an 80x23 screen, sorry.\n");
-		getch();
-		endwin();
-		exit(1);
-	}
-	
-	/* setup colours */
-	init_pair(CP_DEFAULT, globalopts.colours.default_fg,
-		globalopts.colours.default_bg);
-	init_pair(CP_POPUP, globalopts.colours.popup_fg,
-		globalopts.colours.popup_bg);
-	init_pair(CP_POPUP_INPUT, globalopts.colours.popup_input_fg,
-		globalopts.colours.popup_input_bg);
-	init_pair(CP_ERROR, globalopts.colours.error_fg,
-		globalopts.colours.error_bg);
-	init_pair(CP_BUTTON, globalopts.colours.button_fg,
-		globalopts.colours.button_bg);
-	init_pair(CP_SHORTCUTS, globalopts.colours.shortcut_fg,
-		globalopts.colours.shortcut_bg);
-	init_pair(CP_LABEL, globalopts.colours.label_fg,
-		globalopts.colours.label_bg);
-	init_pair(CP_NUMBER, globalopts.colours.number_fg,
-		globalopts.colours.number_bg);
-	init_pair(CP_FILE_MP3, globalopts.colours.file_mp3_fg,
-		globalopts.colours.default_bg);
-	init_pair(CP_FILE_DIR, globalopts.colours.file_dir_fg,
-		globalopts.colours.default_bg);
-	init_pair(CP_FILE_LST, globalopts.colours.file_lst_fg,
-		globalopts.colours.default_bg);
-	init_pair(CP_FILE_WIN, globalopts.colours.file_win_fg,
-		globalopts.colours.default_bg);
-
-	/* initialize selection window */
-	mp3_rootwin = newgroup();
-	mp3_rootwin->setTitle("[Default]");
-	mp3_rootwin->swRefresh(0);
-	mp3_rootwin->drawBorder(); //to get the title 
-	mp3_curwin = mp3_rootwin;
-
-	progmode = PM_NORMAL;
-
-	/* initialize helpwin */
-	init_helpwin();
-	repaint_help();
-	draw_static();
-	mw_settxt("Press '?' to get help on available commands");
-	refresh();
-
-	if (options & OPT_NOMIXER)
-	{
-		globalopts.no_mixer = 1;
-	}
-	if (options & OPT_SOUNDDEV)
-	{
-		set_sound_device(tmp.sound_device);
-		free(tmp.sound_device);
-	}
-	if (options & OPT_MIXERDEV)
-	{
-		set_mixer_device(tmp.mixer_device);
-		free(tmp.mixer_device);
-	}
-	if (options & OPT_REPEAT)
-	{
-		globalopts.repeat = 1;
-	}
-	if (options & OPT_PLAYMODE)
-	{
-		if (!set_play_mode(tmp.play_mode))
-		{
-			endwin();
-			usage();
-		}
-		delete[] tmp.play_mode;
-	}
-	if (options & OPT_FPL)
-	{
-		if (!set_fpl(tmp.fpl))
-		{
-			endwin();
-			usage();
-		}
-	}
-
-	if (options & OPT_THREADS)
-	{
-#ifdef PTHREADEDMPEG
-		if (!set_threads(tmp.threads))
-#else
-		if (1) //threading is not enabled..
-#endif
-		{
-			endwin();
-			usage();
-		}
-	}
-
-	if (options & OPT_CHROOT)
-	{
-		if (chroot(chroot_dir) < 0)
-		{
-			endwin();
-			perror("chroot");
-			fprintf(stderr, "Could not chroot to %s! (are you root?)\n",
-				chroot_dir);
-			exit(1);
-		}
-		chdir("/");
-		delete[] chroot_dir;
-	}
-
-	if (options & OPT_DOWNSAMPLE)
-		globalopts.downsample = 1;
-	if (options & OPT_8BITS)
-		globalopts.eightbits = 1;
-
-	/* initialize mixer */
-	if (!globalopts.no_mixer)
-	{
-		const int color_pairs[4] = { 13,14,15,16 };
-		mixer = new NMixer(stdscr, globalopts.mixer_device, COLS-12,
-			LINES-3, 2, color_pairs, globalopts.colours.default_bg, 1);
-		if (!(mixer->NMixerInit()))
-		{
-			delete mixer; mixer = NULL;
-		}
-		else
-		{
-			//TODO: These should be customizable too..
-			mixer->setMixerCommandKey(MCMD_NEXTDEV, 't');
-			mixer->setMixerCommandKey(MCMD_PREVDEV, 'T');
-			mixer->setMixerCommandKey(MCMD_VOLUP, '>');
-			mixer->setMixerCommandKey(MCMD_VOLDN, '<');
-		}
-	}
-
-
-	/* All options from configfile and commandline have been read. */
-	draw_settings();
-/*\
-|*|  very rude hack caused by nasplayer lib that outputs rubbish to stderr
-\*/
-	//fclose(stderr);
-/*\
-|*|  EORH
-\*/
-	
-	action = AC_NONE;
-
-	if (options & OPT_PLAYMP3)
-	{
-		const char *bla[4];
-		short idx;
-		short foo[2] = { 0, 1 };
-		for (int i = 0; i < (argc - optind); i++)
-		{
-			bla[0] = (const char*)playmp3s[i];
-			if (is_httpstream(bla[0]))
-				bla[1] = bla[0];
-			else
-				bla[1] = chop_path(playmp3s[i]);
-			bla[2] = NULL;
-			bla[3] = NULL;
-
-			idx=mp3_curwin->addItem(bla, foo, CP_FILE_MP3);
-			if (idx!=-1)
-				mp3_curwin->changeItem(idx,&id3_filename,strdup(bla[0]),2);
-			delete[] playmp3s[i];
-		}
-		delete[] playmp3s; playmp3s_nr = 0;
-		mp3_curwin->swRefresh(0);
-		set_action(AC_PLAY);
-		if (!(options & OPT_QUIT))
-			quit_after_playlist = 1;
-	}
-	else if ((options & OPT_LOADLIST) || (options & OPT_AUTOLIST))
-	{
-		read_playlist(init_playlist);
-		mp3_curwin->swRefresh(1);
-		delete[] init_playlist;
-		if (options & OPT_AUTOLIST)
-			set_action(AC_PLAY);
-	}
-
-#ifdef PTHREADEDMPEG
-	pthread_create(&thread_playlist, NULL, play_list, NULL);
-# ifdef INCLUDE_LIRC
-	 pthread_create(&thread_lirc, NULL, lirc_loop, NULL);
-# endif
-#elif defined(LIBPTH)
-	warning("Setting up PTH thread");
-
-	pth_mutex_init(&playing_mutex);
-	pth_mutex_init(&ncurses_mutex);
-	pth_mutex_init(&onemp3_mutex);
-	pth_cond_init(&playing_cond);
-
-	thread_playlist = pth_spawn(PTH_ATTR_DEFAULT, play_list, NULL);
-	pth_yield(NULL);
-#endif /* PTHREADEDMPEG */
-
-	/* read input */
-	while ( (key = handle_input(1)) >= 0)
-	{
-	}
-	
-	/* signal running threads to terminate themselves */
-	playopts.quit_program = 1;
-	wake_player();
-
-#ifdef PTHREADEDMPEG
-	pthread_join(thread_playlist, NULL);
-	//the lirc thread blocks..sod it.
-#elif defined (LIBPTH)
-	pth_join(thread_playlist, NULL);
-#endif
-
-	endwin();
-	return 0;
-}
-
 /* Function Name: usage
  * Description  : Warn user about this program's usage and then exit nicely
  *              : Program must NOT be in ncurses-mode when this function is
@@ -828,6 +374,42 @@ usage()
 	exit(1);
 }
 
+/* Function   : calc_mainwindow_width
+ * Description: Calculates the width of the main window (the big
+ *            : scrollable one) based on the current term size
+ * Parameters : termWidth
+ *            :  Current width of the terminal
+ * Returns    : The calculated width
+ * SideEffects: None.
+ */
+int
+calc_mainwindow_width(int termWidth) {
+	int result = termWidth - 12;
+	if (result < 1)
+		result = 1;
+	
+	return result;
+}
+
+/* Function   : calc_mainwindow_height
+ * Description: Calculates the height of the main window (the big
+ *            : scrollable one) based on the current term size
+ * Parameters : termHeight
+ *            :  Current height of the terminal
+ * Returns    : The calculated height
+ * SideEffects: None.
+ */
+int
+calc_mainwindow_height(int termHeight) {
+	int result = termHeight - 13;
+
+	if (result < 1)
+		result = 1;
+	
+	return result;
+}
+
+
 /* Function   : fw_begin
  * Description: Enters file manager mode. Program should be in normal mode
  *            : when this function's called.
@@ -843,8 +425,8 @@ fw_begin()
 	fw_draw_sortmode(globalopts.fw_sortingmode);
 	if (file_window)
 		delete file_window;
-	file_window = new fileManager(NULL, LINES - 13, COLS - 12, 10, 0,
-		CP_DEFAULT, 1);
+	file_window = new fileManager(NULL, calc_mainwindow_height(LINES),
+		calc_mainwindow_width(COLS), 10, 0, CP_DEFAULT, 1);
 	file_window->drawTitleInBorder(1);
 	file_window->setBorder(ACS_VLINE, ACS_VLINE, ACS_HLINE, ACS_HLINE,
 		ACS_LTEE, ACS_PLUS, ACS_LTEE, ACS_PLUS);
@@ -1133,42 +715,108 @@ void
 refresh_screen()
 {
 	wrefresh(curscr);
-	//TODO: clear(); if set_song_info and set_song_status can be called at
-	//      any time.
-#if 0
-	touchwin(stdscr);
-	wnoutrefresh(stdscr);
-
-	helpwin->swRefresh(2);
-	repaint_help();
-	cw_draw_group_mode();
-	cw_draw_play_mode();
-#ifdef PTHREADEDMPEG
-	cw_draw_threads();
-#endif
-	//TODO: draw nextsong
-
-	if (mixer)
-		mixer->redraw();
-
-	if (popup);
-	else if (progmode == PM_FILESELECTION)
-	{
-		fw_draw_sortmode(globalopts.fw_sortingmode);
-		if (file_window)
-			file_window->swRefresh(2);
-		draw_static(1);
-	}
-	else if (progmode == PM_NORMAL)
-	{
-		mp3Win
-			*sw = mp3_curwin;
-		draw_static();
-		sw->swRefresh(2);
-	}
-	doupdate();
-#endif
 }
+
+/*
+ * Returns the main (scrollable) window. This windows is
+ * Dependant on the context the program is currently in.
+ */
+scrollWin *
+getMainWindow()
+{
+	scrollWin * mainwindow = (scrollWin *)mp3_curwin;
+
+	if (progmode == PM_FILESELECTION)
+		mainwindow = (scrollWin *)file_window;
+	else if (progmode == PM_HELP)
+		mainwindow = (scrollWin *)bighelpwin;
+
+	return mainwindow;
+}
+
+/* Function   : init_mixer
+ * Description: (re)creates the mini mixer in the bottom right of the
+ *            : screen, but only if a mixer is desired.
+ * Parameters : None.
+ * Returns    : Nothing.
+ * SideEffects: None.
+ */
+void
+init_mixer()
+{
+	/* initialize mixer */
+	if (!globalopts.no_mixer)
+	{
+		const int color_pairs[4] = { 13,14,15,16 };
+		int mixerXOffset = COLS - 12;
+		int mixerYOffset = LINES - 3;
+
+		if (mixer) {
+			delete mixer;
+		}
+
+		//sanity check against too small screen[resize]s
+		if (mixerXOffset < 0)
+			mixerXOffset = 0;
+		if (mixerYOffset < 0)
+			mixerYOffset = 0;
+
+		mixer = new NMixer(stdscr, globalopts.mixer_device, mixerXOffset,
+			mixerYOffset, 2, color_pairs, globalopts.colours.default_bg, 1);
+		if (!(mixer->NMixerInit()))
+		{
+			delete mixer;
+		}
+		else
+		{
+			//TODO: These should be customizable too..
+			mixer->setMixerCommandKey(MCMD_NEXTDEV, 't');
+			mixer->setMixerCommandKey(MCMD_PREVDEV, 'T');
+			mixer->setMixerCommandKey(MCMD_VOLUP, '>');
+			mixer->setMixerCommandKey(MCMD_VOLDN, '<');
+		}
+	}
+}
+
+
+void
+handle_resize(int dummy = 0)
+{
+	int newWindowWidth;
+	int newWindowHeight;
+	(void)dummy; //unused param
+
+	/* re-initialize ncurses, this updates LINES & COLS */
+	endwin();
+	refresh();
+	clear();
+
+	newWindowWidth = calc_mainwindow_width(COLS);
+	newWindowHeight = calc_mainwindow_height(LINES);
+
+	try {
+		//resize the window that's currently onscreen.
+		getMainWindow()->resize(newWindowWidth, newWindowHeight);
+		//resize all playlist windows recursively recursively. Just one of them
+		//may be onscreen.
+		mp3_rootwin->resize(newWindowWidth, newWindowHeight, 1);
+	} catch (IllegalArgumentsException e) {
+		endwin();
+		fprintf(stderr, "Resize too small!\n");
+		exit(1);
+	}
+
+	draw_settings();
+	init_helpwin();
+	init_mixer();
+	repaint_help();
+	getMainWindow()->swRefresh(2);
+	draw_static();
+	//redraw current song status / info
+	update_ncurses(1);
+	refresh_screen();
+}
+
 
 /* Adds a new group to mp3_curwin and returns it.
  */
@@ -1237,7 +885,7 @@ set_group_name(const char *name, void *args)
 void
 mw_clear()
 {
-	int width = COLS - 14;
+	int width = (COLS > 14 ? COLS - 14 : 1);
 	char emptyline[width+1];
 
 	//clear old text
@@ -1253,7 +901,7 @@ mw_settxt(const char *txt)
 {
 	mw_clear();
 	move(LINES-2,1);
-	addnstr(txt, COLS-14);
+	addnstr(txt, (COLS > 14 ? COLS-14 : 1));
 	refresh();
 }
 
@@ -2103,7 +1751,7 @@ cw_draw_play_mode(short cleanit)
 	};
 
 
-	unsigned int nrchars = COLS - 16;
+	unsigned int nrchars = (COLS > 16 ? COLS - 16 : 1);
 	for (i = 2; i < nrchars + 2; i++)
 	{
 		move(6, i);
@@ -2216,16 +1864,25 @@ play_list(void *arg)
 			break;
 		case AC_NONE:
 		{
-			if (!playopts.pause && playopts.song_played)
-			{
+			if (!playopts.pause && playopts.song_played) {
 				bool mystatus = (playopts.player)->run(globalopts.fpl);
-				if (!mystatus && (playopts.player)->ready())
-				{
-					/* ugly. If run returns false, all playback should be finished! */
-					stop_song(); //status => AC_NONE
-				}
-				else
+				if (!mystatus) {
+					if ((playopts.player)->ready()) {
+						/* ugly. If run returns false, all playback should be finished! */
+						stop_song(); //status => AC_NONE
+					} else {
+						//output buffer full, wait a bit.
+						USLEEP(10000);
+					}
+				} else {
+					/* TODO: different thread for status updates. Now, this function
+					 * gets called way too often when buffering. It does prevent
+					 * updating the actual display too often, but that check is
+					 * costly as well..
+					 */
 					update_play_display();
+					USLEEP(10000);
+				}
 			}
 
 			if (!playopts.song_played) //let's start one then
@@ -3138,6 +2795,27 @@ clean_popup()
 	mw_settxt("");
 	refresh_screen();
 }
+
+/* Return the command corresponding to the given keycode */
+command_t
+get_command(int kcode, unsigned short pm)
+{
+	int i = 0;
+	command_t cmd = CMD_NONE;
+	struct keybind_t k = keys[i];
+	
+	while (k.cmd != CMD_NONE)
+	{
+		if (k.key == kcode && (pm & k.pm))
+		{
+			cmd = k.cmd;
+			break;
+		}
+		k = keys[++i];
+	}
+	return cmd;
+}
+
 /* handle_input reads input.
  * If no_delay = 0, then this function will block until input arrives.
  * Returns -1 when the program should finish, 0 or greater when everything's
@@ -3158,14 +2836,7 @@ handle_input(short no_delay)
 		*fm = file_window;
 
 	//get a pointer to the main window, which depends on program mode.
-	scrollWin *mainwindow = NULL;
-	if (progmode == PM_NORMAL)
-		mainwindow = (scrollWin *)sw;
-	else if (progmode == PM_FILESELECTION)
-		mainwindow = (scrollWin *)fm;
-	else if (progmode == PM_HELP)
-		mainwindow = (scrollWin *)bighelpwin;
-
+	scrollWin *mainwindow = getMainWindow();
 
 #ifdef LIBPTH
 	pth_yield(NULL);
@@ -3212,7 +2883,7 @@ handle_input(short no_delay)
 	if (songinf.update)
 	{
 		update_status_file();
-		update_ncurses();
+		update_ncurses(0);
 	}
 	
 	UNLOCK_NCURSES;
@@ -3227,6 +2898,11 @@ handle_input(short no_delay)
 #endif
 
 		return 0;
+	}
+
+	if (key == KEY_RESIZE) {
+		handle_resize(0);
+		return retval;
 	}
 
 #ifdef INCLUDE_LIRC
@@ -3826,7 +3502,7 @@ cw_draw_filesort(short cleanit)
 	{
 		//clear 'Sorting mode' line.
 		move(6, 2);
-		int stextlen = COLS - 16;
+		int stextlen = (COLS > 16 ? COLS - 16 : 1);
 		char emptyline[stextlen + 1];
 		memset(emptyline, ' ', stextlen * sizeof(char));
 		emptyline[stextlen] = '\0';
@@ -4010,7 +3686,7 @@ fw_end_search()
 		delete[] fw_searchstring;
 
 	fw_searchstring = NULL;
-	signal(SIGALRM, SIG_IGN);
+	//signal(SIGALRM, SIG_IGN);
 	mw_settxt("");
 }
 
@@ -4214,17 +3890,6 @@ set_skip_frames(unsigned int frames)
 	return 1;
 }	
 
-short
-set_mini_mixer(short yesno)
-{
-	if (yesno)
-		globalopts.minimixer = 1;
-	else
-		globalopts.minimixer = 0;
-
-	return 1;
-}
-
 void
 set_default_colours()
 {
@@ -4255,7 +3920,8 @@ newgroup()
 {
 	mp3Win *tmp;
 
-	tmp = new mp3Win(LINES - 13, COLS - 12, 10, 0, NULL, 0, CP_DEFAULT, 1);
+	tmp = new mp3Win(calc_mainwindow_height(LINES), 
+		calc_mainwindow_width(COLS), 10, 0, NULL, 0, CP_DEFAULT, 1);
 
 	tmp->drawTitleInBorder(1);
 	tmp->setBorder(ACS_VLINE,ACS_VLINE,ACS_HLINE,ACS_HLINE,
@@ -4694,7 +4360,7 @@ void
 init_helpwin()
 {
 	int i = 0, item_count = 0;
-	char line[COLS-1], desc[27], keylabel[4];
+	char line[80], desc[27], keylabel[4];
 	struct keybind_t k = keys[i];
 	
 	if (helpwin)
@@ -4703,9 +4369,9 @@ init_helpwin()
 		helpwin = NULL;
 	}
 
-	memset(line, 0, (COLS-1) * sizeof(char));
+	memset(line, 0, sizeof(line));
 	//TODO: scrollwin never uses first&last line if no border's used!!
-	helpwin = new scrollWin(4,COLS-2,1,1,NULL,0,CP_DEFAULT,0);
+	helpwin = new scrollWin(4, COLS > 2 ? COLS-2 : 1,1,1,NULL,0,CP_DEFAULT,0);
 	helpwin->setWrap(globalopts.wraplist);
 	helpwin->hideScrollbar();
 	//content is afhankelijk van program-mode, dus bij verandereing van
@@ -4723,7 +4389,7 @@ init_helpwin()
 			if (item_count%3 == 2)
 			{
 				helpwin->addItem(line);
-				memset(line, 0, (COLS-1) * sizeof(char));
+				memset(line, 0, sizeof(line));
 			}
 			item_count++;
 		}
@@ -4764,26 +4430,6 @@ get_label(command_t cmd, char *label)
 		k = keys[i++];
 	}
 	set_keylabel(k.key, label);	
-}
-
-/* Return the command corresponding to the given keycode */
-command_t
-get_command(int kcode, unsigned short pm)
-{
-	int i = 0;
-	command_t cmd = CMD_NONE;
-	struct keybind_t k = keys[i];
-	
-	while (k.cmd != CMD_NONE)
-	{
-		if (k.key == kcode && (pm & k.pm))
-		{
-			cmd = k.cmd;
-			break;
-		}
-		k = keys[++i];
-	}
-	return cmd;
 }
 
 /* label must be alloc'd with size 4.
@@ -4937,7 +4583,6 @@ init_globalopts()
 	globalopts.skipframes=10; /* skip 100 frames during music search */
 	globalopts.pan_size = 5; /* pan left/right 5 chars at once */
 	globalopts.debug = 0; /* no debugging info per default */
-	globalopts.minimixer = 1; /* small mixer by default */
 	globalopts.display_mode = 1; /* file display mode (1=filename, 2=id3,
 	                              * not finished yet.. */
 	globalopts.repeat = 0;
@@ -4971,7 +4616,7 @@ init_globalopts()
 void
 reset_next_song()
 {
-	int width = COLS - 33;
+	int width = (COLS > 33 ? COLS - 33 : 1);
 	char emptyline[width+1];
 
 	next_song = -1;
@@ -4987,7 +4632,7 @@ reset_next_song()
 void
 draw_next_song(const char *ns)
 {
-	int mywidth = COLS - 19 - 14;
+	int mywidth = (COLS > 33 ? COLS - 33 : 1);
 	char empty[mywidth+1];
 
 	if (!ns)
@@ -4999,7 +4644,7 @@ draw_next_song(const char *ns)
 	move(7,19);
 	addstr(empty);
 	move(7,19);
-	addnstr(ns, COLS-19-14);
+	addnstr(ns, mywidth);
 	refresh();
 }
 
@@ -5108,8 +4753,8 @@ if (file){ debug("FILE: ");debug(file);debug("\n");}
 void
 get_mainwin_size(int *height, int *width, int *y, int *x)
 {
-	*height = LINES - 13;
-	*width = COLS - 12;
+	*height = calc_mainwindow_height(LINES);
+	*width = calc_mainwindow_width(COLS);
 	*y = 10;
 	*x = 0;
 }
@@ -5143,23 +4788,23 @@ change_program_mode(unsigned short pm)
 /* PRE: ncurses_mutex *must* be locked
  */
 void
-update_ncurses()
+update_ncurses(int update_all)
 {
-	if (songinf.update & 1)
+	if (update_all || songinf.update & 1)
 		set_song_info((const char *)songinf.path, songinf.songinfo);
-	if (songinf.update & 2)
+	if (update_all || songinf.update & 2)
 		set_song_time(songinf.elapsed, songinf.remain);
-	if (songinf.update & 4)
+	if (update_all || songinf.update & 4)
 		set_song_status(songinf.status);
-	if (songinf.update & 8 && songinf.warning)
+	if ((songinf.update & 8 && songinf.warning))
 	{
 		mw_settxt((const char *)songinf.warning);
 		delete[] songinf.warning; songinf.warning = NULL;
 		refresh_screen();
 	}
-	if (songinf.update & 16)
+	if (update_all || songinf.update & 16)
 		draw_play_key(1);
-	if (songinf.update & 32) //draw next_song on screen.
+	if (update_all || songinf.update & 32) //draw next_song on screen.
 	{
 		if (songinf.next_song)
 		{
@@ -5232,7 +4877,7 @@ fw_draw_sortmode(sortmodes_t sm)
 	};
 	short
 		idx = 0;
-	int maxlen = COLS - 16;
+	int maxlen = (COLS > 16 ? COLS - 16 : 1);
 	
 	char emptyline[maxlen + 1];
 	memset(emptyline, ' ', maxlen * sizeof(char));
@@ -5350,7 +4995,7 @@ warning(const char *txt, ... )
 	va_start(ap, txt);
 	vsnprintf(buf, 1024, txt, ap);
 	va_end(ap);
-	addnstr(buf, COLS - 14);
+	addnstr(buf, (COLS > 14 ? COLS - 14 : 1));
 	attrset(COLOR_PAIR(CP_DEFAULT)|A_NORMAL);
 	refresh();
 }
@@ -5718,3 +5363,451 @@ set_pan_size(int psize)
 	globalopts.pan_size = psize;
 	return 1;
 };
+
+int
+main(int argc, char *argv[], char *envp[])
+{
+	int
+		c,
+		long_index,
+		key,
+		options = 0,
+		playmp3s_nr = 0;
+	time_t t;
+	char
+		**playmp3s = NULL,
+		*init_playlist = NULL,
+		*chroot_dir = NULL,
+		*config_file = NULL;
+	struct _tmp
+	{
+		char *play_mode;
+		char *sound_device;
+		char *mixer_device;
+		int fpl;
+#ifdef PTHREADEDMPEG
+		int threads;
+#endif
+	} tmp;
+
+#ifdef LIBPTH
+	pth_init();
+#endif
+	
+	tmp.sound_device = NULL;
+	tmp.mixer_device = NULL;
+	tmp.play_mode = NULL;
+	tmp.fpl = 5;
+	tmp.threads = 10;
+	
+	environment = envp;
+
+	songinf.update = 0;
+	songinf.path = NULL;
+	songinf.next_song = NULL;
+	songinf.warning = NULL;
+	playing_group = NULL;
+	status_file = NULL;
+	mixer = NULL;
+	helpwin = NULL;
+	bighelpwin = NULL;
+	mp3_groupwin = NULL;
+	history = new History();
+	long_index = 0;
+	played_songs = (char**)malloc(sizeof(char*));
+	played_songs[0] = NULL;
+	nr_played_songs = 1;
+	current_song = -1;
+	srand((unsigned int)time(&t));
+	init_globalopts();
+	init_playopts();
+	set_default_colours(); // fill globalopts.colours with default values.
+	/* parse arguments */
+	while (1)
+	{
+		static struct option long_options[] = 
+		{
+			{ "downsample", 0, 0, '2'},
+			{ "8bits", 0, 0, '8'},
+			{ "autolist", 1, 0, 'a'},
+			{ "config-file", 1, 0, 'c'},
+			{ "debug", 0, 0, 'd'},
+			{ "help", 0, 0, 'h'},
+			{ "list", 1, 0, 'l'},
+			{ "mixer-device", 1, 0, 'm' },
+			{ "no-mixer", 0, 0, 'n'},
+			{ "chroot", 1, 0, 'o'},
+			{ "playmode", 1, 0, 'p'},
+			{ "dont-quit", 0, 0, 'q'},
+			{ "repeat", 0, 0, 'R'},
+			{ "runframes", 1, 0, 'r'},
+			{ "sound-device", 1, 0, 's'},
+			{ "status-file", 1, 0, 'f'},
+			{ "threads", 1, 0, 't'},
+			{ "version", 0, 0, 'v'},
+			{ 0, 0, 0, 0}
+		};
+		
+		c = getopt_long(argc, argv, "28a:c:df:hl:m:no:p:qRr:s:t:v", long_options,
+			&long_index);
+
+		if (c == EOF)
+			break;
+		
+		switch(c)
+		{
+		case ':':
+		case '?':
+			usage();
+			break;
+		case '2': /* downsample */
+			options |= OPT_DOWNSAMPLE;
+			break;
+		case '8': /* 8bit audio */
+			options |= OPT_8BITS;
+			break;
+		case 'a': /* load playlist and play */
+			options |= OPT_AUTOLIST;
+			if (init_playlist)
+				delete[] init_playlist;
+			init_playlist = new char[strlen(optarg)+1];
+			strcpy(init_playlist, optarg);
+			break;
+		case 'c': /* configuration file */
+			if (config_file) free(config_file);
+			config_file = strdup(optarg);
+			break;
+		case 'd':
+			options |= OPT_DEBUG;
+			break;
+		case 'f': /* status file */
+			if (status_file)
+				free(status_file);
+			status_file = strdup(optarg);
+			break;
+		case 'h': /* help */
+			usage();
+			break;
+		case 'l': /* load playlist */
+			options |= OPT_LOADLIST;
+			if (init_playlist)
+				delete[] init_playlist;
+			init_playlist = new char[strlen(optarg)+1];
+			strcpy(init_playlist, optarg);
+			break;
+		case 'm': /* mixer device */
+			options |= OPT_MIXERDEV;
+			if (tmp.mixer_device)
+				free(tmp.mixer_device);
+			tmp.mixer_device = strdup(optarg);
+			break;
+		case 'n': /* disable mixer */
+			options |= OPT_NOMIXER;
+			break;
+		case 'o': /* chroot */
+			options |= OPT_CHROOT;
+			if (chroot_dir)
+				delete[] chroot_dir;
+			chroot_dir = new char[strlen(optarg)+1];
+			strcpy(chroot_dir, optarg);
+			break;
+		case 'p': /* set initial playmode */
+			options |= OPT_PLAYMODE;
+			tmp.play_mode = new char[strlen(optarg)+1];
+			strcpy(tmp.play_mode, optarg);
+			break;
+		case 'q': /* don't quit after playing 1 mp3/playlist */
+			options |= OPT_QUIT;
+			break;
+		case 'R': /* playlist repeat */
+			options |= OPT_REPEAT;
+			break;
+		case 'r': /* numbers of frames to decode in 1 loop 1<=fpl<=10 */
+			options |= OPT_FPL;
+			tmp.fpl = atoi(optarg);
+			break;
+		case 's': /* sound-device other than the default /dev/{dsp,audio} ? */
+			options |= OPT_SOUNDDEV;
+			if (tmp.sound_device)
+				free(tmp.sound_device);
+			tmp.sound_device = strdup(optarg);
+			break;
+		case 't': /* threads */
+			options |= OPT_THREADS;
+#ifdef PTHREADEDMPEG
+			tmp.threads = atoi(optarg);
+#endif
+			break;
+		case 'v': /* version info */
+			printf("%s version %s - http://mp3blaster.sourceforge.net/\n",
+				argv[0], VERSION);
+			printf("Supported audio formats: " BUILDOPTS_AUDIOFORMATS "\n");
+			printf("Supported audio output drivers: " BUILDOPTS_AUDIODRIVERS "\n");
+			printf("Build features: " BUILDOPTS_FEATURES "\n");
+			exit(0);
+			break;
+		default:
+			usage();
+		}
+	}
+
+	if (options & OPT_DEBUG) 
+	{
+		globalopts.debug = 1;
+		debug("Debugging of mp3blaster started.\n");
+	}
+
+	//read .mp3blasterrc
+	if (!cf_parse_config_file(config_file) &&
+		(config_file || cf_get_error() != NOSUCHFILE))
+	{
+		fprintf(stderr, "%s\n", cf_get_error_string());
+		exit(1);
+	}
+	if (config_file)
+		free(config_file);
+
+	if (optind < argc) /* assume all other arguments are mp3's */
+	{
+		/* this is not valid if a playlist is loaded from commandline */
+		if ( (options&OPT_LOADLIST) || (options&OPT_AUTOLIST) )
+			usage();
+
+		if (!(playmp3s = (char**)malloc((argc - optind) * sizeof(char*))))
+		{
+			fprintf(stderr, "Cannot allocate enough memory.\n"); exit(1);
+		}
+		/* Build a playlist from the remaining arguments */
+		for (int i = optind ; i < argc; i++)
+		{
+			if (!is_audiofile(argv[i]))
+			{
+				fprintf(stderr, "%s is not a valid audio file!\n", argv[i]);
+				usage();
+			}
+			playmp3s[i - optind] = (char*)malloc((strlen(argv[i])+1) * 
+				sizeof(char));
+			strcpy(playmp3s[i - optind], argv[i]);
+		}
+		options |= OPT_PLAYMP3;
+	}	
+
+	//signal(SIGALRM, SIG_IGN);
+
+	//Initialize NCURSES
+	initscr();
+ 	start_color();
+	set_inout_opts();
+
+	startup_path = get_current_working_path();
+
+	if (false && (LINES < MIN_SCREEN_HEIGHT || COLS < MIN_SCREEN_WIDTH))
+	{
+		mvaddstr(0, 0, "You'll need at least an 80x23 screen, sorry.\n");
+		getch();
+		endwin();
+		exit(1);
+	}
+	
+	/* setup colours */
+	init_pair(CP_DEFAULT, globalopts.colours.default_fg,
+		globalopts.colours.default_bg);
+	init_pair(CP_POPUP, globalopts.colours.popup_fg,
+		globalopts.colours.popup_bg);
+	init_pair(CP_POPUP_INPUT, globalopts.colours.popup_input_fg,
+		globalopts.colours.popup_input_bg);
+	init_pair(CP_ERROR, globalopts.colours.error_fg,
+		globalopts.colours.error_bg);
+	init_pair(CP_BUTTON, globalopts.colours.button_fg,
+		globalopts.colours.button_bg);
+	init_pair(CP_SHORTCUTS, globalopts.colours.shortcut_fg,
+		globalopts.colours.shortcut_bg);
+	init_pair(CP_LABEL, globalopts.colours.label_fg,
+		globalopts.colours.label_bg);
+	init_pair(CP_NUMBER, globalopts.colours.number_fg,
+		globalopts.colours.number_bg);
+	init_pair(CP_FILE_MP3, globalopts.colours.file_mp3_fg,
+		globalopts.colours.default_bg);
+	init_pair(CP_FILE_DIR, globalopts.colours.file_dir_fg,
+		globalopts.colours.default_bg);
+	init_pair(CP_FILE_LST, globalopts.colours.file_lst_fg,
+		globalopts.colours.default_bg);
+	init_pair(CP_FILE_WIN, globalopts.colours.file_win_fg,
+		globalopts.colours.default_bg);
+
+	/* initialize selection window */
+	mp3_rootwin = newgroup();
+	mp3_rootwin->setTitle("[Default]");
+	mp3_rootwin->swRefresh(0);
+	mp3_rootwin->drawBorder(); //to get the title 
+	mp3_curwin = mp3_rootwin;
+
+	progmode = PM_NORMAL;
+
+	/* initialize helpwin */
+	init_helpwin();
+	repaint_help();
+	draw_static();
+	mw_settxt("Press '?' to get help on available commands");
+	refresh();
+
+	if (options & OPT_NOMIXER)
+	{
+		globalopts.no_mixer = 1;
+	}
+	if (options & OPT_SOUNDDEV)
+	{
+		set_sound_device(tmp.sound_device);
+		free(tmp.sound_device);
+	}
+	if (options & OPT_MIXERDEV)
+	{
+		set_mixer_device(tmp.mixer_device);
+		free(tmp.mixer_device);
+	}
+	if (options & OPT_REPEAT)
+	{
+		globalopts.repeat = 1;
+	}
+	if (options & OPT_PLAYMODE)
+	{
+		if (!set_play_mode(tmp.play_mode))
+		{
+			endwin();
+			usage();
+		}
+		delete[] tmp.play_mode;
+	}
+	if (options & OPT_FPL)
+	{
+		if (!set_fpl(tmp.fpl))
+		{
+			endwin();
+			usage();
+		}
+	}
+
+	if (options & OPT_THREADS)
+	{
+#ifdef PTHREADEDMPEG
+		if (!set_threads(tmp.threads))
+#else
+		if (1) //threading is not enabled..
+#endif
+		{
+			endwin();
+			usage();
+		}
+	}
+
+	if (options & OPT_CHROOT)
+	{
+		if (chroot(chroot_dir) < 0)
+		{
+			endwin();
+			perror("chroot");
+			fprintf(stderr, "Could not chroot to %s! (are you root?)\n",
+				chroot_dir);
+			exit(1);
+		}
+		chdir("/");
+		delete[] chroot_dir;
+	}
+
+	if (options & OPT_DOWNSAMPLE)
+		globalopts.downsample = 1;
+	if (options & OPT_8BITS)
+		globalopts.eightbits = 1;
+
+	/* create nmixer interface */
+	init_mixer();
+
+	/* All options from configfile and commandline have been read. */
+	draw_settings();
+	
+	/* Accept signal for redrawing the interface */
+	signal(SIGWINCH, handle_resize);
+
+/*\
+|*|  very rude hack caused by nasplayer lib that outputs rubbish to stderr
+\*/
+	//fclose(stderr);
+/*\
+|*|  EORH
+\*/
+	
+	action = AC_NONE;
+
+	if (options & OPT_PLAYMP3)
+	{
+		const char *bla[4];
+		short idx;
+		short foo[2] = { 0, 1 };
+		for (int i = 0; i < (argc - optind); i++)
+		{
+			bla[0] = (const char*)playmp3s[i];
+			if (is_httpstream(bla[0]))
+				bla[1] = bla[0];
+			else
+				bla[1] = chop_path(playmp3s[i]);
+			bla[2] = NULL;
+			bla[3] = NULL;
+
+			idx=mp3_curwin->addItem(bla, foo, CP_FILE_MP3);
+			if (idx!=-1)
+				mp3_curwin->changeItem(idx,&id3_filename,strdup(bla[0]),2);
+			delete[] playmp3s[i];
+		}
+		delete[] playmp3s; playmp3s_nr = 0;
+		mp3_curwin->swRefresh(0);
+		set_action(AC_PLAY);
+		if (!(options & OPT_QUIT))
+			quit_after_playlist = 1;
+	}
+	else if ((options & OPT_LOADLIST) || (options & OPT_AUTOLIST))
+	{
+		read_playlist(init_playlist);
+		mp3_curwin->swRefresh(1);
+		delete[] init_playlist;
+		if (options & OPT_AUTOLIST)
+			set_action(AC_PLAY);
+	}
+
+#ifdef PTHREADEDMPEG
+	pthread_create(&thread_playlist, NULL, play_list, NULL);
+# ifdef INCLUDE_LIRC
+	 pthread_create(&thread_lirc, NULL, lirc_loop, NULL);
+# endif
+#elif defined(LIBPTH)
+	warning("Setting up PTH thread");
+
+	pth_mutex_init(&playing_mutex);
+	pth_mutex_init(&ncurses_mutex);
+	pth_mutex_init(&onemp3_mutex);
+	pth_cond_init(&playing_cond);
+
+	thread_playlist = pth_spawn(PTH_ATTR_DEFAULT, play_list, NULL);
+	pth_yield(NULL);
+#endif /* PTHREADEDMPEG */
+
+	/* read input */
+	while ( (key = handle_input(1)) >= 0)
+	{
+	}
+	
+	/* signal running threads to terminate themselves */
+	playopts.quit_program = 1;
+	wake_player();
+
+#ifdef PTHREADEDMPEG
+	pthread_join(thread_playlist, NULL);
+	//the lirc thread blocks..sod it.
+#elif defined (LIBPTH)
+	pth_join(thread_playlist, NULL);
+#endif
+
+	endwin();
+	return 0;
+}
+
+

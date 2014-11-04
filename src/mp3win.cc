@@ -400,3 +400,31 @@ mp3Win::setAllSongsPlayed(short recursive)
 {
 	resetSongs(recursive, 1);
 }
+
+void
+mp3Win::resize(int width, int height, int recursive)
+{
+	scrollWin::resize(width, height);
+
+	if (!recursive)
+	{
+		return;
+	}
+
+	//call resize in all subgroups as well
+	mp3Item *tmp = (mp3Item*)getWinItem(0);
+
+	while (tmp)
+	{
+		if (tmp->getType() == SUBWIN)
+		{
+			mp3Win *win = (mp3Win*)(tmp->getObject());
+			if (strcmp(tmp->getName(), "[..]"))
+			{
+				win->resize(width, height, 1);
+			}
+		}
+		tmp = (mp3Item*)tmp->next;
+	}
+
+}

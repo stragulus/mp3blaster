@@ -57,7 +57,7 @@
 
 #If you want to display ID3 tags in another character set (in this case
 #koi8-r <= win1251):
-#CharsetTable /usr/local/share/mp3blaster/win2koi.tbl
+#CharsetTable = /usr/local/share/mp3blaster/win2koi.tbl
 
 #Set a bunch of colours. Try and find out what they do; most should be obvious.
 #Currently, colour support is mostly broken and very inconsistent..

@@ -98,7 +98,6 @@ struct _globalopts /* global options, exported for other classes */
 	unsigned int skipframes;
 	short debug;
 	short repeat;
-	short minimixer; /* 0 for large mixer, 1 for mini mixer */
 	struct _colours {
 		short
 			default_fg, default_bg, popup_fg, popup_bg, popup_input_fg,

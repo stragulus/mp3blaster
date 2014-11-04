@@ -1,11 +1,13 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_PREREQ(2.59)
-AC_INIT(mp3blaster,3.2.2)
+AC_INIT(mp3blaster,3.2.3)
 AC_CONFIG_SRCDIR([src/mp3blaster.h])
 AM_INIT_AUTOMAKE
 
 #Custom C++ flags - later options override earlier ones
-CXXFLAGS="-O2 -Wall -W -fno-strength-reduce $CXXFLAGS"
+if [ -z "$CXXFLAGS" ] ; then
+	CXXFLAGS="-O2 -Wall -W -fno-strength-reduce"
+fi
 
 AM_CONFIG_HEADER(config.h)
 

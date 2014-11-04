@@ -9,6 +9,7 @@
 #include "mp3blaster.h"
 #include NCURSES_HEADER
 #include "winitem.h"
+#include "exceptions.h"
 #include <stdio.h>
 
 enum sw_searchflags { SW_SEARCH_NONE, SW_SEARCH_CASE_INSENSITIVE };
@@ -16,8 +17,41 @@ enum sw_searchflags { SW_SEARCH_NONE, SW_SEARCH_CASE_INSENSITIVE };
 class scrollWin
 {
 public:
-	scrollWin(int, int, int, int, char **, int, short, short);
+	/* Function Name: scrollWin::scrollWin
+	 * Description  : Creates a new selection-window, setting width and
+	 *              : height, items in this window, and whether or not the 
+	 *              : entire path to each item should be displayed.
+	 * Arguments    : sw      : selection-window to create
+	 *              : lines   : amount of lines for this window
+	 *              : ncols   : amount of columns for this window
+	 *              : begin_y : y-coordinate of topleft corner from this window
+	 *              :         : in stdscr.
+	 *              : begin_x : as begin_y, but now x-coordinate.
+	 *              : arr     : array of strings containing items for this
+	 *              :         : window. May be NULL if narr is 0.
+	 *              : narr    : amount of items.
+	 *              : color   : Default colourpair to use
+	 *              : x_offset: 1 if window has a (left-)border of 1, 0 otherwise.
+	 * Throws       : IllegalArgumentsException when size requirements have not
+	 *              : been met
+	 */
+	scrollWin(int lines, int ncols, int begin_y, int begin_x, char **arr,
+		int narr, short color, short x_offset);
+
 	virtual ~scrollWin();
+
+	/* Function   : resize
+	 * Description: Resizes the window
+	 * Parameters : width
+	 *            :  new width
+	 *            : height
+	 *            :  new height
+	 * Returns    : Nothing.
+	 * SideEffects: None.
+	 * Throws     : IllegalArgumentsException when size requirements have not
+	 *            : been met
+	 */
+	virtual void resize(int width, int height);
 
 	void changeSelection(int);
 	void invertSelection();
@@ -85,6 +119,8 @@ protected:
 	winItem *first, *last;
 
 private:
+	void checkSize(const int lines, const int ncols, const int x_offset);
+
 	int nitems;
 	int hide_bar;
 	char *sw_title;
