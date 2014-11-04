@@ -18,10 +18,13 @@
 #include "mp3blaster.h"
 #include NCURSES
 #include <string.h>
+#include <sys/time.h>
+#include <unistd.h>
 #include "playwindow.h"
 #include "genretab.h"
 
 extern int no_mixer; /* from main.cc */
+extern char *sound_device; /* from main.cc */
 
 extern void debug(const char*);
 
@@ -70,7 +73,8 @@ playWindow::playWindow()
 	mixer = NULL;
 	if (!no_mixer)
 	{
-		mixer = new NMixer(interface, 7, nrlines - 7 - 5, color_pairs,
+		mixer = new NMixer(interface, (sound_device && strrchr(sound_device,
+			':') ? "NAS" : (const char*)NULL), 7, nrlines - 7 - 5, color_pairs,
 			COLOR_BLUE);
 		if (!(mixer->NMixerInit()))
 		{
@@ -102,7 +106,7 @@ playWindow::setFileName(const char *flname)
 	if (!flname || !strlen(flname))
 		return;
 
-	if (strlen(flname) > (nrcols-4))
+	if (strlen(flname) > (unsigned int)(nrcols-4))
 	{
 		filename = new char[(nrcols-4)+1];
 		strcpy(filename, flname+(strlen(flname)-(nrcols-4)));
@@ -121,7 +125,7 @@ playWindow::setFileName(const char *flname)
 	mvwaddch(interface, 0, 1+borderlen, ACS_RTEE);
 	mvwaddstr(interface, 0, 2+borderlen, filename);
 	int roffset = nrcols - borderlen - 2;
-	if (borderlen+2+strlen(filename) == (roffset-1))
+	if (borderlen+2+strlen(filename) == (unsigned int)(roffset-1))
 		mvwaddch(interface, 0, roffset - 1, ' ');
 	mvwaddch(interface, 0, roffset, ACS_LTEE);
 	for (int i = roffset + 1; i < roffset + 1 + borderlen; i++)
@@ -140,18 +144,19 @@ playWindow::setStatus(playstatus ps)
 chtype
 playWindow::getInput()
 {
-	chtype
-		ch;
-
-	//this useless usleep seems to fix a timing problem causing the program
-	//to wait for a keypress.
-	usleep(1);
+	chtype         ch;
+	fd_set         fdsr;
+	struct timeval tv;
 
 	if (status == PS_PLAYING || status == PS_PAUSED)
 	{
-		nodelay(interface, TRUE);
+		FD_ZERO(&fdsr);
+		FD_SET(0, &fdsr);  /* stdin file descriptor */
+		tv.tv_sec = tv.tv_usec = 0;
+		if (select(FD_SETSIZE, &fdsr, NULL, NULL, &tv) == 1)
 		ch = wgetch(interface);
-		nodelay(interface, FALSE);
+		else
+		ch = (chtype) ERR;
 	}
 	else
 	{
@@ -256,7 +261,7 @@ playWindow::setSongInfo(const char *inf)
 }
 
 char *
-playWindow::getGenre(const char genre)
+playWindow::getGenre(const unsigned char genre)
 {
 	return genre_table[genre];
 #if 0
@@ -274,7 +279,7 @@ playWindow::getGenre(const char genre)
 }
 
 void
-playWindow::setSongGenre(const char inf)
+playWindow::setSongGenre(const unsigned char inf)
 {
 //	char temp[20]; // this is the genre numbe (for debug)
 //	sprintf(temp, "%02d", inf);

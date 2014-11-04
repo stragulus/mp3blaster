@@ -772,7 +772,7 @@ void Mpegtoraw::layer3huffmandecode(int ch,int gr,int out[SBLIMIT][SSLIMIT])
   for(i=0;i<e;)
   {
     const HUFFMANCODETABLE *h;
-    register end;
+    register int end;
       
     if     (i<region1Start)
     {

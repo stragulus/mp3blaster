@@ -40,7 +40,7 @@ extern "C" {
 #define IOCTL(a,b,c)		(c = ioctl(a,b,c) )
 #endif
 
-char *Rawplayer::defaultdevice="/dev/dsp";
+char *Rawplayer::defaultdevice=SOUND_DEVICE;
 
 /* Volume */
 int Rawplayer::setvolume(int volume)
@@ -68,39 +68,43 @@ int Rawplayer::setvolume(int volume)
 /* Rawplayer class */
 /*******************/
 // Rawplayer class
-Rawplayer::Rawplayer()
+Rawplayer::Rawplayer(int audiohandle, int audiobuffersize)
 {
+	this->audiohandle = audiohandle;
+	this->audiobuffersize = audiobuffersize;
 	//need to do this when object of this class is used for more than one
 	//mp3.
 	rawstereo = rawsamplesize = rawspeed = 0;
+	rawbuffersize = 0;
+	quota = 0;
 }
 
 Rawplayer::~Rawplayer()
 {
-  close(audiohandle);
+	close(audiohandle);
 }
 
-bool Rawplayer::initialize(char *filename)
+Rawplayer *Rawplayer::opendevice(char *filename)
 {
   int flag;
+  int audiohandle, audiobuffersize;
 
-  rawbuffersize=0;
-  quota=0;
+  if (!filename) filename = defaultdevice;
 
   if((audiohandle=open(filename,O_WRONLY|O_NDELAY,0))==-1)
-    return seterrorcode(SOUND_ERROR_DEVOPENFAIL);
+    return NULL;
 
   if((flag=fcntl(audiohandle,F_GETFL,0))<0)
-    return seterrorcode(SOUND_ERROR_DEVOPENFAIL);
+    return NULL;
   flag&=~O_NDELAY;
   if(fcntl(audiohandle,F_SETFL,flag)<0)
-    return seterrorcode(SOUND_ERROR_DEVOPENFAIL);
+    return NULL;
 
   IOCTL(audiohandle,SNDCTL_DSP_GETBLKSIZE,audiobuffersize);
   if(audiobuffersize<4 || audiobuffersize>65536)
-    return seterrorcode(SOUND_ERROR_DEVBADBUFFERSIZE);
+    return NULL;
 
-  return true;
+  return new Rawplayer(audiohandle, audiobuffersize);
 }
 
 void Rawplayer::abort(void)

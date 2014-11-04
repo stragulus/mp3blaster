@@ -6,6 +6,9 @@ Jukka Honkela:
 Steve Kemp:
     He ported mp3tag to Windows NT  (will be added in the version following
 	2.0b8)
+Willem-Jan Monsuwe:
+	NAS and SID playback support, as well as autoconf and some general code
+	improvements.
 
 And ofcourse everyone else who emailed me with suggestions, bugreports etc!
 And everyone I forgot while making this file.  ;)

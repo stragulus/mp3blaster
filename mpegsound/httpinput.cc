@@ -5,7 +5,7 @@
 // Httpinputstream.cc
 // Inputstream for http
 
-// It's from mpg123
+// It's from mpg123 
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -32,6 +32,8 @@
 #ifndef INADDR_NONE
 #define INADDR_NONE 0xffffffff
 #endif
+
+extern void debug(const char*);
 
 static const char *httpstr="http://";
 
@@ -187,7 +189,7 @@ FILE *Soundinputstreamfromhttp::http_open(char *url)
       strcat (request, sptr);
     }
     sprintf (agent, " HTTP/1.0\r\nUser-Agent: %s/%s\r\n\r\n",
-	     "Splay","0.6");
+	     "Mp3blaster",VERSION);
     strcat (request, agent);
     server.sin_family = AF_INET;
     server.sin_port = htons(myport);
@@ -240,6 +242,7 @@ FILE *Soundinputstreamfromhttp::http_open(char *url)
 Soundinputstreamfromhttp::Soundinputstreamfromhttp()
 {
   fp=NULL;
+  debug("httpclass\n");
 }
 
 Soundinputstreamfromhttp::~Soundinputstreamfromhttp()

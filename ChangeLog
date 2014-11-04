@@ -1,3 +1,22 @@
+V2.0b12: 1999/08/05
+===================
+-Fixed a bug in the genre support (char=>unsigned char). Bedankt Tjerk
+ Meesters for the hint!
+-Got rid of some (harmless) compilation warnings.
+-NAS Support en SID playback support, by Willem-Jan Monsuwe (willem@stack.nl)
+ This is still rather alpha..playback with NAS crashes on my machine, but
+ works on another one. Your Milage May Vary :)
+-Fixed a bug that prevented mp3blaster to compile without errors with the
+ latest gcc(2.95.1)
+-Convert to WAV now asks for a filename to write to.
+-Casted some (const char*) as (char *) to get it to  compile with ncurses5.0b2
+ and gcc-2.95.1. Hope this won't break anything.
+-improvements on autoconf files and some general code by willem@stack.nl.
+-Applied a patch from Sverre Huseby (sverrehu@online.no) to hopefully get rid
+ of mp3blaster stopping during playback because input blocks.
+-If nmixer is called as 'nasmixer' (e.g. using a softlink called nasmixer) it
+ will act as a soundmixer for NAS. You need to set $DISPLAY then.
+
 V2.0b11: 1999/07/21
 ===================
 -Fixed a bug that caused a layout error (or sigsegv).

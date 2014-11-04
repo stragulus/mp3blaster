@@ -4,7 +4,7 @@
 
 // Mpegsound.h
 //   This is typeset for functions in MPEG/WAVE Sound library.
-//   Now, it's for only linux-pc-?86
+//   Nasplayer class added by Willem (willem@stack.nl), thanks!
 
 /************************************/
 /* Inlcude default library packages */
@@ -26,6 +26,13 @@
 
 #ifndef _L__SOUND__
 #define _L__SOUND__
+
+/*\ ncurses #defines a lot of functions.  That sucks, because it
+|*| clashes with other things, such as C++ iostream stuff.
+|*| Basically, you can't just use C++ iostreams and ncurses together.
+\*/
+#undef clear
+#undef bool
 
 /****************/
 /* Sound Errors */
@@ -265,7 +272,6 @@ public:
   Soundplayer() {__errorcode=SOUND_ERROR_OK;};
   virtual ~Soundplayer();
 
-  virtual bool initialize(char *filename)                       =0;
   virtual void abort(void);
   virtual int  getprocessed(void);
 
@@ -288,15 +294,15 @@ private:
 class Rawtofile : public Soundplayer
 {
 public:
-  Rawtofile():Soundplayer() { filetype = RAW; }
   ~Rawtofile();
 
-  bool initialize(char *filename);
+  static Rawtofile *opendevice(char *filename);
   bool setsoundtype(int stereo,int samplesize,int speed);
   bool setfiletype(enum soundtype);
   bool putblock(void *buffer,int size);
 
 private:
+  Rawtofile(int filehandle);
   int filehandle, init_putblock;
   int rawstereo,rawsamplesize,rawspeed;
   soundtype filetype;
@@ -307,10 +313,9 @@ private:
 class Rawplayer : public Soundplayer
 {
 public:
-  Rawplayer();
   ~Rawplayer();
 
-  bool initialize(char *filename);
+  static Rawplayer *opendevice(char *filename);
   void abort(void);
   int  getprocessed(void);
 
@@ -328,6 +333,7 @@ public:
   static int  setvolume(int volume);
 
 private:
+  Rawplayer(int audiohandle, int audiobuffersize);
   short int rawbuffer[RAWDATASIZE];
   int  rawbuffersize;
   int  audiohandle,audiobuffersize;
@@ -336,7 +342,43 @@ private:
   int  quota;
 };
 
+#ifdef HAVE_NASPLAYER
+#include <audio/audiolib.h>
 
+// Playing raw audio over a Network Audio System
+// By Willem (willem@stack.nl)
+class NASplayer : public Soundplayer
+{
+public:
+	~NASplayer();
+
+	static NASplayer *opendevice(char *device);
+
+	void abort(void);
+
+	bool setsoundtype(int stereo, int samplesize, int speed);
+	bool resetsoundtype(void);
+
+	bool putblock(void *buffer, int size);
+
+	int  getblocksize(void);
+
+	int  setvolume(int volume);
+
+	AuBool event_handler(AuEvent *ev);
+private:
+	NASplayer(AuServer *aud);
+
+	AuServer *aud;
+	AuFlowID flow;
+	AuDeviceID dev;
+	AuEventHandlerRec *evhnd;
+	unsigned char format;
+	int samplerate, channels;
+	int buffer_ms;
+	int req_size;
+};
+#endif /*\ HAVE_NASPLAYER \*/
 
 /*********************************/
 /* Data format converter classes */
@@ -513,7 +555,7 @@ private:
     char album  [30+1];
     char year   [ 4+1];
     char comment[30+1];
-    char genre        ;
+    unsigned char genre;
   }songinfo;
   int totaltime;
 
@@ -524,7 +566,8 @@ public:
   const char *getalbum   (void) const { return (const char *)songinfo.album;  };
   const char *getyear    (void) const { return (const char *)songinfo.year;   };
   const char *getcomment (void) const { return (const char *)songinfo.comment;};
-  const char  getgenre   (void) const { return (const char)songinfo.genre;    };
+  const unsigned char getgenre (void) const { return
+    (const unsigned char)songinfo.genre; };
   int gettotaltime() { return totaltime; }
 
   /*******************/
@@ -701,6 +744,7 @@ public:
   virtual bool playing(int verbose)                 =0;
 
 protected:
+  bool opendevice(char *device, soundtype write2file=NONE);
   bool seterrorcode(int errorno){__errorcode=errorno;return false;};
   Soundplayer *player;
 
@@ -751,5 +795,35 @@ protected:
 
   void showverbose(int verbose);
 };
+
+#ifdef HAVE_SIDPLAYER
+
+#include <sidplay/player.h>
+#include <sidplay/myendian.h>
+#include <sidplay/fformat.h>
+
+class SIDfileplayer : public Fileplayer
+{
+public:
+	SIDfileplayer();
+	~SIDfileplayer();
+
+	bool openfile(char *filename,char *device, soundtype write2file=NONE);
+	void setforcetomono(short flag);
+	void setdownfrequency(int value);
+	bool run(int frames);
+	bool playing(int verbose);
+protected:
+	emuEngine emu;
+	struct emuConfig emuConf;
+	sidTune *tune;
+	struct sidTuneInfo sidInfo;
+	int song;
+private:
+	char *buffer;
+	int bufSize;
+};
+
+#endif /*\ HAVE_SIDPLAYER \*/
 
 #endif

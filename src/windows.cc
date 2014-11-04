@@ -50,7 +50,7 @@ void popupWindow(const char *txt, int colour_pair = 1, int ypos = -1,
 			2);
 	leaveok(a, TRUE);
 	wbkgd(a, COLOR_PAIR(colour_pair));
-	mvwprintw(a, 2, (columns - strlen(txt)) / 2, txt); //write text in window
+	mvwprintw(a, 2, (columns - strlen(txt)) / 2, (char*)txt); //write text in window
 	mvwprintw(a, 4, (columns - 28) / 2, "Program will auto-continue..");
 	box(a, 0, 0);
 	wrefresh(a);

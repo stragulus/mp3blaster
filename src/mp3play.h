@@ -40,4 +40,22 @@ private:
 	actiontype action;
 };
 
+/*\ A lot of virtual functions to be able to stick multiple
+|*| players into the same class pointer
+\*/
+
+class genPlayer
+{
+public:
+	virtual ~genPlayer();
+	virtual bool playing(int verbose) = 0;
+
+#ifdef PTHREADEDMPEG
+	virtual bool playingwiththread(int verbose) { return playing(verbose); }
+#endif
+	virtual int geterrorcode(void) = 0;
+	virtual bool openfile(char *, char *, soundtype write2file=NONE) = 0;
+	virtual void setdownfrequency(int) = 0;
+};
+
 #endif

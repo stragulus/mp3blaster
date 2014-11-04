@@ -4,37 +4,27 @@ Please report any changes you make to this program to me by e-mail so that
 I know what's going on.
 ------------------------------------------------------------------------
 
-INSTALL
-
 Installation is a piece of cake, thanks to autoconf & automake.
-Tip: First upgrade to libncurses-4.0 or better. Version 3.* of ncurses is 
-no good and will probably mess up the layout *and* perhaps some functionality.
-
-Now on with the show..
-
-If your distribution is GLIBC2 (libc6)-based:
 
 ./configure
 make
 make install
 
-And you're ready :)
+This should suffice on most systems. If you experience problems running
+mp3blaster, read these TIPS:
 
-If you want more info on configure, try ./configure --help.
+-If you're not using ncurses 4.2 (ls /usr/lib/libncurses*), then install
+ it. Ncurses-3.* and ncurses-5.* are no good.
+-If mp3blaster gets killed with a segmentation fault, then reconfigure with
+ -D__NO_MATH_INLINES (CPPFLAGS="-D__NO_MATH_INLINES" ./configure) and
+ remake.
 
-If you *DONT* have GLIBC2: Upgrade!! 
-I have compiled it on a libc5 box too.. The only problem was that
-this box (which has libc5 as default linking library) also had libc6
-installed, including libpthread. If one tries to compile a program it 
-would use libc5 with the libpthread from libc6, resulting in mp3blaster
-linked against 2 libc's...not really a good idea. 2 Solutions: 
-configure without pthread-lib (./configure --with-pthread=no), or install
-a pthread-lib for libc5 and link against that.
+EXTRA CONFIGURE OPTIONS
 
-Any comments, ideas, praises, bugreports and cheques => EMAIL brama@stack.nl.
-Check http://www.stack.nl/~brama/mp3blaster.html for the latests updates, or
-visit ftp://sunsite.unc.edu/pub/Linux/apps/sound/players where you
-probably found this file anyway.
+--with-nas      Use this to get Network Audio System playback suport. Configure
+                must be able to find libaudio.a/so and <audio/audiolib.h>.
+--with-pthread  Used by default. If you don't want pthread (which is only
+                used for buffering), use --without-pthread. 
 
 Platforms that are known to compile mp3blaster out-of-the-box:
 Linux/ix86 (libc5 & libc6)
@@ -44,4 +34,8 @@ OpenBSD/Alpha (compiled, didn't test playing cuz sounddevice wasn't working)
 Linux/Alpha
 
 If you have an SGI Indy eating dust and you don't have a use for it; I'm 
-interested in one!
+interested in one! Sun SparcStations are welcome too ;-)
+
+Any comments, ideas, praises, bugreports and cheques => EMAIL brama@stack.nl.
+Check http://www.stack.nl/~brama/mp3blaster.html for the latests updates, or
+visit http://freshmeat.net/ and search for mp3blaster.

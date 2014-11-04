@@ -2,10 +2,30 @@
  * (C)1999 Bram Avontuur (brama@stack.nl)
  */
 #include "nmixer.h"
+#include <string.h>
+#include <stdlib.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#ifdef HAVE_SYS_SOUNDCARD_H
+#include <sys/soundcard.h>
+#elif HAVE_MACHINE_SOUNDCARD_H
+#include <machine/soundcard.h>
+#elif HAVE_SOUNDCARD_H
+#include <soundcard.h>
+#endif
+
+#ifdef __cplusplus
+}
+#endif
 
 /* Prototypes */
 short is_mixer_device(const char *mdev);
 void usage(const char *);
+
+extern char **environ; //needed for getenv!
 
 int
 main(int argc, char *argv[])
@@ -90,7 +110,27 @@ main(int argc, char *argv[])
 
 	mvprintw(0, (COLS - strlen(MYVERSION)) / 2, MYVERSION);
 
-	bla = new NMixer(stdscr, 2, LINES - 4);
+	if (!strstr(argv[0], "nasmixer"))
+		bla = new NMixer(stdscr, (const char*)NULL, 2, LINES - 4);
+	else //use NAS-mixer!
+	{
+		const char *devnam = getenv("DISPLAY");
+		if (!devnam)
+		{
+			endwin();
+			fprintf(stderr, "Set DISPLAY environment variable if you want "\
+				"to use the NAS mixer.\n");
+			exit(1);
+		}
+#if defined(HAVE_NASPLAYER)
+		bla = new NMixer(stdscr, "NAS", 2, LINES - 4);
+#else
+		endwin();
+		fprintf(stderr, "Nmixer was not compiled with NAS support.\n");
+		exit(1);
+#endif
+	}
+
 	if (!(bla->NMixerInit()))
 	{
 		endwin();

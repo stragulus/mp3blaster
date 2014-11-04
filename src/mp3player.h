@@ -13,7 +13,7 @@
 #include <bool.h>
 #endif
 
-class mp3Player : public Mpegfileplayer
+class mp3Player : public Mpegfileplayer, public genPlayer
 {
 public:
 	mp3Player(mp3Play *calling, playWindow *interface, int threads);
@@ -23,6 +23,11 @@ public:
 #ifdef PTHREADEDMPEG
 	bool playingwiththread(int verbose);
 #endif
+	int geterrorcode(void) { return Mpegfileplayer::geterrorcode(); }
+	bool openfile(char *filename, char *device, soundtype write2file=NONE) {
+		return Mpegfileplayer::openfile(filename, device, write2file); }
+	void setdownfrequency(int value) {
+		Mpegfileplayer::setdownfrequency(value); }
 
 private:
 	int nthreads;

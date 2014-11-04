@@ -1,13 +1,28 @@
 #include <nmixer.h>
+#include <string.h>
 #define MIXER_DEVICE "/dev/mixer"
 
 #define BOTH_CHANNELS 0x11
 #define RIGHT_CHANNEL 0x10
 #define LEFT_CHANNEL  0x01
 
-NMixer::NMixer(WINDOW *mixwin, int yoffset, int nrlines, int *pairs,
-	int bgcolor)
+#ifndef mvwchgat
+#define mvwchgat(a, b, c, d, e, f, g)
+#endif
+
+NMixer::NMixer(WINDOW *mixwin, const char *mixdev, int yoffset, int nrlines,
+	int *pairs, int bgcolor)
 {
+	if (!mixdev)
+	{
+		this->mixdev = new char[strlen(MIXER_DEVICE)+1];
+		strcpy(this->mixdev, MIXER_DEVICE);
+	}
+	else
+	{
+		this->mixdev = new char[strlen(mixdev)+1];
+		strcpy(this->mixdev, mixdev);
+	}
 	this->mixwin = mixwin;
 	this->yoffset = yoffset;
 	this->nrlines = nrlines;
@@ -30,49 +45,19 @@ NMixer::NMixer(WINDOW *mixwin, int yoffset, int nrlines, int *pairs,
 
 NMixer::~NMixer()
 {
-	if (supported)
-		delete[] supported;
-	if (cpairs)
-		delete[] cpairs;
-	if (mixer >= 0)
-		close(mixer);
+	if (supported) delete[] supported;
+	if (cpairs) delete[] cpairs;
+	if (mixers) delete mixers;
+	if (mixdev) delete[] mixdev;
 }
 
 short
 NMixer::NMixerInit()
 {
-	int
-		i;
-	unsigned int setting;
-	unsigned int j;
-
 	nrbars = 0;
 	supported = NULL;
 	//sbars = NULL;
 	
-	if ( (mixer = open(MIXER_DEVICE, O_RDWR)) < 0)
-	{
-		//perror("Can't open /dev/mixer");
-		mixer = -1;
-		return 0;
-	}
-
-	ioctl(mixer, MIXER_READ(SOUND_MIXER_DEVMASK), &setting);
-
-	/* Determine supported devices */
-	for (j = 0; j < SOUND_MIXER_NRDEVICES; j++)
-	{
-		if (setting & (1 << j)) /*Device SOUND_DEV_LABELS[j] is supported.*/
-		{
-			supported = (int *)realloc(supported, (++nrbars) * sizeof(int));
-			supported[nrbars - 1] = j;
-		}
-	}
-
-	/* p->pcm,v->vol,s->spk,b->bas,t->tre,l->line1,m->mic,c->cd,f->fm */
-	//while ( (c = getopt(argc, argv, "p:v:s:b:t:l:"
-	//sbars = (WINDOW**)malloc(nrbars * sizeof(WINDOW*));
-
 	init_pair(cpairs[0], COLOR_WHITE, bgcolor);
 	init_pair(cpairs[1], COLOR_GREEN, bgcolor);
 	init_pair(cpairs[2], COLOR_YELLOW, bgcolor);
@@ -85,15 +70,14 @@ NMixer::NMixerInit()
 		return 0;
 	}
 
-	/* On my system, the mozart souncard I have (with OTI-601 chipset) 
-	 * produces a lot of noise and fuss after initialisation. Setting 
-	 * SOUND_MIXER_LINE2 to zero stops this (what actual setting does this
-	 * change on the mozart card???)
-	 */
-#ifdef MOZART
-	volume = 0;
-	ioctl(mixer, MIXER_WRITE(SOUND_MIXER_LINE2), &volume);
+#ifdef HAVE_NASPLAYER
+	if (mixdev && !strcmp(mixdev, "NAS")) //NAS-mixer
+		mixers = new NASMixer(NULL);
+	else
 #endif
+		mixers = new OSSMixer(NULL);
+	//mixers = new OSSMixer(new NASMixer());
+	supported = mixers->GetDevices(&nrbars);
 
 	/* maxspos == max# bars ON-SCREEN */
 	maxspos = ((nrlines - 1) / 3) - 1; /* 1 nonbar-line[s], 3 lines/bar */
@@ -103,15 +87,13 @@ NMixer::NMixerInit()
 	minbar = 0;
 	currentbar = 0; /* current bar (index) */
 
-	for ( i = 0; i < MYMIN(nrbars, (maxspos + 1)); i++)
+	for ( int i = 0; i < MYMIN(nrbars, (maxspos + 1)); i++)
 	{
-		mvwprintw(mixwin, yoffset + 1 + 3 * i, 65, "L");
-		mvwprintw(mixwin, yoffset + 2 + 3 * i, 65, "R");
+		mvwprintw(mixwin, yoffset + 2 + 3 * i, 65, "L");
+		mvwprintw(mixwin, yoffset + 3 + 3 * i, 65, "R");
 	}
 	mvwprintw(mixwin, yoffset, 10,
 		"0        1         2         3         4         5");
-	/* mvprintw(2, 10, "12345678901234567890123456789012345678901234567890");*/
-	//mvwprintw(mixwin, maxy - 2, 2, "(C)1999 Bram Avontuur (brama@stack.nl)");
 	wrefresh(mixwin);
 
 	/* Draw all Scrollbars */
@@ -124,56 +106,52 @@ NMixer::NMixerInit()
 void
 NMixer::DrawScrollbar(short i, int spos)
 {
-	unsigned int
-		j;
-	int
-		my_x, my_y;
-	unsigned int
-		setting, volumes[2];
-	const char *sources[] = SOUND_DEVICE_LABELS;
+	int j;
+	int my_x, my_y;
+	struct volume vol;
+	const char *source = mixers->GetMixerLabel(supported[i]);
 	const char empty_scrollbar[] = \
 		"                                                          ";
 
 	my_x = 2;
-	my_y = yoffset + 1 + (3 * spos);
+	my_y = yoffset + 2 + (3 * spos);
 	
 	//clear 2x58 positions on window
+	mvwprintw(mixwin, my_y - 1, my_x, empty_scrollbar);
 	mvwprintw(mixwin, my_y, my_x, empty_scrollbar);
 	mvwprintw(mixwin, my_y + 1, my_x, empty_scrollbar);
 
 	//draw new bar
-	mvwprintw(mixwin, my_y, my_x, sources[supported[i]]);
+	mvwprintw(mixwin, my_y - 1, my_x, source);
 	if (i == currentbar)
 	{
-		mvwchgat(mixwin, my_y, my_x, strlen(sources[supported[i]]), A_REVERSE, 
+		mvwchgat(mixwin, my_y - 1, my_x, strlen(source), A_REVERSE, 
 			cpairs[0], NULL);
 	}
 
 	/* get sound-settings */
-	ioctl(mixer, MIXER_READ(supported[i]), &setting);
+	if (!(mixers->GetMixer(supported[i], &vol)))
+		return;
 	/* setting = setting / 2; */
-	
-	volumes[0] = setting & 0x000000FF;
-	volumes[1] = (setting & 0x0000FF00)>>8;
-	volumes[0] = MYMIN(100, volumes[0]);
-	volumes[1] = MYMIN(100, volumes[1]);
-	volumes[0] /= 2;
-	volumes[1] /= 2;
+	vol.left  /= 2;
+	vol.right /= 2;
+	if (vol.left  > 50) vol.left  = 50;
+	if (vol.right > 50) vol.right = 50;
 
 	mvwaddch(mixwin, my_y, my_x + 7, '[');
 	mvwaddch(mixwin, my_y + 1, my_x + 7, '[');
 	mvwaddch(mixwin, my_y, my_x + 58, ']');
 	mvwaddch(mixwin, my_y + 1, my_x + 58, ']');
 	wmove(mixwin, my_y, my_x + 8);
-	for (j = 0; j < volumes[0]; j++)
+	for (j = 0; j < vol.left; j++)
 		waddch(mixwin, '#');
-	for (j = volumes[0]; j < 50; j++)
+	for (j = vol.left; j < 50; j++)
 		waddch(mixwin, ' ');
 
 	wmove(mixwin, my_y + 1, my_x + 8);
-	for (j = 0; j < volumes[1]; j++)
+	for (j = 0; j < vol.right; j++)
 		waddch(mixwin, '#');
-	for (j = volumes[1]; j < 50; j++)
+	for (j = vol.right; j < 50; j++)
 		waddch(mixwin, ' ');
 
 	/* fix up some nice colors */
@@ -200,50 +178,29 @@ void
 NMixer::ChangeBar(short bar, short amount, short absolute, short channels,
 	short update)
 {
-	int
-		volumes[2],
-		setting;
+	struct volume vol;
 
-	ioctl(mixer, MIXER_READ(supported[bar]), &setting);
-	volumes[0] = setting & 0x000000FF;
-	volumes[1] = (setting & 0x0000FF00)>>8;
-
-	if (absolute)
-	{
-		if (amount < 0)
-			amount = 0;
-		else if (amount > 100)
-			amount = 100;
-	}
+	if (!(mixers->GetMixer(supported[bar], &vol)))
+		return;
 
 	if (channels == BOTH_CHANNELS || channels == LEFT_CHANNEL)
 	{
-		if (!absolute)
-			volumes[0] += amount;
-		else
-			volumes[0] = amount;
+		if (absolute) vol.left = 0;
+		vol.left += amount;
 
-		if (volumes[0] < 0)
-			volumes[0] = 0;
-		if (volumes[0] > 100)
-			volumes[0] = 100;
+		if (vol.left < 0) vol.left = 0;
+		if (vol.left > 100) vol.left = 100;
 	}
 
 	if (channels == BOTH_CHANNELS || channels == RIGHT_CHANNEL)
 	{	
-		if (!absolute)
-			volumes[1] += amount;
-		else
-			volumes[1] = amount;
+		if (absolute) vol.right = 0;
+		vol.right += amount;
 
-		if (volumes[1] < 0)
-			volumes[1] = 0;
-		if (volumes[1] > 100)
-			volumes[1] = 100;
+		if (vol.right < 0) vol.right = 0;
+		if (vol.right > 100) vol.right = 100;
 	}
-	setting = (volumes[1]<<8) + volumes[0];
-	ioctl(mixer, MIXER_WRITE(supported[bar]), &setting);
-	if (update)
+	if (mixers->SetMixer(supported[bar], &vol) && update)
 		DrawScrollbar(bar, currentspos);
 }
 
@@ -364,29 +321,8 @@ NMixer::SetMixer(int device, struct volume value, short update)
 		}
 }
 
-short
+bool
 NMixer::GetMixer(int device, struct volume *vol)
 {
-	short gotit = 0;
-	struct volume tmp;
-
-	for (int i = 0; i < nrbars; i++)
-		if (supported[i] == device)
-		{
-			int setting;
-			ioctl(mixer, MIXER_READ(supported[i]), &setting);
-			tmp.left = setting & 0x000000FF;
-			tmp.right = (setting & 0x0000FF00)>>8;
-			gotit = 1;
-			break;
-		}
-
-	if (gotit)
-	{
-		vol->left = tmp.left;
-		vol->right = tmp.right;
-		return 1;
-	}
-	else
-		return 0;
+	return mixers->GetMixer(device, vol);
 }

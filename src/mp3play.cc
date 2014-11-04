@@ -24,6 +24,9 @@
 #include <sys/ioctl.h>
 #include "mp3play.h"
 #include "mp3player.h"
+#ifdef HAVE_SIDPLAYER
+#include "sidplayer.h"
+#endif /*\ HAVE_SIDPLAYER \*/
 #include "playwindow.h"
 
 #ifdef HAVE_SYS_SOUNDCARD_H
@@ -36,6 +39,7 @@
 
 /* prototypes */
 //extern int handle_input(short);
+extern void debug(const char*);
 extern char *sound_device;
 
 inline void mp3Play::error(int n)
@@ -131,7 +135,7 @@ int mp3Play::playMp3List()
 		next_to_play = 0;
 	short
 		play = 1;
-	mp3Player *player;
+	genPlayer *player;
 	char
 		*snddev;
 
@@ -145,28 +149,32 @@ int mp3Play::playMp3List()
 	}
 	else
 	{
+		snddev = NULL; /*\ let the lib handle it \*/
+		/*\
 		snddev = new char[strlen(SOUND_DEVICE)+1];
 		strcpy(snddev, SOUND_DEVICE);
+		\*/
 	}
 
 	interface = new playWindow();
 	interface->setStatus(PS_NORMAL);
 
 	/* quick hack to avoid ``snap''s, turn down the volume */
+	int volume, mixer = -1;
+	if ( (mixer = open(MIXER_DEVICE, O_RDWR)) >= 0)
 	{
-		int volume, mixer = -1;
-		if ( (mixer = open(MIXER_DEVICE, O_RDWR)) >= 0)
-		{
-			ioctl(mixer, MIXER_READ(SOUND_MIXER_VOLUME), &volume);
-			ioctl(mixer, MIXER_WRITE(SOUND_MIXER_VOLUME), 0);
-		}
-	
-		player = new mp3Player(this, interface, threads);
-	
-		if (mixer > -1)
-			ioctl(mixer, MIXER_WRITE(SOUND_MIXER_VOLUME), &volume);
+		ioctl(mixer, MIXER_READ(SOUND_MIXER_VOLUME), &volume);
+		ioctl(mixer, MIXER_WRITE(SOUND_MIXER_VOLUME), 0);
 	}
-	
+
+	mp3Player mp3p(this, interface, threads);
+#ifdef HAVE_SIDPLAYER
+	SIDPlayer sidp(this, interface, threads);
+#endif
+
+	if (mixer > -1)
+		ioctl(mixer, MIXER_WRITE(SOUND_MIXER_VOLUME), &volume);
+
 	while (play)
 	{
 		unsigned int
@@ -176,6 +184,12 @@ int mp3Play::playMp3List()
 
 		next_to_play++; //default is to play next mp3 in list after this one.
 		action = AC_NEXT; //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+		int is_sid(const char*);
+
+		player = &mp3p;
+#ifdef HAVE_SIDPLAYER
+		if (is_sid(filename)) player = &sidp;
+#endif
 
 		if( !(player->openfile(filename, snddev)) )
 		{
@@ -219,9 +233,12 @@ int mp3Play::playMp3List()
 			play = 0;
 	}
 	
-	delete player;
 	delete interface;
 	delete[] snddev;
 
 	return retval;
+}
+
+genPlayer::~genPlayer()
+{
 }

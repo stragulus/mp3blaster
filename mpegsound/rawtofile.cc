@@ -28,14 +28,21 @@ Rawtofile::~Rawtofile()
   close(filehandle);
 }
 
-bool Rawtofile::initialize(char *filename)
+Rawtofile::Rawtofile(int filehandle)
 {
+	this->filehandle = filehandle;
+	init_putblock = 1;
+}
+
+Rawtofile *Rawtofile::opendevice(char *filename)
+{
+  int filehandle;
   if(filename==NULL)filehandle=1;
   else if((filehandle=creat(filename,0644))==-1)
-    return seterrorcode(SOUND_ERROR_DEVOPENFAIL);
+    return NULL;
+  if (isatty(filehandle)) return NULL;
 
-  init_putblock = 1;
-  return true;
+  return new Rawtofile(filehandle);
 }
 
 bool Rawtofile::setsoundtype(int stereo,int samplesize,int speed)

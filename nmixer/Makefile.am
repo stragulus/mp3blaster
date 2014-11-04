@@ -1,8 +1,9 @@
 bin_PROGRAMS	= nmixer
 nmixer_SOURCES	= main.cc
 nmixer_DEPENDENCIES = @LIBNMIXER@
-LIBS			= @LIBS@
+LIBS			= @LIBS@ @NAS_LIBS@
 LDADD           = @LIBNMIXER@
-INCLUDES		= -I/usr/include/ncurses -I.
+INCLUDES		= -I/usr/include/ncurses -I$(srcdir) -I$(includedir)
 noinst_LIBRARIES = libnmixer.a
-libnmixer_a_SOURCES = nmixer.cc
+libnmixer_a_SOURCES = nmixer.cc mixers.cc ossmixer.cc nasmixer.cc nmixer.h
+CXXFLAGS = @NAS_CFLAGS@

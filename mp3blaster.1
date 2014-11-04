@@ -122,6 +122,12 @@ CPU's.
 .B --no-quit, -q
 Don't quit after playing mp3[s] (only makes sense in combination with
 --autolist or when you start mp3blaster with mp3's on the commandline)
+.TP
+.B --sound-device/-s=devicename
+Select the audio device you wish to use for sound playback (default /dev/dsp
+or /dev/audio for OpenBSD). If you want to play over NAS (Network Audio
+System), give the audioserver's address here (usually $DISPLAY, e.g. a host
+name followed by a colon and a server number, like bla.foo.com:0)
 .SH BUGS
 .PP
 If you find bugs, please send reports to brama@stack.nl.
@@ -133,4 +139,3 @@ was written by
 .PP
 Please send comments, suggestions, complaints, bug fixes, coffee and porting
 experiences to me, including the version number of mp3blaster in your mail. 
-.PP

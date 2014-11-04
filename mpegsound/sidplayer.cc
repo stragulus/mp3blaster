@@ -1,0 +1,90 @@
+/*\
+|*|  Class for playing C=64 tunes
+\*/
+
+#include <mpegsound.h>
+
+#ifdef HAVE_SIDPLAYER
+SIDfileplayer::SIDfileplayer()
+{
+	bufSize = 0;
+	buffer = 0;
+	tune = 0;
+	emu.getConfig(emuConf);
+	emuConf.frequency = 32000;
+	emuConf.channels = SIDEMU_MONO;
+	/*\
+	emuConf.autoPanning = SIDEMU_CENTEREDAUTOPANNING;
+	emuConf.volumeControl = SIDEMU_FULLPANNING;
+	\*/
+	emuConf.bitsPerSample = SIDEMU_8BIT;
+	emuConf.sampleFormat = SIDEMU_SIGNED_PCM;
+}
+
+SIDfileplayer::~SIDfileplayer()
+{
+	if (tune) delete tune;
+	if (buffer) delete buffer;
+}
+
+bool SIDfileplayer::openfile(char *filename, char *device, soundtype write2file)
+{
+	if (!opendevice(device, write2file))
+		return seterrorcode(SOUND_ERROR_DEVOPENFAIL);
+	if (tune) delete tune;
+	tune = new sidTune(filename);
+	if ((!tune) || (!*tune))
+		return seterrorcode(SOUND_ERROR_FILEOPENFAIL);
+	player->setsoundtype((emuConf.channels == SIDEMU_STEREO),
+				emuConf.bitsPerSample, emuConf.frequency);
+	emu.setConfig(emuConf);
+	if (bufSize != player->getblocksize()) {
+		bufSize = player->getblocksize();
+		if (buffer) delete buffer;
+		buffer = new char[bufSize];
+		if (!buffer) {
+			bufSize = 0;
+			return seterrorcode(SOUND_ERROR_MEMORYNOTENOUGH);
+		}
+	}
+	tune->getInfo(sidInfo);
+	song = sidInfo.startSong;
+	if (!sidEmuInitializeSong(emu, *tune, song))
+		return seterrorcode(SOUND_ERROR_FILEREADFAIL);
+	tune->getInfo(sidInfo);
+	return true;
+}
+
+void SIDfileplayer::setforcetomono(short flag)
+{
+	/*\
+	emuConf.channels = flag ? SIDEMU_MONO : SIDEMU_STEREO;
+	emu.setConfig(emuConf);
+	\*/
+}
+
+void SIDfileplayer::setdownfrequency(int value)
+{
+	emuConf.frequency = value;
+	emu.setConfig(emuConf);
+}
+
+bool SIDfileplayer::run(int frames)
+{
+	tune->getInfo(sidInfo);
+	if (song != sidInfo.currentSong)
+		if (!sidEmuInitializeSong(emu, *tune, song))
+			return seterrorcode(SOUND_ERROR_FILEREADFAIL);
+	while (--frames >= 0) {
+		sidEmuFillBuffer(emu, *tune, buffer, bufSize);
+		if (!player->putblock(buffer, bufSize)) return false;
+	}
+	return true;
+}
+
+bool SIDfileplayer::playing(int verbose)
+{
+	while (run(1));
+	return false;
+}
+#endif /* HAVE_SIDPLAYER */

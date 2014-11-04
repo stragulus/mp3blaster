@@ -44,9 +44,6 @@
  *  of ncurses. Notably the distributions on RedHat-5.2 and debian-2.0 are
  *  horrible. To be sure everything works as it should, UPGRADE to at least
  *  ncurses-4.2. (lib *and* headerfiles)
- * -Might coredump when an attempt to play an unsupported mp3 is made..
- *  although I think it plays all mp3's now. If you can reproduce a bug,
- *  PLEASE e-mail me.
  */
 #include "mp3blaster.h"
 #include NCURSES
@@ -90,6 +87,8 @@ void set_header_title(const char*);
 void refresh_screen(void);
 void Error(const char*);
 int is_mp3(const char*);
+int is_sid(const char *);
+int is_ours(const char *);
 int handle_input(short);
 void cw_set_fkey(short, const char*);
 void set_default_fkeys(program_mode pm);
@@ -112,6 +111,7 @@ void draw_settings(int cleanit=0);
 char *gettext(const char *label, short display_path=0);
 short fw_getpath();
 void fw_convmp3();
+void fw_addurl();
 
 #define OPT_LOADLIST 1
 #define OPT_DEBUG 2
@@ -296,9 +296,9 @@ main(int argc, char *argv[])
 		/* Build a playlist from the remaining arguments */
 		for (int i = optind ; i < argc; i++)
 		{
-			if (!is_mp3(argv[i]))
+			if (!is_ours(argv[i]))
 			{
-				fprintf(stderr, "%s is not a valid mp3 file!\n", argv[i]);
+				fprintf(stderr, "%s is not a valid audio file!\n", argv[i]);
 				usage();
 			}
 			playmp3s[i - optind] = (char*)malloc((strlen(argv[i])+1) * 
@@ -418,6 +418,14 @@ main(int argc, char *argv[])
 		delete[] chroot_dir;
 	}
 
+/*\
+|*|  very rude hack caused by nasplayer lib that outputs rubbish to stderr
+\*/
+	fclose(stderr);
+/*\
+|*|  EORH
+\*/
+
 	if (options & OPT_PLAYMP3)
 	{
 		for (int i = 0; i < (argc - optind); i++)
@@ -496,6 +504,9 @@ usage()
 		"\t\thicks on slow CPU's.\n"\
 		"\t--sound-device/-s=<device>: Device to use to output sound.\n"\
 		"\t\tDefault for your system is " SOUND_DEVICE ".\n"\
+		"\t\tIf you want to use NAS (Network Audio System) as playback\n"\
+		"\t\tdevice, then enter the nasserver's address as device (e.g.\n"\
+		"\t\thost.name.com:0; it *must* contain a colon)\n"\
 		"");
 
 	exit(1);
@@ -552,7 +563,7 @@ fw_end()
 	
 	for ( i = 0; i < nselected; i++)
 	{
-		if (!is_mp3(selitems[i]))
+		if (!is_ours(selitems[i]))
 			continue;
 
 		char *path = file_window->getPath();
@@ -646,7 +657,7 @@ fw_changedir(const char *newpath = 0)
 				strcat(file, "/");
 			strcat(file, selitems[i]);
 
-			if (is_mp3(file))
+			if (is_ours(file))
 				add_selected_file(file);
 
 			free(file);
@@ -810,6 +821,28 @@ is_mp3(const char *filename)
 	//	return 0;
 	
 	return 1;
+}
+
+int
+is_sid(const char *filename)
+{
+#ifdef HAVE_SIDPLAYER
+	char *ext = strrchr(filename, '.');
+	if (ext) {
+		if (!strcasecmp(ext, ".psid")) return 1;
+		if (!strcasecmp(ext, ".sid")) return 1;
+		if (!strcasecmp(ext, ".dat")) return 1;
+		if (!strcasecmp(ext, ".inf")) return 1;
+		if (!strcasecmp(ext, ".info")) return 1;
+	}
+#endif
+	return 0;
+}
+
+int
+is_ours(const char *filename)
+{
+	return (is_mp3(filename) || is_sid(filename));
 }
 
 void
@@ -1128,7 +1161,7 @@ read_group_from_file(FILE *f)
 					
 				sscanf(line, "%[^\n]", songname);
 
-				if (is_mp3(songname))
+				if (is_ours(songname))
 					sw->addItem(songname);
 
 				delete[] songname;
@@ -1461,7 +1494,7 @@ play_list()
 void
 play_one_mp3(const char *filename)
 {
-	if (!filename || !is_mp3(filename))
+	if (!filename || !is_ours(filename))
 	{
 		warning("Invalid filename (should end with .mp[23])");
 		refresh_screen();
@@ -1520,7 +1553,7 @@ set_default_fkeys(program_mode peem)
 		cw_set_fkey(4, "Enter pathname");
 		cw_set_fkey(5, "Add dirs as groups");
 		cw_set_fkey(6, "Convert MP3 to WAV");
-		cw_set_fkey(7, "");
+		cw_set_fkey(7, "Add URL");
 		cw_set_fkey(8, "");
 		cw_set_fkey(9, "");
 		cw_set_fkey(10, "");
@@ -1641,7 +1674,7 @@ recsel_files(const char *path, short d2g=0, int d2g_init=0)
 		
 			recsel_files(newpath, d2g);
 		}
-		else if (is_mp3(newpath))
+		else if (is_ours(newpath))
 		{
 			if (d2g && !d2g_init)
 			{
@@ -1778,7 +1811,7 @@ handle_input(short no_delay)
 				select_group(current_group + 1); break; //select next group
 			case '-':
 				select_group(current_group - 1); break; //select prev. group
-			case 12: refresh_screen(); break; // C-l
+			case 'l': refresh_screen(); break; // C-l
 			case 13: // play 1 mp3
 				if (sw->getNitems() > 0)
 				{
@@ -1900,6 +1933,9 @@ handle_input(short no_delay)
 				break;
 			case KEY_F(6): case '6': /* Convert mp3 to wav */
 				fw_convmp3();
+				break;
+			case KEY_F(7): case '7': /* Add HTTP url to play */
+				fw_addurl();
 				break;
 		}
 	}
@@ -2029,15 +2065,15 @@ fw_convmp3()
 		{
 			char bla[strlen(file)+80];
 			Mpegfileplayer *decoder;
-			char file2write[strlen(file)+5];
+			char *file2write;
 
-			strcpy(file2write, file);
-			strcat(file2write, ".wav");
+			file2write = gettext("File to write to:", 0);
 
-			if (!(decoder = new Mpegfileplayer) || !decoder->openfile(file,
+			if (!file2write || !(decoder = new Mpegfileplayer) ||
+				!decoder->openfile(file,
 				file2write, WAV))
 			{
-				sprintf(bla, "Decoding of %s failed.", file, file2write);
+				sprintf(bla, "Decoding of %s failed.", file);
 				warning(bla);
 				refresh_screen();
 				if (decoder)
@@ -2045,10 +2081,11 @@ fw_convmp3()
 			}
 			else
 			{
-				sprintf(bla, "Converting to wavefile, please wait.", file);
+				sprintf(bla, "Converting to wavefile, please wait.");
 				mw_settxt(bla);
 				decoder->playing(0);
 				delete decoder;
+				free(file2write);
 			}
 		}
 
@@ -2058,4 +2095,26 @@ fw_convmp3()
 		delete[] selitems[i];
 	}
 	delete[] selitems;
+}
+
+void
+fw_addurl()
+{
+	scrollWin
+		*sw;
+	char
+		*urlname;
+
+	if (progmode != PM_FILESELECTION)
+		return;
+
+	sw = group_stack->entry(current_group - 1);
+	urlname = gettext("URL:", 0);
+
+	if (!urlname)
+		return;
+
+	add_selected_file(urlname);
+	sw->swRefresh(0);
+	free(urlname);
 }

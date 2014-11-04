@@ -57,7 +57,7 @@ id3Parse::search_header(FILE *fp)
 }
 
 char *
-id3Parse::getGenre(const char genre)
+id3Parse::getGenre(const unsigned char genre)
 {
 #if 0
   int i;
@@ -116,9 +116,7 @@ id3Parse::parseID3()
 	}
 	if (fread(buf, 1, sizeof(char), fp) == sizeof(char))
 	{
-		strncpy(&(song->genre), buf, 1);
-		//strncpy(song->genre_txt, getGenre(song->genre),40);
-		//song->genre_txt[40] = '\0';
+		song->genre = (unsigned char)buf[0];
 		success++;
 	}
 	fclose(fp);

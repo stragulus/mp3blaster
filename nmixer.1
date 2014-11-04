@@ -4,6 +4,7 @@ nmixer - An interactive text-based sound-mixer control program
 .SH SYNOPSIS
 .TP
 \fBnmixer\fR [\fB-q\fR] [\fBmixdev=setting ...\fR]
+\fBnasmixer\fR [\fB-q\fR] [\fBmixdev=setting ...\fR]
 .SH DESCRIPTION
 .I NMixer 
 is an interactive text-based sound-mixer control program that you can
@@ -17,6 +18,8 @@ arrow keys change the volume for the currently highlighted device, and
 (if you're lucky), you can use home/end/PgUp/PgDn on the numerical keyboard
 to set left and right volume independantly. You can also use 0..5 to set
 the volume to the position indicated by the numbers on top of the screen.
+If nmixer is compiled with NAS (Network Audio System) support and it's called
+as 'nasmixer', it will show the settings for the NAX mixer device.
 
 .SH OPTIONS
 .TP

@@ -25,7 +25,7 @@ public:
 	void setAlbum(const char *tp);
 	void setSongYear(const char *yr);
 	void setSongInfo(const char *inf);
-	void setSongGenre(const char);
+	void setSongGenre(const unsigned char);
 	void setTotalTime(int time);
 	void updateTime(int time);
 
@@ -42,7 +42,7 @@ private:
 	NMixer *mixer;
 	int totaltime;
 
-	char *getGenre(const char);
+	char *getGenre(const unsigned char);
 };
 
 #endif /* _CLASS_PLAYWINDOW_ */

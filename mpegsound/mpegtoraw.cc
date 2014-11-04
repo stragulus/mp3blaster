@@ -170,7 +170,7 @@ typedef struct
   char *album;
   char *year;
   char *comment;
-  char *genre;
+  unsigned char genre;
 }ID3;
 
 static void strman(char *str,int max)
@@ -192,7 +192,7 @@ inline void parseID3(Soundinputstream *fp,ID3 *data)
   data->album   [0]=0;
   data->year    [0]=0;
   data->comment [0]=0;
-  data->genre   [0]=255;
+  data->genre=255;
 
   fp->setposition(fp->getsize()-128);
 
@@ -202,12 +202,14 @@ inline void parseID3(Soundinputstream *fp,ID3 *data)
       if(fp->getbytedirect()==0x41)
         if(fp->getbytedirect()==0x47)
 	{
+		char tmp;
 	  fp->_readbuffer(data->songname,30);strman(data->songname,30);
 	  fp->_readbuffer(data->artist  ,30);strman(data->artist,  30);
 	  fp->_readbuffer(data->album   ,30);strman(data->album,   30);
 	  fp->_readbuffer(data->year    , 4);strman(data->year,     4);
 	  fp->_readbuffer(data->comment ,30);strman(data->comment, 30);
-	  fp->_readbuffer(data->genre,1);
+	  fp->_readbuffer(&tmp,1);
+	  data->genre = (unsigned char)tmp;
           break;
         }
 
@@ -317,7 +319,7 @@ bool Mpegtoraw::initialize(char *filename)
       data.album   =songinfo.album;
       data.year    =songinfo.year;
       data.comment =songinfo.comment;
-      data.genre   =&songinfo.genre;
+      data.genre   =songinfo.genre;
       parseID3(loader,&data);
     }
   }
@@ -337,6 +339,7 @@ bool Mpegtoraw::initialize(char *filename)
     loader->setposition(first_offset);
 
   seterrorcode(SOUND_ERROR_OK);
+  if (totalframe == 0) totalframe = -1;
   return (totalframe != 0);
 }
 
@@ -494,6 +497,7 @@ bool Mpegtoraw::loadheader(void)
   if (first_header && !(isvalidheader(version + 1, layer, bitrateindex,
     frequency)))
   {
+  	debug("Bad file format: mpegtoraw.cc line 498\n");
     return seterrorcode(SOUND_ERROR_BAD);
   }
 
@@ -774,6 +778,7 @@ bool Mpegtoraw::run(int frames)
     if(frequency!=lastfrequency)
     {
       if(lastfrequency>0) {
+	    debug("Bad file format: mpegtoraw.cc line 781\n");
 	    seterrorcode(SOUND_ERROR_BAD);
 	    lastfrequency = frequency;
       }

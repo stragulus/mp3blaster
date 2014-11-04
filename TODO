@@ -1,3 +1,6 @@
+-NAS dumps core on my system..
+-dir as argument recursively adds all files in it
+-add files on alf. order i/o creation order
 -add record enable/disable to nmixer
 -mp3blasterrc file (with support for adjustable keybindings)
 -esd (enlightenment sound daemon) support

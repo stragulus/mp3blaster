@@ -9,6 +9,8 @@
 #include "config.h"
 #endif
 
+extern void debug(const char*);
+
 #include <string.h>
 
 #include "mpegsound.h"
@@ -24,6 +26,24 @@ Fileplayer::~Fileplayer()
 {
   delete player;
 };
+
+bool Fileplayer::opendevice(char *device, soundtype write2file)
+{
+	char x[80]; sprintf(x, "device=%s\n", (device?device:"NULL"));debug(x);
+	if (player) delete player;
+	if (!write2file) {
+#ifdef HAVE_NASPLAYER
+		if (device && strrchr(device, ':')) //device=hostname:port?
+			player = NASplayer::opendevice(device);
+		if (player) return true;
+#endif /*\ HAVE_NASPLAYER \*/
+		player = Rawplayer::opendevice(device);
+		if (player) return true;
+	}
+	player = Rawtofile::opendevice(device);
+	if (player) return true;
+	return false;
+}
 
 // Wave file player
 Wavefileplayer::Wavefileplayer()
@@ -41,19 +61,8 @@ Wavefileplayer::~Wavefileplayer()
 bool Wavefileplayer::openfile(char *filename,char *device, soundtype write2file)
 {
 // Player
-  if(device==NULL)device=Rawplayer::defaultdevice;
-
-  if(device[0]=='/')player=new Rawplayer;
-  else 
-  {
-    if(device[0]=='-')device=NULL;
-    player=new Rawtofile;
-  }
-
-  if(player==NULL)
-    return seterrorcode(SOUND_ERROR_MEMORYNOTENOUGH);
-  if(!player->initialize(device))return seterrorcode(player->geterrorcode());
-
+  if (!opendevice(device, write2file))
+	return seterrorcode(SOUND_ERROR_DEVOPENFAIL);
 // Loader
   {
     int err;
@@ -118,28 +127,8 @@ Mpegfileplayer::~Mpegfileplayer()
 bool Mpegfileplayer::openfile(char *filename,char *device, soundtype write2file)
 {
 // Player
-  if (!player)
-  {
-    if(device==NULL)device=Rawplayer::defaultdevice;
-    else if(write2file == NONE && device[0] == '/')
-		player= new Rawplayer;
-	else if (write2file != NONE)
-	{	
-		player = new Rawtofile;
-		((Rawtofile*)player)->setfiletype(write2file);
-	}
-	else 
-	{
-		if(device[0]=='-')
-			device=NULL;
-		player = new Rawtofile;
-	}
-
-    if(player==NULL)
-      return seterrorcode(SOUND_ERROR_MEMORYNOTENOUGH);
-    if(!player->initialize(device))
-      return seterrorcode(player->geterrorcode());
-  }
+  if (!opendevice(device, write2file))
+	return seterrorcode(SOUND_ERROR_DEVOPENFAIL);
 // Loader
   {
     int err;
@@ -155,8 +144,10 @@ bool Mpegfileplayer::openfile(char *filename,char *device, soundtype write2file)
     return seterrorcode(SOUND_ERROR_MEMORYNOTENOUGH);
 
 // Initialize server
-  if (!server->initialize(filename))
+  if (!server->initialize(filename)) {
+    debug("Bad file format: fileplayer.cc line 146\n");
     return seterrorcode(SOUND_ERROR_BAD);
+  }
 
   return true;
 }

@@ -5,9 +5,12 @@ libmpegsound_a_SOURCES  = soundinputstream.cc fileinput.cc httpinput.cc \
 			  mpegtable.cc filter.cc filter_2.cc \
 			  mpegtoraw.cc mpeglayer1.cc mpeglayer2.cc \
 			  mpeglayer3.cc bitwindow.cc huffmantable.cc \
-			  wavetoraw.cc \
-			  fileplayer.cc
+			  wavetoraw.cc sidplayer.cc \
+			  fileplayer.cc nasplayer.cc
 
 noinst_HEADERS		= mpegsound.h mpegsound_locals.h
 
-INCLUDES                = -I.
+INCLUDES                = -I$(srcdir) -I$(includedir)
+CXXFLAGS                = @CXXFLAGS@ @NAS_CFLAGS@
+
+dnl libmpegsound_a_LIBADD	= @NAS_LIBS@ @SID_LIBS@

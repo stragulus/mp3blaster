@@ -17,22 +17,6 @@
 #include <errno.h>
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#ifdef HAVE_SYS_SOUNDCARD_H
-#include <sys/soundcard.h>
-#elif HAVE_MACHINE_SOUNDCARD_H
-#include <machine/soundcard.h>
-#elif HAVE_SOUNDCARD_H
-#include <soundcard.h>
-#endif
-
-#ifdef __cplusplus
-}
-#endif
-
 #ifdef HAVE_NCURSES_H
 #include <ncurses.h>
 #elif HAVE_NCURSES_CURSES_H
@@ -41,6 +25,9 @@ extern "C" {
 #include <curses.h>
 #else
 #error "Can't find any ncurses include file!"
+#endif
+#ifdef HAVE_NASPLAYER
+#include <audio/audiolib.h>
 #endif
 
 #define MIXER_DEVICE "/dev/mixer"
@@ -57,11 +44,61 @@ struct volume
 	short right;
 }; 
 
+class baseMixer
+{
+public:
+	virtual ~baseMixer();
+	baseMixer(baseMixer *next);
+	int *GetDevices(int *num);
+	bool SetMixer(int device, struct volume *vol);
+	bool GetMixer(int device, struct volume *vol);
+	const char *GetMixerLabel(int device);
+protected:
+	void AddDevice(int device);
+	virtual bool Set(int device, struct volume *vol) = 0;
+	virtual bool Get(int device, struct volume *vol) = 0;
+	virtual const char *Label(int device) = 0;
+	int *devs, num_devs;
+private:
+	baseMixer *next;
+	int mixerID;
+};
+
+class OSSMixer : public baseMixer
+{
+public:
+	OSSMixer(baseMixer *next = 0);
+	~OSSMixer();
+protected:
+	bool Set(int device, struct volume *vol);
+	bool Get(int device, struct volume *vol);
+	const char *Label(int device);
+private:
+	int mixer;
+};
+
+#ifdef HAVE_NASPLAYER
+class NASMixer : public baseMixer
+{
+public:
+	NASMixer(baseMixer *next = 0);
+	~NASMixer();
+protected:
+	bool Set(int device, struct volume *vol);
+	bool Get(int device, struct volume *vol);
+	const char *Label(int device);
+private:
+	AuServer *aud;
+	AuDeviceAttributes *ada;
+	int num_ada;
+};
+#endif
+
 class NMixer
 {
 public:
-	NMixer(WINDOW* mixwin, int yoffset=0, int nrlines=0, int *pairs=0,
-		int bgcolor=0);
+	NMixer(WINDOW* mixwin, const char *mixdev=NULL, int yoffset=0,
+		int nrlines=0, int *pairs=0, int bgcolor=0);
 	~NMixer();
 
 	short NMixerInit();
@@ -72,15 +109,16 @@ public:
 	short ProcessKey(int key);
 	/* functions for each well-known mixertype */
 	void SetMixer(int device, struct volume value, short update=1);
-	short GetMixer(int device, struct volume *vol);
+	bool GetMixer(int device, struct volume *vol);
 	
 private:
+	baseMixer *mixers;
+	const int *supported;
+	char *mixdev;
 	int
 		yoffset,
 		nrlines,
 		maxx, maxy,
-		*supported,
-		mixer,
 		nrbars,
 		*cpairs,
 		bgcolor;
