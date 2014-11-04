@@ -21,6 +21,8 @@
 #include "mpegsound.h"
 #include "mpegsound_locals.h"
 
+extern void debug(const char*);
+
 inline void Mpegbitwindow::wrap(void)
 {
   int p=bitindex>>3;
@@ -1392,7 +1394,7 @@ void Mpegtoraw::layer3reorderandantialias(int ch,int gr,
   {
     if(gi->mixed_block_flag)
     {
-      fprintf(stderr,"Notchecked!");
+      debug("Mpegtoraw::layer3reorderandantialias:Not checked!");
       layer3reorder_1  (version,frequency,in,out);    // Not checked...
       layer3antialias_1(out);
     }

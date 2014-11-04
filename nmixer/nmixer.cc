@@ -6,13 +6,15 @@
 #define RIGHT_CHANNEL 0x10
 #define LEFT_CHANNEL  0x01
 
-#define MYVERSION "<<MixIt 2.0>>"
+#define MYVERSION "<<NMixer 2.0b9>>"
 
-NMixer::NMixer(WINDOW *mixwin, int yoffset, int nrlines, int *pairs)
+NMixer::NMixer(WINDOW *mixwin, int yoffset, int nrlines, int *pairs,
+	int bgcolor)
 {
 	this->mixwin = mixwin;
 	this->yoffset = yoffset;
 	this->nrlines = nrlines;
+	this->bgcolor = bgcolor;
 	getmaxyx(mixwin, maxy, maxx);
 	if (!(this->nrlines))
 		this->nrlines = maxy - this->yoffset;
@@ -74,10 +76,10 @@ NMixer::NMixerInit()
 	//while ( (c = getopt(argc, argv, "p:v:s:b:t:l:"
 	//sbars = (WINDOW**)malloc(nrbars * sizeof(WINDOW*));
 
-	init_pair(cpairs[0], COLOR_WHITE, COLOR_BLACK);
-	init_pair(cpairs[1], COLOR_GREEN, COLOR_BLACK);
-	init_pair(cpairs[2], COLOR_YELLOW, COLOR_BLACK);
-	init_pair(cpairs[3], COLOR_RED, COLOR_BLACK);
+	init_pair(cpairs[0], COLOR_WHITE, bgcolor);
+	init_pair(cpairs[1], COLOR_GREEN, bgcolor);
+	init_pair(cpairs[2], COLOR_YELLOW, bgcolor);
+	init_pair(cpairs[3], COLOR_RED, bgcolor);
 
 	if (maxx < 80 || nrlines < 8)
 	{
@@ -123,7 +125,7 @@ NMixer::NMixerInit()
 }
 
 void
-NMixer::DrawScrollbar(int i, int spos)
+NMixer::DrawScrollbar(short i, int spos)
 {
 	unsigned int
 		j;
@@ -138,10 +140,6 @@ NMixer::DrawScrollbar(int i, int spos)
 	my_x = 2;
 	my_y = yoffset + 1 + (3 * spos);
 	
-	//old *ugly* way of drawing bars..using a new window!
-	//sbars[i] = newwin(2, 58, yoffset + 3 + 3 * spos, 2);
-	//mvwprintw(sbars[i], 0, 0, sources[supported[i]]);
-
 	//clear 2x58 positions on window
 	mvwprintw(mixwin, my_y, my_x, empty_scrollbar);
 	mvwprintw(mixwin, my_y + 1, my_x, empty_scrollbar);
@@ -165,17 +163,21 @@ NMixer::DrawScrollbar(int i, int spos)
 	volumes[0] /= 2;
 	volumes[1] /= 2;
 
+	mvwaddch(mixwin, my_y, my_x + 7, '[');
+	mvwaddch(mixwin, my_y + 1, my_x + 7, '[');
+	mvwaddch(mixwin, my_y, my_x + 58, ']');
+	mvwaddch(mixwin, my_y + 1, my_x + 58, ']');
 	wmove(mixwin, my_y, my_x + 8);
 	for (j = 0; j < volumes[0]; j++)
 		waddch(mixwin, '#');
 	for (j = volumes[0]; j < 50; j++)
-		waddch(mixwin, '.');
+		waddch(mixwin, ' ');
 
 	wmove(mixwin, my_y + 1, my_x + 8);
 	for (j = 0; j < volumes[1]; j++)
 		waddch(mixwin, '#');
 	for (j = volumes[1]; j < 50; j++)
-		waddch(mixwin, '.');
+		waddch(mixwin, ' ');
 
 	/* fix up some nice colors */
 	mvwchgat(mixwin, my_y + 0, my_x + 8,  17, A_BOLD, cpairs[1], NULL);

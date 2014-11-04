@@ -61,7 +61,9 @@
 
 #define SOUND_ERROR_THREADFAIL       18
 
-#define SOUND_ERROR_UNKNOWN          19
+#define SOUND_ERROR_BADHEADER        19
+
+#define SOUND_ERROR_UNKNOWN          20
 
 
 /**************************/
@@ -418,6 +420,22 @@ private:
   enum _mpegversion  {mpeg1,mpeg2}                               version;
   enum _mode    {fullstereo,joint,dual,single}                   mode;
   enum _frequency {frequency44100,frequency48000,frequency32000} frequency;
+
+  /*************************/
+  /* Initialization vars   */
+  /*************************/
+  short first_header;
+  struct mpeg_header
+  {
+    int layer;
+	int protection;
+	int bitrateindex;
+	int padding;
+	int extendedmode;
+	_mpegversion version;
+	_mode mode;
+	_frequency frequency;
+  } header_one;
 
   /*******************************************/
   /* Functions getting MPEG header variables */

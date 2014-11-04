@@ -27,14 +27,16 @@ id3Parse::search_header(FILE *fp)
 {
 	int c, flag = 0, success = 0;
 
-	if ( fseek(fp, -128, SEEK_END) < 0)
+	if ( fseek(fp, -160, SEEK_END) < 0)
 		return success;
 
 	for(;;)
 	{
 		if ( (c = fgetc(fp)) < 0)
 			break;
-		if (c == 0x54)
+		else if (c == 0xFF)
+			flag++;
+		else if (c == 0x54 && flag >=28)
 		{
 			if ( fgetc(fp) == 0x41)
 			{

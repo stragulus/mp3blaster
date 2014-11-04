@@ -8,7 +8,9 @@ mp3blaster_SOURCES	= debug.cc \
 			  mp3stack.cc \
 			  playwindow.cc \
 			  scrollwin.cc \
-			  windows.cc
+			  windows.cc \
+			  getopt.c \
+			  getopt1.c
 mp3tag_SOURCES = id3parse.cc mp3tag.cc
 mp3blaster_DEPENDENCIES = @LIBMPEGSOUND@ @LIBNMIXER@
 INCLUDES		= -I../mpegsound -I/usr/include/ncurses -I../nmixer

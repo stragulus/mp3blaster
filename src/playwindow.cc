@@ -69,7 +69,8 @@ playWindow::playWindow()
 	mixer = NULL;
 	if (!no_mixer)
 	{
-		mixer = new NMixer(interface, 7, nrlines - 7 - 5, color_pairs);
+		mixer = new NMixer(interface, 7, nrlines - 7 - 5, color_pairs,
+			COLOR_BLUE);
 		if (!(mixer->NMixerInit()))
 		{
 			delete mixer;
@@ -149,7 +150,6 @@ playWindow::getInput()
 	}
 	else
 	{
-		fprintf(stderr,"Wahey\n");fflush(stderr);
 		nodelay(interface, FALSE);
 		ch = wgetch(interface);
 	}

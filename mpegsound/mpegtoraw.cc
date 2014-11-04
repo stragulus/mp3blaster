@@ -264,6 +264,7 @@ void Mpegtoraw::initialize(char *filename)
   layer3initialize();
 
   currentframe=decodeframe=0;
+  first_header = 1;
   if(loadheader())
   {
     totalframe=(loader->getsize()+framesize-1)/framesize;
@@ -359,12 +360,6 @@ bool Mpegtoraw::loadheader(void)
 {
   register int c;
   bool flag;
-#ifdef DEBUG
-  bool badheader = 0;
-  static bool firstheader = 1;
-  static int old_layer,old_version,old_padding,old_frequency,
-    old_bitrateindex,old_extendedmode,old_mode;
-#endif
   sync();
 
 // Synchronize
@@ -407,55 +402,78 @@ bool Mpegtoraw::loadheader(void)
   padding=(c&1);             c>>=1;
   //frequency=(_frequency)(c&2); c>>=2; this is wrong.
   frequency=(_frequency)(c&3); c>>=2;
-  if ((frequency&0x3) == 0x3)
+  if (first_header && ((frequency&0x3) == 0x3))
   {
     debug("Invalid frequency (probably a corrupt " \
 	"mp3).\n");
-#ifdef DEBUG
-    if (firstheader)
-	return false;
-    else
-        badheader = 1;
-#else
     return false;
-#endif
   }
 
   bitrateindex=(int)c;
-  if(bitrateindex==15)return seterrorcode(SOUND_ERROR_BAD);
+  if(first_header && bitrateindex==15)
+    return seterrorcode(SOUND_ERROR_BAD);
 
   c=((unsigned int)(loader->getbytedirect()))>>4;
   /* c = 0 0 0 0 bit25 bit26 bit27 bit27 bit28 */
   extendedmode=c&3;
   mode=(_mode)(c>>2);
 
-#ifdef DEBUG
-  if (!badheader)
+  if (first_header)
   {
-    old_layer = layer;
-    old_version = version;
-    old_padding = padding;
-    old_frequency = frequency;
-    old_bitrateindex = bitrateindex;
-    old_extendedmode = extendedmode;
-    old_mode = mode;
-    firstheader = 0;
+    header_one.layer = layer;
+    header_one.protection = protection;
+    header_one.bitrateindex = bitrateindex;
+    header_one.padding = padding;
+    header_one.extendedmode = extendedmode;
+    header_one.version = version;
+    header_one.mode = mode;
+    header_one.frequency = frequency;
+	first_header = 0;
   }
   else
   {
-    layer = old_layer;
-    version = old_version;
-    padding = old_padding;
-    frequency = old_frequency;
-    bitrateindex = old_bitrateindex;
-    extendedmode = old_extendedmode;
-    mode = old_mode;
-    debug("Bad synchronize-header. Falling back to previous header.");
+    unsigned short bla = 0;
+
+  	if (layer != header_one.layer)
+	{
+	  bla |= 1;
+	  layer = header_one.layer;
+	}
+	if (protection != header_one.protection)
+	  bla |= 2;
+	if (bitrateindex != header_one.bitrateindex)
+	{
+	  bla |= 4;
+	  bitrateindex = header_one.bitrateindex;
+    }
+	//if (padding != header_one.padding)
+	//  bla |= 8;
+	//if (extendedmode != header_one.extendedmode)
+	//  bla |= 16;
+	if (version != header_one.version)
+	{
+	  bla |= 32;
+	  version = header_one.version;
+	}
+	if (mode != header_one.mode)
+	{
+	  bla |= 64;
+	  mode = header_one.mode;
+	}
+	if (frequency != header_one.frequency)
+	{
+	  bla |= 128;
+	  frequency = header_one.frequency;
+	}
+
+	if (bla)
+	{
+	  char blub[100];
+	  sprintf(blub, "Bumped into a bad header: %d\n", bla);
+	  debug(blub);
+	  //return seterrorcode(SOUND_ERROR_BADHEADER);
+	}
   }
-
-  if (firstheader) firstheader = 0; /* read first header succesfully */
-#endif
-
 // Making information
   inputstereo= (mode==single)?0:1;
   if(forcetomonoflag)outputstereo=0; else outputstereo=inputstereo;

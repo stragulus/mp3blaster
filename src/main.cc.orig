@@ -61,8 +61,6 @@
 #include <time.h>
 #ifdef HAVE_GETOPT_H
 #include <getopt.h>
-#else
-#include "getopt.h"
 #endif
 #ifdef HAVE_ERRNO_H
 #include <errno.h>
@@ -101,14 +99,13 @@ void read_playlist(const char *);
 void write_playlist();
 void play_list();
 #ifdef PTHREADEDMPEG
-void change_threads(int dont=0);
+void change_threads();
 #endif
 void add_selected_file(const char*);
 char *get_current_working_path();
 void usage();
 void show_help();
 void draw_extra_stuff(int file_mode=0);
-void draw_settings(int cleanit=0);
 char *gettext(const char *label, short display_path=0);
 short fw_getpath();
 
@@ -184,7 +181,7 @@ main(int argc, char *argv[])
 	/* parse arguments */
 	while (1)
 	{
-#if 1
+#ifdef HAVE_GETOPT_H
 		static struct option long_options[] = 
 		{
 			{ "autolist", 1, 0, 'a'},
@@ -380,9 +377,16 @@ main(int argc, char *argv[])
 	mw_settxt("Press 'h' to get a screen with key functions.");
 	wrefresh(message_window);
 
-	progmode = PM_NORMAL;
-	draw_settings();
+	/* display play-mode in command_window */
+	mvwaddstr(command_window, 13, 1, "Current group's mode:");
+	cw_toggle_group_mode(1);
+	mvwaddstr(command_window, 16, 1, "Current play-mode: ");
+	cw_toggle_play_mode(1);
 
+	progmode = PM_NORMAL;
+#ifdef PTHREADEDMPEG
+	change_threads(); /* display #threads in command_window */
+#endif
 	debug_info = NULL;
 
 	if (options & OPT_DEBUG) 
@@ -463,8 +467,8 @@ main(int argc, char *argv[])
 void
 usage()
 {
-	fprintf(stderr, "Mp3blaster v%s (C)1997 - 1999 Bram Avontuur.\n%s", \
-		VERSION, \
+	fprintf(stderr, "%s",
+#ifdef HAVE_GETOPT_H
 		"Usage:\n" \
 		"\tmp3blaster [options]\n"\
 		"\tmp3blaster [options] [file1 ...]\n"\
@@ -495,6 +499,38 @@ usage()
 		"\t--sound-device/-s=<device>: Device to use to output sound.\n"\
 		"\t\tDefault for your system is " SOUND_DEVICE ".\n"\
 		"");
+#else
+		"Usage:\n" \
+		"\tmp3blaster [options]\n"\
+		"\tmp3blaster [options] [file1 ...]\n"\
+		"\t\tPlay one or more mp3's.\n"\
+		"\tmp3blaster [options] -l <playlist.lst>\n"\
+		"\t\tLoad a playlist but don't start playing.\n"\
+		"\tmp3blaster [options] -a <playlist.lst>\n"\
+		"\t\tLoad a playlist and start playing.\n"\
+		"\nOptions:\n"\
+		"\t-h: This help screen.\n"\
+		"\t-n: Don't start the built-in mixer.\n"\
+		"\t-d: Log debug-info in $HOME/.mp3blaster.\n"\
+		"\t-c <rootdir>: Set <rootdir> as mp3blaster's root dir.\n"\
+		"\t\tThis affects *ALL* file operations in mp3blaster!!(including\n"\
+		"\t\tplaylist reading&writing!) Note that only users with uid 0\n"\
+		"\t\tcan use this option (yet?). This feature will change soon.\n"\
+		"\t-q: Don't quit after playing mp3[s] (only makes sense in \n"\
+		"\t\tcombination with -a or mp3's on command-line)\n"\
+		"\t-p {onegroup,allgroups,groupsrandom,allrandom}\n"\
+		"\t\tDefault playing mode is resp. Play first group only, Play\n"\
+		"\t\tall groups in given order(default), Play all groups in random\n"\
+		"\t\torder, Play all songs in random order.\n"\
+		"\t-r=<number>: Number of frames to decode in one loop.\n"\
+		"\t\tRange: 1 to 10 (default=5). A low value means that the\n"\
+		"\t\tinterface (while playing) reacts faster but slow CPU's might\n"\
+		"\t\thick. A higher number implies a slow interface but less\n"\
+		"\t\thicks on slow CPU's.\n"\
+		"\t-s=<device>: Device to use to output sound.\n"\
+		"\t\tDefault for your system is " SOUND_DEVICE ".\n"\
+		"");
+#endif
 
 	exit(1);
 }
@@ -600,7 +636,6 @@ fw_end()
 
 	set_default_fkeys(progmode);
 	draw_extra_stuff();
-	draw_settings();
 }
 
 void
@@ -1688,11 +1723,10 @@ recsel_files(const char *path, short d2g=0, int d2g_init=0)
 
 #ifdef PTHREADEDMPEG
 void
-change_threads(int dont)
+change_threads()
 {
-	if (!dont)
-		if ( (threads += 50) > 500)
-			threads = 0;
+	if ( (threads += 50) > 500)
+		threads = 0;
 	mvwprintw(command_window, 20, 1, "Threads: %03d", threads);
 	wrefresh(command_window);
 }
@@ -1788,7 +1822,6 @@ handle_input(short no_delay)
 			{
 				progmode = PM_FILESELECTION;
 				set_default_fkeys(progmode);
-				draw_settings(1);
 				if (file_window)
 					delete file_window;
 				file_window = new fileManager(NULL, LINES - 4, COLS - 27,
@@ -1842,18 +1875,8 @@ handle_input(short no_delay)
 			case 'h': show_help(); break;
 			case KEY_DOWN: sw->changeSelection(1); break;
 			case KEY_UP: sw->changeSelection(-1); break;
-			case KEY_NPAGE: sw->pageDown();
-				wbkgdset(file_window->sw_win, ' '|COLOR_PAIR(1)|A_BOLD);
-				file_window->setBorder(0, 0, 0, 0, ACS_LTEE, ACS_PLUS,
-					ACS_BTEE, ACS_PLUS);
-				wbkgdset(file_window->sw_win, ' '|COLOR_PAIR(6));
-				break;
-			case KEY_PPAGE: sw->pageUp(); 
-				wbkgdset(file_window->sw_win, ' '|COLOR_PAIR(1)|A_BOLD);
-				file_window->setBorder(0, 0, 0, 0, ACS_LTEE, ACS_PLUS,
-					ACS_BTEE, ACS_PLUS);
-				wbkgdset(file_window->sw_win, ' '|COLOR_PAIR(6));
-				break;
+			case KEY_NPAGE: sw->pageDown(); break;
+			case KEY_PPAGE: sw->pageUp(); break;
 			case ' ': sw->selectItem(); sw->changeSelection(1); break;
 			case 12: refresh_screen(); break; // C-l
 			case 13:
@@ -1956,32 +1979,4 @@ show_help()
 	//delwin(helpwin);
 	refresh_screen();
 	return;
-}
-
-void
-draw_settings(int cleanit)
-{
-	/* display play-mode in command_window */
-	if (!cleanit)
-	{
-		mvwaddstr(command_window, 13, 1, "Current group's mode:");
-		mvwaddstr(command_window, 16, 1, "Current play-mode: ");
-		cw_toggle_group_mode(1);
-		cw_toggle_play_mode(1);
-#ifdef PTHREADEDMPEG
-		change_threads(1); /* display #threads in command_window */
-#endif
-	}
-	else
-	{
-		mvwaddstr(command_window, 13, 1, "                     ");
-		mvwaddstr(command_window, 14, 1, "                     ");
-		mvwaddstr(command_window, 16, 1, "                   ");
-		mvwaddstr(command_window, 17, 1, "                       ");
-		mvwaddstr(command_window, 18, 1, "                       ");
-#ifdef PTHREADEDMPEG
-		mvwaddstr(command_window, 20, 1, "              ");
-#endif
-	}
-	wrefresh(command_window);		
 }

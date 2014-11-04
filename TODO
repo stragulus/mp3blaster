@@ -1,4 +1,9 @@
--playback device selectable from command-line/compile-time option (for OpenBSD)
+-playlist loading/storing from a scrollable menu (by using one default
+ directory where all playlists are stored)
+-find out why 2.0b6's nodelay() does work with certain older versions of
+ ncurses while later versions don't. (seems to be a timing problem)
+-When a directory is selected (with spacebar) in the filemanager, add this
+ as a separate group to the playlist
 -emulate popular commandline mp3 players (like mpg123/splay)
 -'/' to search in scrollwin
 -(downmix to 22Khz)
@@ -6,7 +11,6 @@
 -(``cold start'' option)
 -(add browsable playlist in playwindow)
 -(add wav/http support)
--(include getopt.c/getopt.h from GNU site so all OS's support getopt_long)
 -Allowing user to change group-order (and mp3-order afterwards)
 -when paused, show this on the interface.
 -InfraRed support! (lirc)

@@ -277,11 +277,19 @@ bool mp3Player::playingwiththread(int verbose)
 	while (server->getframesaved() < nthreads - 1)
 		server->run(1);
 	server->unpausethreadedplayer();
-		
+
+int	framesaveloop = 99;
+
 	while(should_play)
 	{
 		if (status == PS_PLAYING)
 		{
+if (++framesaveloop>99)
+{
+framesaveloop=0;
+char blub[100];sprintf(blub, "Framesaved: %d\n", server->getframesaved());
+debug(blub);
+}
 			should_play = (server->run(fpl));
 			init_count += fpl;
 			/* restore volume? */

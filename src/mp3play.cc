@@ -36,10 +36,11 @@
 
 /* prototypes */
 //extern int handle_input(short);
+extern char *sound_device;
 
 inline void mp3Play::error(int n)
 {
-	const char *sound_errors[20] =
+	const char *sound_errors[21] =
 	{
 		"Everything's OK (You shouldnt't see this!)",
 		"Failed to open sound device.",
@@ -64,6 +65,7 @@ inline void mp3Play::error(int n)
 		"Bad sound file format.",
 		
 		"Can't make thread.",
+		"Bad mpeg header.",
 		
 		"Unknown error."
 	};
@@ -130,9 +132,22 @@ int mp3Play::playMp3List()
 	short
 		play = 1;
 	mp3Player *player;
+	char
+		*snddev;
 
 	if (!nmp3s) /* nothing to play. Whaaah. */
 		return -1;
+
+	if (sound_device)
+	{
+		snddev = new char[strlen(sound_device)+1];
+		strcpy(snddev, sound_device);
+	}
+	else
+	{
+		snddev = new char[strlen(SOUND_DEVICE)+1];
+		strcpy(snddev, SOUND_DEVICE);
+	}
 
 	interface = new playWindow();
 	interface->setStatus(PS_NORMAL);
@@ -162,7 +177,7 @@ int mp3Play::playMp3List()
 		next_to_play++; //default is to play next mp3 in list after this one.
 		action = AC_NEXT; //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-		if( !(player->openfile(filename, SOUND_DEVICE)) )
+		if( !(player->openfile(filename, snddev)) )
 		{
 			int vaut = player->geterrorcode();
 
@@ -206,6 +221,7 @@ int mp3Play::playMp3List()
 	
 	delete player;
 	delete interface;
+	delete[] snddev;
 
 	return retval;
 }

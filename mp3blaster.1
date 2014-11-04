@@ -5,8 +5,8 @@ mp3blaster - An interactive text-console based mp3 player.
 .TP
 \fBmp3blaster\fR [\fBoptions\fR]
 .TP
-\fBmp3blaster\fR [\fBoptions\fR] \fB--file\fI\fI|\fB-f filename.mp3
-Play one mp3 (auto-exit with --quit)
+\fBmp3blaster\fR [\fBoptions\fR] \fR [\fBfile ...\fR]
+Play one or more mp3's from the command-line
 .TP
 \fBmp3blaster\fR [\fBoptions\fR] \fB--list\fI|\fB-l playlist.lst
 Load a playlist at startup but don't start playing.
@@ -119,9 +119,9 @@ value means that the interface (while playing) reacts faster but slow CPU's
 might hick. A higher number implies a slow interface but less hicks on slow
 CPU's.
 .TP
-.B --quit, -q
-Quit after playing mp3[s] (only makes sense in combination with --autolists
-or --file)
+.B --no-quit, -q
+Don't quit after playing mp3[s] (only makes sense in combination with
+--autolist or when you start mp3blaster with mp3's on the commandline)
 .SH BUGS
 .PP
 If you find bugs, please send reports to brama@stack.nl.
@@ -131,6 +131,6 @@ If you find bugs, please send reports to brama@stack.nl.
 was written by 
 .B Bram Avontuur <brama@stack.nl> <http://www.stack.nl/~brama/>
 .PP
-Please send comments, suggestion, complaints, bug fixes, coffee and porting
+Please send comments, suggestions, complaints, bug fixes, coffee and porting
 experiences to me, including the version number of mp3blaster in your mail. 
 .PP

@@ -1,4 +1,31 @@
-V2.0b8: 1999/04/XX
+V2.0b9: 1999/04/XX
+==================
+-Added command option for output device
+-Changed mixer layout
+-Added command-line options for nmixer: You can now set any mixer-device
+ supported by the OSS-lib (and your soundcard, ofcourse) on the command-line.
+ Together with the option -q you can use nmixer to initialise your mixer's
+ volumes (it will quit nmixer immediately)
+-Wrote a manual for nmixer.
+-Changed command-line syntax. You don't need the -f option now to play just
+ one (or now, more) mp3(s), you can just do mp3blaster [options] *.mp3 for
+ example.
+-The default behaviour when mp3blaster starts playing immediately
+ at startup is to quit as soon as the playing is over. -q now prevents this
+ (instead of causing it)
+-Changed mp3tag so that it will recognise ID3tags that are not preceded with
+ 28 or more 0xFF's (some programs obviously do this!)
+-Fixed a few layout bugs.
+-I changed the mpegsound lib such that mp3blaster now also plays mp3's with
+ errors in them. This breaks the ability to play free bitrate mp3's though,
+ but I haven't heard of anyone yet who actually uses those. If you have 
+ free bitrate mp3's (or know how to make them) I'd love to hear about it so
+ I might be able to allow free bitrate mp3's *and* playback of bad mp3's.
+ This fix should (hopefully) STOP mp3blaster from SIGSEGV'ing on bad mp3s!!
+-Added mp3tag.exe on the mp3blaster homepage. Thanks to Steve Kemp
+ <skx@tardis.ed.ac.uk> for this! Also check the winnt/ dir for the sources.
+
+V2.0b8: 1999/04/18
 ==================
 -Added time to the playing interface. Playing time, total time *and* remaining
  time are displayed now. Note that the timing will not work with free bitrate

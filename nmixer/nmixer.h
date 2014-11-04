@@ -61,11 +61,12 @@ struct volume
 class NMixer
 {
 public:
-	NMixer(WINDOW* mixwin, int yoffset=0, int nrlines=0, int *pairs=0);
+	NMixer(WINDOW* mixwin, int yoffset=0, int nrlines=0, int *pairs=0,
+		int bgcolor=0);
 	~NMixer();
 
 	short NMixerInit();
-	void DrawScrollbar(int i, int spos);
+	void DrawScrollbar(short i, int spos);
 	void ChangeBar(short bar, short amount, short absolute, short channels,
 		short update=1);
 	void RedrawBars();
@@ -82,7 +83,8 @@ private:
 		*supported,
 		mixer,
 		nrbars,
-		*cpairs;
+		*cpairs,
+		bgcolor;
 	WINDOW
 		*mixwin;
 	short

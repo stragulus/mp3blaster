@@ -2,7 +2,7 @@
 # Generated automatically by configure.
 # Run this file to recreate the current configuration.
 # This directory was configured as follows,
-# on host nixnut:
+# on host mud:
 #
 # ./configure 
 #
@@ -40,7 +40,7 @@ s%@CFLAGS@%-g -O2%g
 s%@CPPFLAGS@%%g
 s%@CXXFLAGS@%-g -O2 -Wall -Wstrict-prototypes -W -fno-strength-reduce %g
 s%@FFLAGS@%%g
-s%@DEFS@% -DPACKAGE=\"mp3blaster\" -DVERSION=\"2.0b8\" -DHAVE_LIBM=1 -DSTDC_HEADERS=1 -DHAVE_FCNTL_H=1 -DHAVE_MALLOC_H=1 -DHAVE_SYS_IOCTL_H=1 -DHAVE_UNISTD_H=1 -DHAVE_ERRNO_H=1 -DHAVE_PTHREAD_H=1 -DHAVE_NCURSES_H=1 -DHAVE_CURSES_H=1 -DHAVE_SYS_SOUNDCARD_H=1 -DHAVE_GETOPT_H=1 -DHAVE_STRDUP=1 -DHAVE_STRSTR=1 -DSOUND_DEVICE=\"/dev/dsp\" -DPTHREADEDMPEG=1 -D_REENTRANT=1 %g
+s%@DEFS@% -DPACKAGE=\"mp3blaster\" -DVERSION=\"2.0b9\" -DHAVE_LIBM=1 -DSTDC_HEADERS=1 -DHAVE_FCNTL_H=1 -DHAVE_MALLOC_H=1 -DHAVE_SYS_IOCTL_H=1 -DHAVE_UNISTD_H=1 -DHAVE_ERRNO_H=1 -DHAVE_PTHREAD_H=1 -DHAVE_NCURSES_NCURSES_H=1 -DHAVE_NCURSES_CURSES_H=1 -DHAVE_NCURSES_H=1 -DHAVE_CURSES_H=1 -DHAVE_SYS_SOUNDCARD_H=1 -DHAVE_GETOPT_H=1 -DHAVE_STRDUP=1 -DHAVE_STRSTR=1 -DSOUND_DEVICE=\"/dev/dsp\" -DPTHREADEDMPEG=1 -D_REENTRANT=1 %g
 s%@LDFLAGS@%%g
 s%@LIBS@%-lm  -lpthread -lncurses%g
 s%@exec_prefix@%${prefix}%g
@@ -62,7 +62,7 @@ s%@INSTALL_PROGRAM@%${INSTALL}%g
 s%@INSTALL_SCRIPT@%${INSTALL_PROGRAM}%g
 s%@INSTALL_DATA@%${INSTALL} -m 644%g
 s%@PACKAGE@%mp3blaster%g
-s%@VERSION@%2.0b8%g
+s%@VERSION@%2.0b9%g
 s%@ACLOCAL@%aclocal%g
 s%@AUTOCONF@%autoconf%g
 s%@AUTOMAKE@%automake%g

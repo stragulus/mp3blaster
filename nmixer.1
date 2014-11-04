@@ -1,0 +1,43 @@
+.TH nmixer 1
+.SH NAME
+nmixer - An interactive text-based sound-mixer control program
+.SH SYNOPSIS
+.TP
+\fBnmixer\fR [\fB-q\fR] [\fBmixdev=setting ...\fR]
+.SH DESCRIPTION
+.I NMixer 
+is an interactive text-based sound-mixer control program that you can
+use to set the volume of each supported mixer device of your soundcard.
+It automagically detects all devices that are supported by your sound
+hardware, and shows a list of scrollbars for each of these devices.
+You can use the up and down arrow keys to scroll though the list of
+scrollbars (some do not fit on the screen, but you can reach them by
+simply scrolling down at the bottom of the screen). The left and right
+arrow keys change the volume for the currently highlighted device, and
+(if you're lucky), you can use home/end/PgUp/PgDn on the numerical keyboard
+to set left and right volume independantly. You can also use 0..5 to set
+the volume to the position indicated by the numbers on top of the screen.
+
+.SH OPTIONS
+.TP
+.B mixdev=setting
+Sets a specific mixer device to the volume specified by setting. 
+Example: bass=100
+.TP
+.B -q
+Immediately quit (after the command-line specified settings are set!). This
+only makes sense if you use command-line options to set volumes. (currently,
+the interface is drawn while setting the mixer, and removed afterwards, which
+might be annoying, but it's in the way of being changed :)
+.SH BUGS
+.PP
+If you find bugs, please send reports to brama@stack.nl.
+.PP
+.SH AUTHOR
+.I nmixer
+was written, directed and performed by 
+.B Bram Avontuur <brama@stack.nl> <http://www.stack.nl/~brama/>
+.PP
+Please send comments, suggestions, complaints, bug fixes, coffee and porting
+experiences to me, including the version number of nmixer in your mail. 
+.PP
