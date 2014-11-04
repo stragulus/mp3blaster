@@ -93,22 +93,27 @@ Rawplayer::Rawplayer(char *filename, int audiohandle, int audiobuffersize)
 
 Rawplayer::~Rawplayer()
 {
-	close(audiohandle);
+	if (audiohandle != -1)
+	{
+		close(audiohandle);
+	}
+
 	if (filename)
 		free(filename);
 }
 
-Rawplayer *Rawplayer::opendevice(char *filename)
+int Rawplayer::getdevicehandle(const char *filename)
 {
-	int audiohandle, audiobuffersize;
+	int audiohandle;
 
-	if (!filename) filename = defaultdevice;
 #if defined(AUDIO_NONBLOCKING) || defined(NEWTHREAD)
 	if((audiohandle=open(filename,O_WRONLY|O_NDELAY,0))==-1)
 #else
 	if((audiohandle=open(filename,O_WRONLY,0))==-1)
 #endif
-		return NULL;
+	{
+		return -1;
+	}
 
 #ifdef AIOSSIZE
 	debug("AIOSSIZE defined\n");
@@ -116,15 +121,6 @@ Rawplayer *Rawplayer::opendevice(char *filename)
 	blocksize.play_size = RAWDATASIZE * sizeof(short int);
 	blocksize.rec_size = RAWDATASIZE * sizeof(short int);
 	IOCTL(audiohandle,AIOSSIZE, blocksize);
-#endif
-
-	/* Bad, you have to setsoundtype prior to query audiobuffersize */
-#if 0
-	IOCTL(audiohandle,SNDCTL_DSP_GETBLKSIZE,audiobuffersize);
-	if(audiobuffersize<4 || audiobuffersize>65536)
-		return NULL;
-#else
-	audiobuffersize = 1024; //it's properly set at setsoundtype().
 #endif
 
 	//maybe this will prevent sound hickups on some cards..
@@ -136,6 +132,30 @@ Rawplayer *Rawplayer::opendevice(char *filename)
 	fragsize=2048;
 	ioctl(audiohandle, SNDCTL_DSP_SETFRAGMENT, &fragsize);
 #endif
+
+	return audiohandle;
+}
+
+Rawplayer *Rawplayer::opendevice(char *filename)
+{
+	int audiohandle, audiobuffersize;
+
+	if (!filename) filename = defaultdevice;
+
+	audiohandle = getdevicehandle(filename);
+
+	if (audiohandle == -1)
+		return NULL;
+
+	/* Bad, you have to setsoundtype prior to query audiobuffersize */
+#if 0
+	IOCTL(audiohandle,SNDCTL_DSP_GETBLKSIZE,audiobuffersize);
+	if(audiobuffersize<4 || audiobuffersize>65536)
+		return NULL;
+#else
+	audiobuffersize = 1024; //it's properly set at setsoundtype().
+#endif
+
 	return new Rawplayer(filename, audiohandle, audiobuffersize);
 }
 
@@ -151,6 +171,9 @@ int Rawplayer::getprocessed(void)
 	audio_buf_info info;
 	int r;
 
+	if (audiohandle == -1)
+		return -1;
+
 	IOCTL(audiohandle,SNDCTL_DSP_GETOSPACE,info);
 
 	r=(info.fragstotal-info.fragments)*info.fragsize;
@@ -162,6 +185,7 @@ bool Rawplayer::setsoundtype(int stereo,int samplesize,int speed)
 {
 	int changed = 0;
 
+	debug("Rawplayer::setsoundtype(%d,%d,%d)\n", stereo, samplesize, speed);
 	if (rawstereo != stereo) { rawstereo = stereo; changed++; }
 	if (rawsamplesize != samplesize) { rawsamplesize = samplesize; changed++; }
 	if (rawspeed != speed) { rawspeed = speed; changed++; }
@@ -178,7 +202,11 @@ bool Rawplayer::resetsoundtype(void)
 
 	if (!first_init)
 	{
-		debug("Resetting soundcard!\n");
+		if (audiohandle == -1)
+			return false;
+
+		debug("Resetting soundcard! (%d, %d, %d)\n", rawstereo, rawsamplesize,
+		 rawspeed);
 return seterrorcode(SOUND_ERROR_DEVCTRLERROR);
 #if 0
 		/* flush all data in soundcard's buffer first. */
@@ -268,6 +296,37 @@ return seterrorcode(SOUND_ERROR_DEVCTRLERROR);
 	return true;
 }
 
+void Rawplayer::releasedevice()
+{
+	if (audiohandle != -1)
+	{
+		/* abort(); <= prevents opening the sound device on my box! */
+		if (close(audiohandle) == -1)
+			debug("releasedevice: Couldn't close audiohandle!\n");
+		audiohandle = -1;
+	}
+}
+
+bool Rawplayer::attachdevice()
+{
+	/* make sure it's closed.. */
+	if (audiohandle != -1)
+	{
+		debug("attachdevice(): audiohandle wasn't closed?\n");
+		releasedevice();
+	}
+
+	audiohandle = getdevicehandle(filename);
+	if (audiohandle == -1)
+		return false;
+
+	first_init = 1;
+	if (!resetsoundtype())
+		return false;
+
+	return true;
+}
+
 int Rawplayer::fix_samplesize(void *buffer, int size)
 {
 	int modifiedsize=size;
@@ -304,6 +363,9 @@ int Rawplayer::fix_samplesize(void *buffer, int size)
 
 int Rawplayer::putblock_nt(void *buffer, int size)
 {
+	if (audiohandle == -1)
+		return -1;
+
 	/* I'm not sure if pth_write is called for here, since we're doing non-blocked
 	   I/O anyway */
 
@@ -316,9 +378,13 @@ int Rawplayer::putblock_nt(void *buffer, int size)
 #endif
 
 }
+
 bool Rawplayer::putblock(void *buffer,int size)
 {
 	int modifiedsize=size;
+
+	if (audiohandle == -1)
+		return false;
 
 	if(forcetomono || forceto8)
 	{

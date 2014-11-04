@@ -23,6 +23,12 @@
  * Dec 31 2000: Applied a patch from Rob Funk to fix randomness bug
  * Newer dates: changes made are stored in CVS.
  */
+
+/*
+ * Added basic LIRC support.
+ * Olgierd Pieczul <wojrus@linux.slupsk.net>
+ */
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -62,7 +68,9 @@
 //load keybindings
 #include "keybindings.h"
 #include "getinput.h"
-
+#ifdef INCLUDE_LIRC
+#include <lirc/lirc_client.h>
+#endif
 #ifdef LIBPTH
 #define USLEEP(x) pth_usleep(x)
 #else
@@ -133,7 +141,6 @@ void usage();
 void show_help();
 void draw_static(int file_mode=0);
 void draw_settings(int cleanit=0);
-char *gettext(const char *label, short display_path=0);
 void fw_getpath(char *, void *);
 void fw_convmp3(char *, void *);
 void fw_addurl(char *, void *);
@@ -190,7 +197,7 @@ void set_inout_opts();
 void select_files_by_pattern(char *, void *);
 void playlist_write(char *playlistfile, void *args);
 void fw_rename_file(char *newname, void *args);
-
+void *lirc_loop(void *);
 #ifdef TEMPIE
 #define LOCK_NCURSES (!pthread_mutex_trylock(&ncurses_mutex))
 #define UPDATE_CURSES pthread_cond_signal(&ncurses_cond)
@@ -219,6 +226,7 @@ void fw_rename_file(char *newname, void *args);
 #define OPT_8BITS 2048
 #define OPT_THREADS 4096
 #define OPT_MIXERDEV 8192
+#define OPT_REPEAT 16384
 
 /* global vars */
 struct song_t
@@ -268,6 +276,9 @@ pthread_cond_t
 #endif
 pthread_t
 	thread_playlist; //thread that handles playlist (main handles input)
+#ifdef INCLUDE_LIRC
+	pthread_t thread_lirc;
+#endif
 #ifdef TEMPIE
 pthread_t
 	thread_ncurses; //thread that modifies ncurses structures
@@ -281,6 +292,7 @@ pth_cond_t
 	playing_cond;
 pth_t
 	thread_playlist;
+
 #endif /* PTHREADEDMPEG */
 mp3Win
 	*mp3_curwin = NULL, /* currently displayed mp3 window */
@@ -316,7 +328,9 @@ History
 	*history = NULL;
 getInput
 	*global_input = NULL;
-
+#ifdef INCLUDE_LIRC
+	command_t lirc_cmd = CMD_NONE;
+#endif
 int
 main(int argc, char *argv[], char *envp[])
 {
@@ -346,7 +360,7 @@ main(int argc, char *argv[], char *envp[])
 #ifdef LIBPTH
 	pth_init();
 #endif
-
+	
 	tmp.sound_device = NULL;
 	tmp.mixer_device = NULL;
 	tmp.play_mode = NULL;
@@ -390,6 +404,7 @@ main(int argc, char *argv[], char *envp[])
 			{ "chroot", 1, 0, 'o'},
 			{ "playmode", 1, 0, 'p'},
 			{ "dont-quit", 0, 0, 'q'},
+			{ "repeat", 0, 0, 'R'},
 			{ "runframes", 1, 0, 'r'},
 			{ "sound-device", 1, 0, 's'},
 			{ "status-file", 1, 0, 'f'},
@@ -398,7 +413,7 @@ main(int argc, char *argv[], char *envp[])
 			{ 0, 0, 0, 0}
 		};
 		
-		c = getopt_long_only(argc, argv, "28a:c:df:hl:m:no:p:qr:s:t:v", long_options,
+		c = getopt_long_only(argc, argv, "28a:c:df:hl:m:no:p:qRr:s:t:v", long_options,
 			&long_index);
 
 		if (c == EOF)
@@ -468,6 +483,9 @@ main(int argc, char *argv[], char *envp[])
 			break;
 		case 'q': /* don't quit after playing 1 mp3/playlist */
 			options |= OPT_QUIT;
+			break;
+		case 'R': /* playlist repeat */
+			options |= OPT_REPEAT;
 			break;
 		case 'r': /* numbers of frames to decode in 1 loop 1<=fpl<=10 */
 			options |= OPT_FPL;
@@ -609,6 +627,10 @@ main(int argc, char *argv[], char *envp[])
 		set_mixer_device(tmp.mixer_device);
 		free(tmp.mixer_device);
 	}
+	if (options & OPT_REPEAT)
+	{
+		globalopts.repeat = 1;
+	}
 	if (options & OPT_PLAYMODE)
 	{
 		if (!set_play_mode(tmp.play_mode))
@@ -729,6 +751,9 @@ main(int argc, char *argv[], char *envp[])
 
 #ifdef PTHREADEDMPEG
 	pthread_create(&thread_playlist, NULL, play_list, NULL);
+#ifdef INCLUDE_LIRC
+	pthread_create(&thread_lirc, NULL, lirc_loop, NULL);
+#endif
 #ifdef TEMPIE
 	pthread_create(&thread_ncurses, NULL, curses_thread, NULL);
 #endif
@@ -742,7 +767,6 @@ main(int argc, char *argv[], char *envp[])
 
 	thread_playlist = pth_spawn(PTH_ATTR_DEFAULT, play_list, NULL);
 	pth_yield(NULL);
-
 #endif /* PTHREADEDMPEG */
 
 	/* read input from keyboard */
@@ -799,6 +823,7 @@ usage()
 		"\t\tall groups, Play all songs in random order.\n"\
 		"\t--dont-quit/-q: Don't quit after playing mp3[s] (only makes sense\n"\
 		"\t\tin combination with --autolist or files from command-line)\n"\
+		"\t--repeat/-R: Repeat playlist.\n"\
 		"\t--runframes/-r=<number>: Number of frames to decode in one loop.\n"\
 		"\t\tRange: 1 to 10 (default=5). A low value means that the\n"\
 		"\t\tinterface (while playing) reacts faster but slow CPU's might\n"\
@@ -1116,7 +1141,6 @@ draw_static(int file_mode)
 	//Draw Next Song:
 	move(7,2);
 	addstr("Next Song      :");
-	//mw_settxt("Visit http://tutorial.mp3blaster.cx/");
 
 	refresh();
 	return;
@@ -1226,8 +1250,6 @@ set_group_name(char *name, void *args)
 	mp3Win *gr = sw->getGroup(index);
 	if (gr)
 		gr->setTitle(tmpname);
-	sw->swRefresh(0);
-	//refresh();
 	free(name);
 }
 
@@ -1387,7 +1409,7 @@ popup_win
 {
 	int maxx, maxy, width, height, by, bx, i, j;
 
-	popup = 1;
+	popup = 1; /* global variable, indicating input status */
 	getmaxyx(stdscr, maxy, maxx);
 	width = maxx - 14;
 	height = maxy - 15;
@@ -2117,6 +2139,11 @@ play_list(void *arg)
 {
 	if (arg);
 
+#ifdef PTHREADEDMPEG
+	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL),
+	pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
+#endif
+
 	//this loops controls the 'playing' variable. The 'action' variable is
 	//controlled by the input thread.
 	//playing=1: user wants to play
@@ -2270,7 +2297,8 @@ play_list(void *arg)
 			{
 				playopts.pause = 0;
 				update_songinfo(PS_PLAY, 16|4);
-				(playopts.player)->unpause();
+				if (!((playopts.player)->unpause()))
+					stop_song();
 			}
 			else if (playopts.song_played && !playopts.pause)
 			{
@@ -2281,7 +2309,7 @@ play_list(void *arg)
 			else if (!playopts.song_played)
 			{
 				playopts.allow_repeat = 0;
-				debug("AC_PLAY: allow_repeat = 0");
+				debug("AC_PLAY: allow_repeat = 0\n");
 			}
 		break;
 		case AC_NEXTGRP:
@@ -2301,6 +2329,85 @@ play_list(void *arg)
 #endif
 	}
 }
+#ifdef INCLUDE_LIRC
+void *lirc_loop(void *arg)
+{
+	struct lirc_config *config;
+
+	if (arg) {}
+
+	if (lirc_init("mp3blaster", 1) == -1)
+	{
+	  warning("Couldn't initialize LIRC support (no config?)");
+	  return NULL;
+  }
+
+	if (lirc_readconfig(NULL, &config, NULL) == 0)
+	{
+		char *code;
+		char *name;
+		int ret;
+
+		while (lirc_nextcode(&code) == 0 && code)
+		{
+			while ((ret = lirc_code2char(config, code, &name)) == 0 && name)
+			{
+				if (!strcasecmp(name, "PLAY"))
+					lirc_cmd = CMD_PLAY_PLAY; 	
+				else if (!strcasecmp(name, "NEXT"))
+					lirc_cmd = CMD_PLAY_NEXT; 	
+				else if (!strcasecmp(name, "PREVIOUS"))
+					lirc_cmd = CMD_PLAY_PREVIOUS;
+				else if (!strcasecmp(name, "REWIND"))
+					lirc_cmd = CMD_PLAY_REWIND;
+				else if (!strcasecmp(name, "FORWARD"))
+					lirc_cmd = CMD_PLAY_FORWARD;
+				else if (!strcasecmp(name, "STOP"))
+					lirc_cmd = CMD_PLAY_STOP;
+				else if (!strcasecmp(name, "UP"))
+					lirc_cmd = CMD_UP;
+				else if (!strcasecmp(name, "DOWN"))
+					lirc_cmd = CMD_DOWN;
+				else if (!strcasecmp(name, "PLAYMODE"))
+					lirc_cmd = CMD_TOGGLE_PLAYMODE;
+				else if (!strcasecmp(name, "ENTER"))
+				{
+					if (progmode == PM_NORMAL)
+						lirc_cmd = CMD_ENTER;
+					else if (progmode == PM_FILESELECTION)
+						lirc_cmd = CMD_FILE_ENTER;
+				}
+				else if (!strcasecmp(name, "FILES"))
+				{
+					if (progmode == PM_NORMAL)
+						lirc_cmd = CMD_SELECT_FILES;
+					else if (progmode == PM_FILESELECTION)
+						lirc_cmd = CMD_FILE_ADD_FILES;
+				}
+				else if (!strcasecmp(name, "SELECT"))
+				{
+					if (progmode == PM_NORMAL)
+						lirc_cmd = CMD_SELECT;
+					else if (progmode == PM_FILESELECTION)
+						lirc_cmd = CMD_FILE_SELECT;
+				}
+				else if (!strcasecmp(name, "QUIT"))
+					lirc_cmd = CMD_QUIT_PROGRAM;
+			}
+
+			free(code);
+
+			if (ret == -1)
+				break;
+		}
+
+		lirc_freeconfig(config);
+	}
+
+	lirc_deinit();
+	return NULL;
+}
+#endif
 
 void
 update_playlist_history()
@@ -3015,7 +3122,7 @@ int
 handle_input(short no_delay)
 {
 	int
-		key,
+		key = 0,
 		retval = 0;
 	fd_set fdsr;
 	struct timeval tv;
@@ -3024,6 +3131,16 @@ handle_input(short no_delay)
 		*sw = mp3_curwin;
 	fileManager
 		*fm = file_window;
+
+	//get a pointer to the main window, which depends on program mode.
+	scrollWin *mainwindow = NULL;
+	if (progmode == PM_NORMAL)
+		mainwindow = (scrollWin *)sw;
+	else if (progmode == PM_FILESELECTION)
+		mainwindow = (scrollWin *)fm;
+	else if (progmode == PM_HELP)
+		mainwindow = (scrollWin *)bighelpwin;
+
 
 #ifdef LIBPTH
 	pth_yield(NULL);
@@ -3035,21 +3152,35 @@ handle_input(short no_delay)
 		FD_ZERO(&fdsr);
 		FD_SET(0, &fdsr);  /* stdin file descriptor */
 		tv.tv_sec = tv.tv_usec = 0;
-		if (select(FD_SETSIZE, &fdsr, NULL, NULL, &tv) == 1)
+#ifdef INCLUDE_LIRC
+		if (lirc_cmd == CMD_NONE) {
+			if (select(FD_SETSIZE, &fdsr, NULL, NULL, &tv) == 1) 
+				key = getch();
+			else
+			{
+				key = ERR;
+			}
+		}
+#else
+		if (select(FD_SETSIZE, &fdsr, NULL, NULL, &tv) == 1) 
 			key = getch();
 		else
 		{
 			key = ERR;
 		}
+#endif
 	}
 	else
 	{
 		debug("THREAD main waiting for blocking input.\n");
 		nodelay(stdscr, FALSE);
-		key=getch();
+#ifdef INCLUDE_LIRC
+		if (lirc_cmd == CMD_NONE) key = getch();
+#else
+		key = getch();
+#endif 
 		debug("THREAD main woke up!\n");
 	}
-
 #ifndef TEMPIE
 	if (LOCK_NCURSES);
 
@@ -3078,7 +3209,16 @@ handle_input(short no_delay)
 	//lock the ncurses mutex during the entire input loop.
 	LOCK_NCURSES;
 #endif
+
+#ifdef INCLUDE_LIRC
+	if (lirc_cmd != CMD_NONE) {
+		cmd = lirc_cmd;
+		lirc_cmd = CMD_NONE;
+	}
+	else cmd = get_command(key, progmode);
+#else
 	cmd = get_command(key, progmode);
+#endif
 
 	if (input_mode == IM_SEARCH)
 	{
@@ -3140,6 +3280,7 @@ handle_input(short no_delay)
 			delete global_input;
 			global_input = NULL;
 			input_mode = IM_DEFAULT;
+			mainwindow->swRefresh(1);
 		}
 		break;
 		default:
@@ -3161,15 +3302,6 @@ handle_input(short no_delay)
 #endif
 		return retval;
 	}
-
-	//get a pointer to the main window, which depends on program mode.
-	scrollWin *mainwindow = NULL;
-	if (progmode == PM_NORMAL)
-		mainwindow = (scrollWin *)sw;
-	else if (progmode == PM_FILESELECTION)
-		mainwindow = (scrollWin *)fm;
-	else if (progmode == PM_HELP)
-		mainwindow = (scrollWin *)bighelpwin;
 
 	switch(cmd)
 	{
@@ -3198,6 +3330,7 @@ handle_input(short no_delay)
 			sw->swRefresh(1);
 		break;
 		case CMD_QUIT_PROGRAM: //quit mp3blaster
+#if 0
 			lock_playing_mutex();
 			if (!playopts.playing)
 			{
@@ -3218,6 +3351,9 @@ handle_input(short no_delay)
 				stop_list();
 				retval = -1;
 			}
+#else
+			retval = -1;
+#endif
 		break;
 		case CMD_HELP:
 			if (progmode == PM_HELP)
@@ -5317,60 +5453,6 @@ add_init_opt(struct init_opts *myopts, const char *option, void *value)
 	tmp->next = NULL;
 }
 
-/* free returned char with free() */
-#if 0
-char *
-get_input(WINDOW *win, const char*defval, int maxlen, int y, int x)
-{
-	int
-		c = 0;
-	short
-		insert_mode = 0; //0 -> replace i/o insert
-	getInput
-		*input = new getInput(win, defval, maxlen, maxlen, y, x);
-	char *result = NULL;
-
-	while ((c = getch()) != 13)
-	{
-		switch(c)
-		{
-		case KEY_LEFT:
-			input->moveLeft(1);
-			break;
-		case KEY_RIGHT:
-			input->moveRight(1);
-			break;
-		case KEY_UP:
-			insert_mode = 1;
-			mw_settxt("-- INSERT --");
-			input->updateCursor();
-			break;
-		case KEY_DOWN:
-			insert_mode = 0;
-			mw_settxt("            ");
-			input->updateCursor();
-			break;
-		case KEY_BACKSPACE:
-			input->deleteChar(); 
-			break;
-		case KEY_DC:
-			input->deleteChar(0);
-			break;
-		case KEY_HOME: input->moveToBegin(); break;
-		case KEY_END: input->moveToEnd(); break;
-		default:
-			if (insert_mode)
-				input->insertChar(c);
-			else
-				input->replaceChar(c);
-		}
-	}
-
-	result = input->getString();
-	delete input;
-	return result;
-};
-#endif
 void
 get_input(
 	WINDOW *win, const char*defval, unsigned int size, unsigned int maxlen, int y, int x,
@@ -5477,18 +5559,29 @@ playlist_write(char *playlistfile, void *args)
 
 	org_path = get_current_working_path();
 	char *tmpDir = expand_path(globalopts.playlist_dir);
-	if (tmpDir)
+
+	do
 	{
-		chdir(tmpDir);
-		free(tmpDir);
-		tmpDir = NULL;
+		if (!tmpDir)
+		{
+			warning("Failed to change to playlist dir.");	
+			break;
+		}
+
+		if (chdir(tmpDir) == -1)
+		{
+			warning("Failed to change to playlist dir.");
+			break;
+		}
+
 		if (!write_playlist(plistfile))
 			warning("Failed to write playlist.");
 		else
 			mw_settxt("Playlist written.");
-	}
-	else
-		warning("Failed to change to playlist dir.");	
+	} while (0);
+
+	if (tmpDir)
+		free(tmpDir);
 
 	chdir(org_path);
 	free(org_path);
@@ -5530,11 +5623,9 @@ fw_rename_file(char *newname, void *args)
 
 	if (rename_result == -1)
 	{
-		const char *errormsg = NULL;
-		if (errno > sys_nerr - 1)
+		const char *errormsg = (const char *)strerror(errno);
+		if (!errormsg)
 			errormsg = "Unknown error occurred";
-		else 
-			errormsg = sys_errlist[errno];
 		char *warningmsg = new char[strlen(errormsg) + 50];
 		sprintf(warningmsg, "Rename failed: %s", errormsg);
 		warning(warningmsg);

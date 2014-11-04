@@ -9,6 +9,9 @@
 /* Include the OggVorbis sound format */
 #undef INCLUDE_OGG
 
+/* Include LIRC support */
+#undef INCLUDE_LIRC
+
 /* MySQL support for mp3tag. Probably only useful for the author :) */
 #undef WANT_MYSQL
 #undef MYSQL_H

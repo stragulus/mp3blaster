@@ -1,24 +1,35 @@
+INTERFACE
+-better distinction between file manager and playlist
+ => file manager should get a different colour and window styles? Or just a
+    complete overlay on the entire interface..
+-Rename GroupShuffle to Shuffle
+-Select a Directory in FM -> add it to the group
+
 BUGS
 -make '<' and '>' mixer keys remappable
 -fix warnings
--fix totaltime() in mpegtoraw.cc
 -fix colour stuff
 
 IMPORTANT
+-Quiting with an unsaved playlist should display a warning (unless one
+ explicitly configures it not to, of course)
+-Add 'readonly' mode (similar to '%' in mutt), enable it by default, to prevent
+ people from accidentally deleting their mp3 collection.
 -warn about double keybindings (2 actions to 1 keycode)
 -allow 1 action mapped to multiple keycodes
 -22Khz vorbis files play too fast?
 -save shuffle mode for main group, and playback mode for entire group in
  playlist
--release audio device when pausing playback ? 
 
 SMALL & SIMPLE
 -configfile keyword for items in mixer (shortens cycle)
 -file search with '/' optionally case-insensitive
 -mp3 search in normal mode with '/' too
 -jump to dir-entry one came from after going to '..'
+-hide 'hidden files' (.??*)
 
 INTERESTING
+-ogg streaming (have oggplayer class use soundinputstream)
 -implement ID3v2 tag parsing (id3lib.sourceforge.net, www.id3v2.org)
 -skip to place in playlist on request.
 -FLAC support (flawless audio codec, http://flac.sourceforge.net/)

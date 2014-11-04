@@ -47,6 +47,7 @@ NMixer::NMixer(WINDOW *mixwin, const char *mixdev, int xoffset, int yoffset,
 		this->mixdev = new char[strlen(mixdev)+1];
 		strcpy(this->mixdev, mixdev);
 	}
+	this->mixers = NULL;
 	this->mixwin = mixwin;
 	this->minimode = (minimode ? 1 : 0);
 	this->xoffset = xoffset;
@@ -125,6 +126,21 @@ NMixer::NMixerInit()
 	else if (minimode && ((maxx - xoffset) < 11 || nrlines < 2))
 		return 0;
 
+	InitMixerDevice();
+
+	DrawFixedStuff();
+
+	/* Draw all Scrollbars */
+	RedrawBars();
+
+	/* initialiation succeeded. */
+	return 1;
+}
+
+void
+NMixer::InitMixerDevice() {
+	if (mixers)
+		delete mixers;
 #ifdef HAVE_NASPLAYER
 	if (mixdev && !strcmp(mixdev, "NAS")) //NAS-mixer
 		mixers = new NASMixer(mixdev);
@@ -141,14 +157,29 @@ NMixer::NMixerInit()
 	currentspos = 0; /* current ON-SCREEN bar */
 	minbar = 0;
 	currentbar = 0; /* current bar (index) */
+}
 
-	DrawFixedStuff();
+// Pre: 0 <= mixNr < 10
+void
+NMixer::SwitchMixerDevice(int mixNr)
+{
+	if (mixdev != NULL)
+		delete[] mixdev;
+	if (mixNr == 0)
+	{
+		mixdev = new char[strlen(MIXER_DEVICE) + 1];
+		strcpy(mixdev, MIXER_DEVICE);
+	}
+	else
+	{
+		mixdev = new char[strlen(MIXER_DEVICE) + 2];
+		sprintf(mixdev, "%s%d", MIXER_DEVICE, mixNr);
+	}
+	InitMixerDevice();
 
-	/* Draw all Scrollbars */
-	RedrawBars();
-
-	/* initialiation succeeded. */
-	return 1;
+	for (int i = yoffset; i < yoffset + nrlines; i++)
+		mvwprintw(mixwin, i, 2, "%64s", "");
+	redraw();
 }
 
 /* TODO: Don't redraw label every time */
@@ -422,8 +453,38 @@ NMixer::ProcessKey(int key)
 					mixers->SetRecord(barID, true);
 				RedrawBars();
 			}
+			break;
 		}
-		break;
+		case KEY_F(1):
+			SwitchMixerDevice(0);
+			break;
+		case KEY_F(2):
+			SwitchMixerDevice(1);
+			break;
+		case KEY_F(3):
+			SwitchMixerDevice(2);
+			break;
+		case KEY_F(4):
+			SwitchMixerDevice(3);
+			break;
+		case KEY_F(5):
+			SwitchMixerDevice(4);
+			break;
+		case KEY_F(6):
+			SwitchMixerDevice(5);
+			break;
+		case KEY_F(7):
+			SwitchMixerDevice(6);
+			break;
+		case KEY_F(8):
+			SwitchMixerDevice(7);
+			break;
+		case KEY_F(9):
+			SwitchMixerDevice(8);
+			break;
+		case KEY_F(10):
+			SwitchMixerDevice(9);
+			break;
 	}
 	return 1;
 }

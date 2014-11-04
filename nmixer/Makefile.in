@@ -57,12 +57,18 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
+host_alias = @host_alias@
+host_triplet = @host@
 CC = @CC@
 CXX = @CXX@
+HAVE_LIB = @HAVE_LIB@
+LIB = @LIB@
 LIBMPEGSOUND = @LIBMPEGSOUND@
 LIBMYSQL = @LIBMYSQL@
 LIBNMIXER = @LIBNMIXER@
+LIRC_LIBS = @LIRC_LIBS@
 LN_S = @LN_S@
+LTLIB = @LTLIB@
 MAKEINFO = @MAKEINFO@
 MP3B_MODULES = @MP3B_MODULES@
 NAS_CFLAGS = @NAS_CFLAGS@
@@ -244,6 +250,13 @@ distdir: $(DISTFILES)
 	    || cp -p $$d/$$file $(distdir)/$$file || :; \
 	  fi; \
 	done
+getopt.o: getopt.c ../config.h
+getopt1.o: getopt1.c ../config.h getopt.h
+main.o: main.cc nmixer.h ../config.h getopt.h
+mixers.o: mixers.cc nmixer.h ../config.h getopt.h
+nasmixer.o: nasmixer.cc
+nmixer.o: nmixer.cc nmixer.h ../config.h getopt.h
+ossmixer.o: ossmixer.cc nmixer.h ../config.h getopt.h
 
 info-am:
 info: info-am

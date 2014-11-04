@@ -27,6 +27,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <dirent.h>
+#include <errno.h>
 #include "fileman.h"
 #include "global.h"
 
@@ -85,11 +86,25 @@ fileManager::getCurrentWorkingPath()
 
 	char *tmppwd = (char *)malloc(65 * sizeof(char));
 	int size = 65;
-	
+	int invalid_path = 0;	
+
 	while ( !(getcwd(tmppwd, size - 1)) )
 	{
+		if (errno != ERANGE)
+		{
+			invalid_path = 1;
+			break;
+		}
 		size += 64;
 		tmppwd = (char *)realloc(tmppwd, size * sizeof(char));
+	}
+
+	if (invalid_path)
+	{
+		/* beuh? Someone must have deleted it.. */
+		if (tmppwd)
+			free(tmppwd);
+		tmppwd = strdup("/");
 	}
 
 	path = new char[strlen(tmppwd) + 2];	
@@ -286,12 +301,12 @@ fileManager::readDir()
 			fsizedesc = NULL;
 			fdesc = NULL;
 
-			if (buffy.st_size < (10 * 1024)) //10 Kb
+			if (buffy.st_size < (10000)) //10000 B
 			{
 				fsize = buffy.st_size;
 				fsizedesc = fsizedescs[0]; //bytes
 			}
-			else if (buffy.st_size < (10 * 1024 * 1024)) //10 Mb
+			else if (buffy.st_size < (10240000)) //10000 KB
 			{
 				fsize = buffy.st_size / 1024;
 				fsizedesc = fsizedescs[1]; //kbytes

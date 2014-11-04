@@ -1,3 +1,29 @@
+V3.2.0 2003/09/08
+=================
+-Updated source to compile with recent gcc compilers
+-Pausing mp3/wav/ogg playback releases the sound device
+-Better mp3 integrity checks. Songs that didn't previously play (or only
+ partly), should now play fine (as in, the bits that are valid)
+-Fixed a bug that would hang mp3blaster if you'd be in a dir that was deleted
+ meanwhile.
+-bugfix that could crash mp3blaster after a request to quit (..)
+-bugfix that failed to redraw screen correctly after operations that 
+ required input (such as convert to wav, enter group name, ..)
+-fixed a bug that could crash mp3blaster on opening oggs when sound device
+ was busy.
+-Check if the playlist directory actually exists before trying to write 
+ a playlist
+-Added '--repeat/-R' command line option
+-Applied LIRC support patch from Olgierd Pieczul <wojrus@linux.slupsk.net>.
+ Thanks a lot!
+
+V3.1.4 2003/03/24
+=================
+-Fixed file size display for files that crossed the 10000 bytes/kbytes
+ boundary by a bit.
+-Applied patch from Serge v/d Boom for nmixer. F1..F10 switches directly
+ to /dev/dsp[0..10], except that dsp0 is dsp.
+
 V3.1.3 2002/10/20
 =================
 -Changed RPM .spec file such that all compression methods for man files will

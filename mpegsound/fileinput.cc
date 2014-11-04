@@ -17,6 +17,13 @@
 /************************/
 /* Input bitstrem class */
 /************************/
+
+Soundinputstreamfromfile::Soundinputstreamfromfile()
+{
+	fp = NULL;
+	__canseek = true;
+}
+
 Soundinputstreamfromfile::~Soundinputstreamfromfile()
 {
   if(fp)

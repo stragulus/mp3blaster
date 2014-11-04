@@ -46,13 +46,13 @@ bool Oggplayer::openfile(char *filename, char *device, soundtype write2file)
 {
 	FILE *f;
 	int openres;
+
 	if (of)
 	{
 		ov_clear(of);
 		delete of;
+		of = NULL;
 	}
-
-	of = new OggVorbis_File;
 
 	//initialize player object that writes to sound device/file
 	if (!opendevice(device, write2file))
@@ -61,6 +61,8 @@ bool Oggplayer::openfile(char *filename, char *device, soundtype write2file)
 	if (!(f = fopen(filename, "r")))
 		return seterrorcode(SOUND_ERROR_FILEOPENFAIL);
 	
+	of = new OggVorbis_File;
+
 	//initialize OggVorbis structure
 	if ( (openres = ov_open(f, of, NULL, 0)) < 0)
 	{
@@ -72,6 +74,9 @@ bool Oggplayer::openfile(char *filename, char *device, soundtype write2file)
 		case OV_EBADHEADER: seterrorcode(SOUND_ERROR_BADHEADER); break;
 		default: seterrorcode(SOUND_ERROR_UNKNOWN);
 		}
+
+		delete of;
+		of = NULL;
 
 		fclose(f); //if ov_open fails, it's safe to use fclose()
 		return false;
@@ -244,12 +249,13 @@ bool Oggplayer::rewind(int sec)
  
 bool Oggplayer::pause()
 {
+	player->releasedevice();
 	return true;
 }
  
 bool Oggplayer::unpause()
 {
-	return true;
+	return player->attachdevice();
 }
  
 bool Oggplayer::stop()

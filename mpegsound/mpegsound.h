@@ -277,8 +277,11 @@ public:
   virtual int  getposition(void)                 =0;
   virtual void setposition(int pos)              =0;
 
+  bool canseek(void) { return __canseek; }
+
 protected:
   void seterrorcode(int errorcode) {__errorcode=errorcode;};
+  bool __canseek;
 
 private:
   int __errorcode;
@@ -288,7 +291,7 @@ private:
 class Soundinputstreamfromfile : public Soundinputstream
 {
 public:
-  Soundinputstreamfromfile()  {fp=NULL;};
+  Soundinputstreamfromfile();
   ~Soundinputstreamfromfile();
 
   bool open(char *filename);
@@ -351,6 +354,8 @@ public:
   virtual bool setsoundtype(int stereo,int samplesize,int speed)=0;
   virtual void set8bitmode()=0;
   virtual bool resetsoundtype(void);
+  virtual void releasedevice(void) = 0;
+  virtual bool attachdevice(void) = 0;
 
   virtual bool putblock(void *buffer,int size)                  =0;
   virtual int  putblock_nt(void *buffer, int size)		=0;
@@ -373,11 +378,14 @@ public:
   ~Rawtofile();
 
   static Rawtofile *opendevice(char *filename);
+
   bool setsoundtype(int stereo,int samplesize,int speed);
   void set8bitmode() { want8bit = 1; }
   bool setfiletype(enum soundtype);
   bool putblock(void *buffer,int size);
   int putblock_nt(void *buffer,int size);
+  void releasedevice(void) {};
+  bool attachdevice(void) { return true; };
 private:
   Rawtofile(int filehandle);
   int init_putblock;
@@ -393,12 +401,16 @@ public:
   ~Rawplayer();
 
   static Rawplayer *opendevice(char *filename);
+  static int getdevicehandle(const char *filename);
+
   void abort(void);
   int  getprocessed(void);
 
   bool setsoundtype(int stereo,int samplesize,int speed);
   void set8bitmode() { want8bit = 1; }
   bool resetsoundtype(void);
+  void releasedevice(void);
+  bool attachdevice(void);
 
   bool putblock(void *buffer,int size);
   int  putblock_nt(void *buffer,int size);
@@ -442,6 +454,8 @@ public:
 	bool setsoundtype(int stereo, int samplesize, int speed);
 	void set8bitmode() { want8bit = 1; }
 	bool resetsoundtype(void);
+	void releasedevice(void) {}
+	bool attachdevice(void) { return true; }
 
 	bool putblock(void *buffer, int size);
 
@@ -550,8 +564,9 @@ private:
   /*************************/
 private:
   int layer,protection,bitrateindex,padding,extendedmode, is_vbr;
-  enum _mpegversion  {mpeg1,mpeg2}                               version;
-  enum _mode    {fullstereo,joint,dual,single}                   mode;
+  int first_layer;
+  enum _mpegversion  {mpeg1,mpeg2} version;
+  enum _mode    {fullstereo,joint,dual,single} mode;
   enum _frequency {frequency44100,frequency48000,frequency32000} frequency;
 
   /*************************/
@@ -560,13 +575,13 @@ private:
   struct mpeg_header
   {
     int layer;
-	int protection;
-	int bitrateindex;
-	int padding;
-	int extendedmode;
-	_mpegversion version;
-	_mode mode;
-	_frequency frequency;
+    int protection;
+    int bitrateindex;
+    int padding;
+    int extendedmode;
+    _mpegversion version;
+    _mode mode;
+    _frequency frequency;
   } header_one;
 
   /*******************************************/
@@ -724,7 +739,7 @@ private:
   }u;
   char buffer[4096];
   int  bitindex;
-	short scan_mp3; //default = 1 => don't scan mp3 to calculate length in sec.
+  short scan_mp3; //default = 1 => don't scan mp3 to calculate length in sec.
   bool fillbuffer(int size){bitindex=0;return loader->_readbuffer(buffer,size);};
   void sync(void)  {bitindex=(bitindex+7)&0xFFFFFFF8;};
   bool issync(void){return (bitindex&7);};
@@ -758,7 +773,7 @@ private:
   /* Decoding functions for each layer */
   /*************************************/
 private:
-  bool loadheader(void);
+  bool loadheader(bool lookahead=true);
 
   //
   // Subbandsynthesis
@@ -930,8 +945,8 @@ public:
 	bool initialize(void *);
 	bool forward(int frames) { skip(frames); return true; }
 	bool rewind(int frames) { skip(-frames); return true; }
-	bool pause() { return true; }
-	bool ready() { return true; }
+	bool pause() { player->releasedevice(); return true; }
+	bool ready() { return player->attachdevice(); }
 	bool unpause() { return true; }
 	bool stop() { return true; }
 	int elapsed_time();
@@ -965,14 +980,14 @@ public:
 	bool forward(int);
 	bool rewind(int);
 #ifdef NEWTHREAD
-	bool pause() { server->pauseplaying(); return true; }
-	bool unpause() { server->continueplaying(); return true; }
+	bool pause() { server->pauseplaying(); player->releasedevice(); return true; }
+	bool unpause() { server->continueplaying(); return player->attachdevice(); }
 #elif defined(PTHREADEDMPEG)
-	bool pause() { if (use_threads) server->pausethreadedplayer(); return true;}
-	bool unpause() { if (use_threads) server->unpausethreadedplayer(); return true;}
+	bool pause() { if (use_threads) server->pausethreadedplayer(); player->releasedevice(); return true;}
+	bool unpause() { if (use_threads) server->unpausethreadedplayer(); return player->attachdevice();}
 #else
-	bool pause() { return true;}
-	bool unpause() { return true;}
+	bool pause() { player->releasedevice(); return true;}
+	bool unpause() { return player->attachdevice(); }
 #endif
 	bool stop();
 	bool ready();

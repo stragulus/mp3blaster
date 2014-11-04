@@ -260,7 +260,6 @@ bool Mpegfileplayer::initialize(void *init_args)
 {
 	int threads = 0;
 	//struct init_opts *opts = NULL;
-	short noscan = 0;
 	init_opts *opts = NULL;
 
 	if (init_args)

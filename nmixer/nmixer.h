@@ -116,6 +116,8 @@ public:
 	~NMixer();
 
 	short NMixerInit();
+	void InitMixerDevice();
+	void SwitchMixerDevice(int mixNr);
 	void DrawScrollbar(short i, int spos);
 	void ChangeBar(short bar, short amount, short absolute, short channels,
 		short update=1);

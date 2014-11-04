@@ -28,24 +28,27 @@ Soundinputstream::~Soundinputstream()
 /********************/
 Soundinputstream *Soundinputstream::hopen(char *filename,int *errorcode)
 {
-  Soundinputstream *st;
+	Soundinputstream *st;
 
-  if(filename==NULL)st=new Soundinputstreamfromfile;
-  else if(strstr(filename,"://"))st=new Soundinputstreamfromhttp;
-  else st=new Soundinputstreamfromfile;
+	if (filename==NULL)
+		st=new Soundinputstreamfromfile;
+	else if (strstr(filename,"://"))
+		st=new Soundinputstreamfromhttp;
+	else
+		st=new Soundinputstreamfromfile;
 
-  if(st==NULL)
-  {
-    *errorcode=SOUND_ERROR_MEMORYNOTENOUGH;
-    return NULL;
-  }
+	if (st==NULL)
+	{
+		*errorcode=SOUND_ERROR_MEMORYNOTENOUGH;
+		return NULL;
+	}
 
-  if(!st->open(filename))
-  {
-    *errorcode=st->geterrorcode();
-    delete st;
-    return NULL;
-  }
+	if (!st->open(filename))
+	{
+		*errorcode=st->geterrorcode();
+		delete st;
+		return NULL;
+	}
 
-  return st;
+	return st;
 }

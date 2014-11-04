@@ -708,16 +708,14 @@ inline void Mpegtoraw::flushrawdata(void)
 	}
 	else
 	{
-		if (!suppress_sound)
-			player->putblock((char *)rawdata,rawdataoffset<<1);
+		player->putblock((char *)rawdata,rawdataoffset<<1);
 		currentframe++;
 	}
 	rawdataoffset=0;
 }
 #else
 {
-	if (!suppress_sound)
-		player->putblock((char *)rawdata,rawdataoffset<<1);
+	player->putblock((char *)rawdata,rawdataoffset<<1);
 	currentframe++;
 	rawdataoffset=0;
 }
@@ -800,8 +798,6 @@ bool Mpegtoraw::initialize(char *filename)
 	if (!filename)
 		return false;
 
-	suppress_sound = 0;
-
 	scalefactor       = SCALE;
 	calcbufferoffset  = 15;
 	currentcalcbuffer = 0;
@@ -828,59 +824,132 @@ bool Mpegtoraw::initialize(char *filename)
 
 	currentframe=decodeframe=0;
 	is_vbr = 0;
-	int headcount = 0, first_offset = 0, loopcount = 0;
+	int headcount = 0, first_offset = 0;
+	bool found_first_frame = false;
+	int frameinfo_layer = 0;
+	int frameinfo_version = 0;
+	int frameinfo_samplerate = 0;
+	int frame_start;
+
 	sync();
 
-	while (headcount < 1 && geterrorcode() != SOUND_ERROR_FINISH)
-	{
-		int fileseek = loader->getposition();
 
-		if (loadheader())
+	/* Try to find at least 3 valid mp3 frames at a position where we
+	 * expect it, with consistent data. If they can't be found, we don't
+	 * consider it to be an mp3.
+	 */
+	while (headcount < 3 && geterrorcode() != SOUND_ERROR_FINISH)
+	{
+		frame_start = loader->getposition();
+
+		if (!loadheader(false))
 		{
-			if (!headcount)
-				first_offset = fileseek;
-			headcount++;
+			debug("Found a bogus header (or EOF?) Resetting..\n");
+			/* found a bogus header. Reset header counter */
+			headcount = 0;
+			found_first_frame = false;
+
+			if (loader->canseek())
+				loader->setposition(frame_start + 1);
+			/* for streams in which cannot be seeked, we just keep on searching
+			 * forward from where we are now, and hope we didn't just halfway into
+			 * what's really a valid header. Doesn't matter much though, eventually
+			 * we'll bump into a correct header.
+			 */
+			continue;
 		}
-		else
+
+		if (!found_first_frame)
 		{
-			headcount = 0; //reset counter when bad header's found.
-			loader->setposition(fileseek + 2); //skip 2 bytes or else this loop
-																				 //might never end
+			/* we haven't found the first, valid frame yet.
+			 * Maybe this is the one!
+			 */
+			debug("Hopefully found the first valid frame at position %d\n", frame_start);
+			first_offset = frame_start;
+			found_first_frame = true;
+			/* store frameinfo which must remain constant */
+			frameinfo_layer = layer;
+			frameinfo_version = version;
+			frameinfo_samplerate = frequency;
+
 		}
-		loopcount++;
+
+		/* after a successful loadheader(), the loader is positioned at the 
+		 * start of the next expected frame header.
+		 */
+
+		/* are the new frame settings consistent with the first found frame?
+		 */
+		if ((frameinfo_layer != layer ||
+			frameinfo_version != version ||
+			frameinfo_samplerate != frequency) )
+		{
+			debug("Frame info inconsistent, finding new First Frame\n");
+			found_first_frame = false;
+			headcount = 0;
+			if (loader->canseek())
+				loader->setposition(frame_start + 1);
+			continue;
+		}
+
+		headcount++; /* yay, valid frame */
+
+		if (headcount > 1)
+		{
+			debug("Found %d valid headers so far.\n", headcount);
+		}
 	}
 
-	loader->setposition(first_offset);
+	if (headcount != 3)
+	{
+		debug("Couldn't find 3 consecutive, valid mp3 frames!\n");
+		return false; /* invalid MP3 */
+	}
+
+	/* store this mp3's frame info, for future error checking */
+	header_one.version = version;
+	header_one.mode = mode;
+	header_one.layer = layer;
+	header_one.frequency = frequency;
+
+	/* rewind to first valid frame and read info from it */
+	if (loader->canseek())
+	{
+		loader->setposition(first_offset);
+		loadheader();
+		loader->setposition(first_offset);
+	}
 
 	bool found_xing = false;
+	XHEADDATA xingheader;
 
-	if(headcount > 0)
+	xingheader.toc = NULL;
+
+	/* Try to find a XING header to determine total song length first.
+	 * Note that this method only works if the FIRST valid mp3 frame found
+	 * contains the XING header. Order of headers in front of mp3's is not
+	 * specified though.
+	 */
+	/* framesize is set by loadheader, and is the size of the first frame */
+	unsigned char *buffer = new unsigned char[framesize * sizeof(char)];
+	if (loader->canseek() && (loader->getblock((char *)buffer, framesize * sizeof(char)) ==
+		(int)(framesize * sizeof(char))) &&
+		GetXingHeader(&xingheader, buffer))
 	{
-		XHEADDATA xingheader;
-		xingheader.toc = NULL;
-		/* Try to find a XING header to determine total song length first*/
-		/* framesize is set by loadheader, and is the size of the first frame */
-		unsigned char *buffer = new unsigned char[framesize * sizeof(char)];
-		if ((loader->getblock((char *)buffer, framesize * sizeof(char)) ==
-			(int)(framesize * sizeof(char))) &&
-			GetXingHeader(&xingheader, buffer))
-		{
-			totalframe = xingheader.frames;	
-			found_xing = true;
-			debug("Found XING header, and set total frames to %d.\n", totalframe);
-		}
-		else
-		{
-			debug("No XING header found, assuming CBR mp3.\n");
-			totalframe = (loader->getsize() + framesize - 1) / framesize;
-		}
-		delete[] buffer;
-		buffer = NULL;
+		totalframe = xingheader.frames;	
+		found_xing = true;
+		debug("Found XING header, and set total frames to %d.\n", totalframe);
 	}
-	else //no valid mpeg frame found
-		totalframe=0;
+	else
+	{
+		debug("No XING header found, assuming CBR mp3.\n");
+		totalframe = (loader->getsize() + framesize - 1) / framesize;
+	}
+	delete[] buffer;
+	buffer = NULL;
 
-	loader->setposition(first_offset);
+	if (loader->canseek())
+		loader->setposition(first_offset);
 
 	if(frameoffsets)
 		delete[] frameoffsets;
@@ -921,7 +990,7 @@ bool Mpegtoraw::initialize(char *filename)
 #endif
 #endif /* NEWTHREAD */
 
-	if (totalframe)
+	if (loader->canseek() && totalframe)
 	{
 		/*Calculate length of [vbr] mp3. Neat if you don't have XING headers,
 		  bad if you stream mp3's over a slow network connection/disk (since
@@ -956,6 +1025,13 @@ bool Mpegtoraw::initialize(char *filename)
 		loader->setposition(first_offset);
 		seterrorcode(SOUND_ERROR_OK);
 	}
+
+	/* set loader to start of first valid frame. 
+	 * Maybe it should point to the bytes FOLLOWING the header, I'm not sure..
+	 * ::run() loads its own header first, so let's assume this is correct.
+	 */
+	if (loader->canseek())
+		loader->setposition(first_offset);
 
 	return (totalframe != 0);
 }
@@ -1053,6 +1129,7 @@ void Mpegtoraw::setframe(int framenumber)
 
 void Mpegtoraw::clearbuffer(void)
 {
+	debug("clearbuffer\n");
 #ifndef NEWTHREAD
 #ifdef PTHREADEDMPEG
 	if(threadflags.thread)
@@ -1069,40 +1146,43 @@ void Mpegtoraw::clearbuffer(void)
 	player->resetsoundtype();
 }
 
-//find a valid frame. If one is found, read the frame (so the filepointer
-//points to the next frame). If an invalid frame is found, the filepointer
-//points to the first or second byte after a sequence of 0xff 0xf? bytes.
-bool Mpegtoraw::loadheader(void)
+//find a valid frame. If an invalid frame is found, the filepointer
+//points to the location where the next frame is to be expected, and 'true'
+//is returned.
+//if 'lookahead' is false, loadheader will return false if the expected
+//header is not found at the exact location of the filepointer at call time.
+bool Mpegtoraw::loadheader(bool lookahead)
 {
 	register int c;
 	bool flag;
+	int bytes_read = 0;
+
 	sync();
 
 // Synchronize
 	flag=false;
 	do
 	{
-
 		if ( (c = loader->getbytedirect()) < 0 )
 			break;
 
+		bytes_read++;
+
 		if (c == 0xff)
 		{
-			while (!flag)
-			{
 				if ( (c = loader->getbytedirect()) < 0)
-				{
-					flag=true;
 					break;
-				}
+
+				bytes_read++;
+
 				if ( (c&0xf0) == 0xf0 )
-				{
 					flag=true;
-					break;
-				}
-				else if ( c!= 0xff )
-					break;
-			}
+				else if (!lookahead)
+					return seterrorcode(SOUND_ERROR_BAD);
+		}
+		else if (!lookahead)
+		{
+			return seterrorcode(SOUND_ERROR_BAD);
 		}
 	} while (!flag);
 
@@ -1118,7 +1198,12 @@ bool Mpegtoraw::loadheader(void)
 
 	version = (_mpegversion)((c>>3)^1); /* bit 13 */
 
-	c = ((loader->getbytedirect()))>>1; /* c = 0 bit17 .. bit23 */
+	if ((c = loader->getbytedirect()) < 0)
+		return seterrorcode(SOUND_ERROR_FINISH);
+
+	bytes_read++;
+
+	c >>= 1; /* c = 0 bit17 .. bit23 */
 	padding = (c&1);
 	c >>= 1;
 
@@ -1132,7 +1217,12 @@ bool Mpegtoraw::loadheader(void)
 	if (bitrateindex == 15 || !bitrateindex)
 		return seterrorcode(SOUND_ERROR_BAD);
 
-	c = ((unsigned int)(loader->getbytedirect()))>>4;
+	if ((c = loader->getbytedirect()) < 0)
+		return seterrorcode(SOUND_ERROR_FINISH);
+
+	bytes_read++;
+
+	c = ((unsigned int)c)>>4;
 	/* c = 0 0 0 0 bit25 bit26 bit27 bit27 bit28 */
 	extendedmode = c&3;
 	mode = (_mode)(c>>2);
@@ -1193,7 +1283,8 @@ bool Mpegtoraw::loadheader(void)
 	{
 		framesize=(12000*bitrate[version][0][bitrateindex])/
 							frequencies[version][frequency];
-		if(frequency==frequency44100 && padding)framesize++;
+		if (frequency==frequency44100 && padding)
+			framesize++;
 		framesize<<=2;
 	}
 	else
@@ -1210,8 +1301,11 @@ bool Mpegtoraw::loadheader(void)
 				layer3slots = framesize-((mode==single)?17:32) - (protection?0:2) - 4;
 		}
 	}
+
 	if(!fillbuffer(framesize-4))
 		seterrorcode(SOUND_ERROR_FILEREADFAIL);
+
+	bytes_read += (framesize - 4);
 
 	if(!protection)
 	{
@@ -1354,54 +1448,78 @@ bool Mpegtoraw::run(int frames)
 	buffer_node *temp;
 #endif
 	clearrawdata();
-	if(frames<0)lastfrequency=0;
 
 	for(;frames;frames--)
 	{
 #ifdef NEWTHREAD
 		if(spare) /* There are frames in the spare buffer! */
 		{
-	pth_mutex_acquire(&queue_mutex,FALSE,NULL);
-				if(buffers[spare->index].framenumber < decodeframe)
+			pth_mutex_acquire(&queue_mutex,FALSE,NULL);
+			if(buffers[spare->index].framenumber < decodeframe)
+			{
+				/* Houston, we have a problem! */
+				while(spare && buffers[spare->index].framenumber < decodeframe)
 				{
-		 /* Houston, we have a problem! */
-		 while(spare && buffers[spare->index].framenumber < decodeframe)
-		 {
-			 release_buffer(spare->index);
-			 temp=spare;
-			 spare=spare->next;
-			 free(temp);
-		 }
-	pth_mutex_release(&queue_mutex);
-		 continue;
+					release_buffer(spare->index);
+					temp=spare;
+					spare=spare->next;
+					free(temp);
 				}
-				if(buffers[spare->index].framenumber==decodeframe)
+				pth_mutex_release(&queue_mutex);
+				continue;
+			}
+			if(buffers[spare->index].framenumber==decodeframe)
+			{
+				while(spare && buffers[spare->index].framenumber==decodeframe)
 				{
-					 while(spare && buffers[spare->index].framenumber==decodeframe)
-					 {
-						 queue_buf(spare->index);
-			 spare=spare->next;
-			 decodeframe++;
-					 }
-					 setdecodeframe(decodeframe-5); /* Not that stupid as it seems */
-		 skip=4;
-				}  
-	pth_mutex_release(&queue_mutex);
+					queue_buf(spare->index);
+					spare=spare->next;
+					decodeframe++;
+				}
+				setdecodeframe(decodeframe-5); /* Not that stupid as it seems */
+				skip=4;
+			}  
+			pth_mutex_release(&queue_mutex);
 		} /* If(spare) */
+
 		if(!skip)
 		{
-			 pth_mutex_acquire(&queue_mutex,FALSE,NULL);
-			 buffer_number=request_buffer();
-			 pth_mutex_release(&queue_mutex);
-			 if(buffer_number==-1) /* No free buffers available */
-					break;
+			pth_mutex_acquire(&queue_mutex,FALSE,NULL);
+			buffer_number=request_buffer();
+			pth_mutex_release(&queue_mutex);
+			if(buffer_number==-1) /* No free buffers available */
+				break;
 		}
 		else
 #endif
 		if(totalframe>0)
 		{
 			if(decodeframe<totalframe)
-	frameoffsets[decodeframe]=loader->getposition();
+			frameoffsets[decodeframe]=loader->getposition();
+		}
+
+		bool found_frame = false;
+
+		while (!found_frame && !loader->eof())
+		{
+			if(loadheader()==false)
+			{
+				/* loadheader advances the file stream pointer, so it's safe to
+				 * keep on calling it.
+				 */
+				debug("Invalid frame found (pos ~= %d)\n", loader->getposition());
+				continue;
+			}
+
+			if (version != header_one.version || mode != header_one.mode ||
+				layer != header_one.layer || frequency != header_one.frequency)
+			{
+				/* argh. Bogus frame. */
+				debug("Invalid frame found (pos ~= %d)\n", loader->getposition());
+				continue;
+			}
+
+			found_frame = true;
 		}
 
 		if(loader->eof())
@@ -1417,36 +1535,8 @@ bool Mpegtoraw::run(int frames)
 			seterrorcode(SOUND_ERROR_FINISH);
 			break;
 		}
-		if(loadheader()==false)
-		{
-			if (geterrorcode() == SOUND_ERROR_BAD || geterrorcode() == 
-				SOUND_ERROR_BADHEADER)
-			{
-				suppress_sound = 0;
-				continue;
-			}
-			else
-				break;
-		}
-		else if (suppress_sound)
-			suppress_sound--;
 
-		register int resetsound = 0;
-
-		if(frequency!=lastfrequency)
-		{
-			if(lastfrequency>0)
-			seterrorcode(SOUND_ERROR_BAD);
-			lastfrequency=frequency;
-			resetsound = 1;
-		}
-		if (outputstereo != laststereo)
-		{
-			resetsound = 1;
-			laststereo = outputstereo;
-		}
-
-		if (resetsound || frames < 0)
+		if (frames < 0)
 		{
 			if (!player->setsoundtype(outputstereo,AFMT_S16_NE,
 				frequencies[version][frequency]>>downfrequency))

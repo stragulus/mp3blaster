@@ -128,22 +128,22 @@ unsigned int proxyport;
 
 FILE *Soundinputstreamfromhttp::http_open(char *urrel)
 {
-  char
+	char
 		*purl=NULL,
 		*host = NULL,
 		*request = NULL,
 		*sptr = NULL,
 		*url = NULL;
-  char agent[50];
+	char agent[50];
 	const char *url_part;
-  int linelength;
-  int sock;
-  int relocate=0,numrelocs=0;
+	int linelength;
+	int sock;
+	int relocate=0,numrelocs=0;
 	int slash_count = 0;
-  unsigned long myip;
-  unsigned int myport;
-  struct sockaddr_in server;
-  FILE *myfile;
+	unsigned long myip;
+	unsigned int myport;
+	struct sockaddr_in server;
+	FILE *myfile;
 
 	url = new char[strlen(urrel) + 2];
 	strcpy(url, urrel);
@@ -156,7 +156,6 @@ FILE *Soundinputstreamfromhttp::http_open(char *urrel)
 		slash_count++;
 	}
 
-	debug("#slashes in URL: %d\n", slash_count);
 	if (strlen(url) > 0 && url[strlen(url)-1] != '/' && slash_count == 2)
 	{
 		//add a trailing slash after the url's hostname
@@ -188,15 +187,15 @@ FILE *Soundinputstreamfromhttp::http_open(char *urrel)
 		else
 			proxyip = INADDR_NONE;
 	}
-  
-  if (!(purl=(char *)malloc(1024))) 
-  {
-    seterrorcode(SOUND_ERROR_MEMORYNOTENOUGH);
+	
+	if (!(purl=(char *)malloc(1024))) 
+	{
+		seterrorcode(SOUND_ERROR_MEMORYNOTENOUGH);
 		delete[] url;
-    return NULL;
-  }
-  strncpy(purl,url,1022);
-  purl[1022]= purl[1023] = '\0';
+		return NULL;
+	}
+	strncpy(purl,url,1022);
+	purl[1022]= purl[1023] = '\0';
 	delete[] url;
 	url = NULL;
 	request = NULL;
@@ -206,11 +205,11 @@ FILE *Soundinputstreamfromhttp::http_open(char *urrel)
 		if (request)
 			free(request);
 
-  	if ((linelength = strlen(purl) * 2 + 100) < 1024)
-    	linelength=1024;
+		if ((linelength = strlen(purl) * 2 + 100) < 1024)
+			linelength=1024;
 		if (!(request=(char *)malloc(linelength)))
-  	{
-   		seterrorcode(SOUND_ERROR_MEMORYNOTENOUGH);
+		{
+			seterrorcode(SOUND_ERROR_MEMORYNOTENOUGH);
 			free(purl);
 			return NULL;
 		}
@@ -247,93 +246,93 @@ FILE *Soundinputstreamfromhttp::http_open(char *urrel)
 			free(host);
 			host = NULL;
 		}
-    sprintf (agent, "User-Agent: %s/%s\r\n\r\n",
-	     "Mp3blaster",VERSION);
-    strcat (request, agent);
+		sprintf (agent, "User-Agent: %s/%s\r\n\r\n",
+			 "Mp3blaster",VERSION);
+		strcat (request, agent);
 		debug("HTTP Request:\n\n%s", request);
-    server.sin_family = AF_INET;
-    server.sin_port = htons(myport);
-    server.sin_addr.s_addr = myip;
-    if ((sock=socket(PF_INET,SOCK_STREAM,6))<0)
-    {
-      seterrorcode(SOUND_ERROR_SOCKET);
+		server.sin_family = AF_INET;
+		server.sin_port = htons(myport);
+		server.sin_addr.s_addr = myip;
+		if ((sock=socket(PF_INET,SOCK_STREAM,6))<0)
+		{
+			seterrorcode(SOUND_ERROR_SOCKET);
 			free(purl);
 			free(request);	
-      return NULL;
-    }
-    if (connect(sock,(struct sockaddr *)&server,sizeof(server)))
-    {
-      seterrorcode(SOUND_ERROR_CONNECT);
+			return NULL;
+		}
+		if (connect(sock,(struct sockaddr *)&server,sizeof(server)))
+		{
+			seterrorcode(SOUND_ERROR_CONNECT);
 			free(purl);
 			free(request);
-      return NULL;
-    }
-    if (!writestring(sock,request))
+			return NULL;
+		}
+		if (!writestring(sock,request))
 		{
 			free(purl);
 			free(request);
 			return NULL;
 		}
 
-    if (!(myfile=fdopen(sock, "rb")))
-    {
-      seterrorcode(SOUND_ERROR_FDOPEN);
+		if (!(myfile=fdopen(sock, "rb")))
+		{
+			seterrorcode(SOUND_ERROR_FDOPEN);
 			free(purl);
-      return NULL;
-    };
+			return NULL;
+		};
 
-    relocate=false;
-    purl[0]='\0';
+		relocate=false;
+		purl[0]='\0';
 
-    if (!readstring(request,linelength-1,myfile))
+		if (!readstring(request,linelength-1,myfile))
 		{
 			free(purl);
 			free(request);
 			return NULL;
 		}
 
-    if ((sptr=strchr(request,' ')))
-    {
-      switch(sptr[1])
-      {
-        case '3':relocate=true;
-        case '2':break;
-        default: seterrorcode(SOUND_ERROR_HTTPFAIL);
+		if ((sptr=strchr(request,' ')))
+		{
+			switch(sptr[1])
+			{
+				case '3':relocate=true;
+				case '2':break;
+				default: seterrorcode(SOUND_ERROR_HTTPFAIL);
 				free(purl);
 				free(request);
-	      return NULL;
-      }
-    }
+				return NULL;
+			}
+		}
 
-    do
+		do
 		{
-      if (!readstring(request,linelength-1,myfile))
+			if (!readstring(request,linelength-1,myfile))
 			{
 				free(purl);
 				free(request);
 				return NULL;
 			}
-      if (!strncmp(request,"Location:",9))
+			if (!strncmp(request,"Location:",9))
 				strncpy (purl,request+10,1023);
-    } while (request[0]!='\r' && request[0]!='n');
-  } while (relocate && purl[0] && numrelocs++<5);
+		} while (request[0]!='\r' && request[0]!='n');
+	} while (relocate && purl[0] && numrelocs++<5);
 
-  if (relocate)
-  { 
-    seterrorcode(SOUND_ERROR_TOOMANYRELOC);
-    return NULL;
-  }
+	if (relocate)
+	{ 
+		seterrorcode(SOUND_ERROR_TOOMANYRELOC);
+		return NULL;
+	}
 
-  free(purl);
-  free(request);
+	free(purl);
+	free(request);
 
-  return myfile;
+	return myfile;
 }
 
 Soundinputstreamfromhttp::Soundinputstreamfromhttp()
 {
   fp=NULL;
-  debug("httpclass\n");
+  __canseek = false;
 }
 
 Soundinputstreamfromhttp::~Soundinputstreamfromhttp()
