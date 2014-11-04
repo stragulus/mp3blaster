@@ -1,5 +1,8 @@
 BUGS
 -make '<' and '>' mixer keys remappable
+-fix warnings
+-fix totaltime() in mpegtoraw.cc
+-fix colour stuff
 
 IMPORTANT
 -warn about double keybindings (2 actions to 1 keycode)
@@ -7,6 +10,7 @@ IMPORTANT
 -22Khz vorbis files play too fast?
 -save shuffle mode for main group, and playback mode for entire group in
  playlist
+-release audio device when pausing playback ? 
 
 SMALL & SIMPLE
 -configfile keyword for items in mixer (shortens cycle)
@@ -17,6 +21,8 @@ SMALL & SIMPLE
 INTERESTING
 -implement ID3v2 tag parsing (id3lib.sourceforge.net, www.id3v2.org)
 -skip to place in playlist on request.
+-FLAC support (flawless audio codec, http://flac.sourceforge.net/)
+-make File.ID3Names a sscanf-like pattern that determines *how* id3 names are shown.
 -stream preferences (although that's basically just a playlist with groups,
  in which each group contains a stream..)
 -fix information display so that it will display information relevant to the
@@ -39,12 +45,11 @@ INTERESTING
 -lower screenwidth/height requirement
 -fade cross-over to new song / preload new song before old one ends
 
-WHEN I'M BORED
+LOW PRIORITY
+-save session-info (like last dir one was in last time)
 -recode layout of code (currently, too much is stuffed in main.cc)
 -move all selected files in filemanager to current dir (m) (!)
 -clear mpeg-info when songplay's finished.
 -file viewer in filemanager.
 -rename group->getPlayedmode() to group->randomOrder()
 -pulldown menus instead of space-consuming help window/option to hide help
-
-FROM MAILS: read TODO.mails (author only)

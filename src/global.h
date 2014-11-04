@@ -28,4 +28,5 @@ char *id3_filename(void *filename);
 char *id3_filename(const char *filename);
 void lowercase(char*);
 void sort_files(char **files, int nrfiles);
+void recode_string(char *);
 #endif /* _MP3B_GLOBAL_ */

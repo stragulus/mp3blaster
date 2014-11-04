@@ -112,7 +112,9 @@ mp3blaster_SOURCES = fileman.cc \
 				history.cc \
 				history.h \
 				getinput.cc \
-				getinput.h
+				getinput.h \
+				interface.cc \
+				interface.h
 
 splay_SOURCES = splay.cc splay.h splay_common.cc
 splay_DEPENDENCIES = ../mpegsound/libmpegsound.a
@@ -136,7 +138,7 @@ am_mp3blaster_OBJECTS = fileman.$(OBJEXT) main.$(OBJEXT) \
 	scrollwin.$(OBJEXT) getopt.$(OBJEXT) getopt1.$(OBJEXT) \
 	id3parse.$(OBJEXT) global.$(OBJEXT) config.$(OBJEXT) \
 	winitem.$(OBJEXT) mp3win.$(OBJEXT) mp3item.$(OBJEXT) \
-	history.$(OBJEXT) getinput.$(OBJEXT)
+	history.$(OBJEXT) getinput.$(OBJEXT) interface.$(OBJEXT)
 mp3blaster_OBJECTS = $(am_mp3blaster_OBJECTS)
 mp3blaster_LDFLAGS =
 am_mp3tag_OBJECTS = id3parse.$(OBJEXT) mp3tag.$(OBJEXT)
@@ -156,10 +158,11 @@ depcomp = $(SHELL) $(top_srcdir)/depcomp
 @AMDEP_TRUE@	$(DEPDIR)/getinput.Po $(DEPDIR)/getopt.Po \
 @AMDEP_TRUE@	$(DEPDIR)/getopt1.Po $(DEPDIR)/global.Po \
 @AMDEP_TRUE@	$(DEPDIR)/history.Po $(DEPDIR)/id3parse.Po \
-@AMDEP_TRUE@	$(DEPDIR)/main.Po $(DEPDIR)/mp3item.Po \
-@AMDEP_TRUE@	$(DEPDIR)/mp3tag.Po $(DEPDIR)/mp3win.Po \
-@AMDEP_TRUE@	$(DEPDIR)/scrollwin.Po $(DEPDIR)/splay.Po \
-@AMDEP_TRUE@	$(DEPDIR)/splay_common.Po $(DEPDIR)/winitem.Po
+@AMDEP_TRUE@	$(DEPDIR)/interface.Po $(DEPDIR)/main.Po \
+@AMDEP_TRUE@	$(DEPDIR)/mp3item.Po $(DEPDIR)/mp3tag.Po \
+@AMDEP_TRUE@	$(DEPDIR)/mp3win.Po $(DEPDIR)/scrollwin.Po \
+@AMDEP_TRUE@	$(DEPDIR)/splay.Po $(DEPDIR)/splay_common.Po \
+@AMDEP_TRUE@	$(DEPDIR)/winitem.Po
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
@@ -232,6 +235,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/global.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/history.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/id3parse.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/interface.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/mp3item.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/mp3tag.Po@am__quote@

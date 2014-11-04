@@ -85,8 +85,8 @@ am__include = @am__include@
 am__quote = @am__quote@
 install_sh = @install_sh@
 
-pkgdata_DATA = commands.txt sample.mp3blasterrc charmap/makefile charmap/README charmap/chargen.c charmap/koi8-r charmap/maketbl.c charmap/win1251
-EXTRA_DIST = commands.txt sample.mp3blasterrc charmap/makefile charmap/README charmap/chargen.c charmap/koi8-r charmap/maketbl.c charmap/win1251
+pkgdata_DATA = commands.txt sample.mp3blasterrc charmap/makefile charmap/README charmap/chargen.c charmap/koi8-r charmap/maketbl.c charmap/win1251 charmap/win2koi.tbl
+EXTRA_DIST = commands.txt sample.mp3blasterrc charmap/makefile charmap/README charmap/chargen.c charmap/koi8-r charmap/maketbl.c charmap/win1251 charmap/win2koi.tbl
 subdir = doc
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = $(top_builddir)/config.h

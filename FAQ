@@ -11,48 +11,34 @@
       root to set the level, or run mp3blaster as root (at your own risk).
 
 <LI>  <FONT CLASS="listitem">
-        Listing files over a network is very slow
-      </FONT><BR>
-
-      By default, mp3blaster scans each file to find ID3 tags. Disable this
-      by setting File.ID3Names to 0 in your config file.
-
-<LI>  <FONT CLASS="listitem">
         When playing mp3's over a network, there's a delay before each file.
       </FONT><BR>
 
-      By default, mp3blaster reads the entire mp3 file to scan the length in
-      seconds, otherwise VBR encoded mp3's will show up with the wrong song
-      length. To disable this, set ScanMP3 to 1 in your config file.
+      Mp3blaster can read the entire mp3 file to scan the length in
+      seconds, so VBR encoded mp3's will show up with the correct total
+      time. To disable this, set ScanMP3 to 1 in your config file. If your
+			mp3's start with a XING header, the total time will be correctly read
+			from there.
 
 <LI>  <FONT CLASS="listitem">
         How do you get the colours and borders right in an xterm?
        </FONT><BR>
 
       Run xterm with -fg white -bg black, set your TERM environment variable
-      to color_xterm (FreeBSD: xterm-color) and there you go!
-
+      to xterm-color (or perhaps color_xterm). You might want to copy the
+			suggested keybindings from the sample mp3blasterrc installed in
+			$prefix/share/mp3blaster.
 <LI>  <FONT CLASS="listitem">
         Mp3blaster compiles, but when I try to play an MP3, it gives a 
         segmentation fault.
        </FONT><BR>
 
-      This happens on old linux systems with gcc-2.7.*.
+      This happens on really old linux systems with gcc-2.7.*.
       Try to recompile with compile flag -D__NO_MATH_INLINES
       (CPPFLAGS="-D__NO_MATH_INLINES" ./configure).
 
 <LI>  <FONT CLASS="listitem">
-        Mp3blaster compiles, but it gives a segmentation fault at startup or
-        shutdown.
-      </FONT><BR>
-
-      Do not link the stdc++ libraries (CXX=gcc ./configure usually
-      accomplishes this; if it's a recompile don't forget to delete
-      config.cache!).
-
-<LI>  <FONT CLASS="listitem">
-        When I play mp3's, the blue playwindow's layout is messed
-        up.
+				The screen layout is messed up.
       </FONT><BR>
 
       You probably have ncurses-3 installed on your system. Upgrade 

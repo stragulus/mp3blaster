@@ -178,7 +178,8 @@ bool Rawplayer::resetsoundtype(void)
 
 	if (!first_init)
 	{
-		debug("Resetting soundcard!");
+		debug("Resetting soundcard!\n");
+return seterrorcode(SOUND_ERROR_DEVCTRLERROR);
 #if 0
 		/* flush all data in soundcard's buffer first. */
 		if(ioctl(audiohandle,SNDCTL_DSP_SYNC,NULL)<0)
@@ -190,13 +191,20 @@ bool Rawplayer::resetsoundtype(void)
 #endif	
 		/* OSS tells us to reopen the handle after a change in sample props */
 		if (close(audiohandle) == -1)
+		{
+			debug("Couldn't close audiohandle\n");
 			return seterrorcode(SOUND_ERROR_DEVCTRLERROR);
+		}
 	#if defined(AUDIO_NONBLOCKING) || defined(NEWTHREAD)
 		if((audiohandle=open(filename,O_WRONLY|O_NDELAY,0))==-1)
 	#else
 		if((audiohandle=open(filename,O_WRONLY,0))==-1)
 	#endif
+		{
+			debug("Couldn't reopen audiohandle\n");
 			return seterrorcode(SOUND_ERROR_DEVCTRLERROR);
+		}
+		debug("Soundcard successfully reopened.\n");
 	}
 	else
 		first_init = 0;
@@ -345,7 +353,7 @@ bool Rawplayer::putblock(void *buffer,int size)
 		while(getprocessed()>quota)USLEEP(3);
 #endif
 
-#ifdef AUDIO_NONBLOCKING
+#if defined(AUDIO_NONBLOCKING) || defined(NEWTHREAD)
 	register ssize_t
 		wsize,
 		remainsize = modifiedsize;

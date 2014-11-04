@@ -348,6 +348,7 @@ fileManager::readDir()
 
 	setTitle(path);
 	enableScreenUpdates();
+	resetPan();
 	swRefresh(1);
 
 	for (i = 0; i < diritems; i++)

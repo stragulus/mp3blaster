@@ -1,14 +1,7 @@
-Martijn van Buul (martijnb@stack.nl):
-	Many ideas, patches, and lcd support. Martijn hacks mp3blaster for using
-	it in a student bar at our local university.
-Jukka Honkela:
-	He submitted a patch for reducing ticks between numbers.
-Steve Kemp:
-    He ported mp3tag to Windows NT  (will be added in the version following
-	2.0b8)
-Willem-Jan Monsuwe:
-	NAS and SID playback support, as well as autoconf and some general code
-	improvements.
+Specials credits go to:
+-Martijn van Buul (martijnb@stack.nl):
+	Many ideas and patches. Martijn also hacks mp3blaster for using
+	it in a student bar at the local university.
 
-And ofcourse everyone else who emailed me with suggestions, bugreports etc!
-And everyone I forgot while making this file.  ;)
+And of course everyone else who emailed me with suggestions, bugreports etc!
+And everyone I forgot while writing this file.

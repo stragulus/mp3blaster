@@ -1,3 +1,27 @@
+V3.1.1 2002/03/16
+=================
+-Applied a patch from Douglas Richard that introduces horizontal panning
+ of the scrollable window using Key.Left and Key.Right, as well as
+ configurable wraparound-behaviour (see config file directive 'WrapAround')
+ and jump-to-top/bottom of the list using Key.Home and Key.End keybindings.
+-When resetting sound device failed, playback of current song is stopped.
+-config file directive 'SkipFrames' => 'SkipLength'
+-Added RPM specfile, so you can build mp3blaster on RedHat 7.2 with
+ rpm -ta <source tarball>
+-applied patches from Martijn to fix compiling issues with NetBSD/curses.
+-applied patch from Martijn that fixes endian issues in waveplayer
+-applied patch from Ivan Prokudin that fixes a bug in the character
+ set recoding code.
+-Added patch from Serge v/d Boom that writes info about mp3's being played
+ to a status file (see --status-file).
+-Fixed bug that prevented showing next song
+-Configfile directive 'File.ID3Names' enabled now implies that the default
+ file display mode in the filemanager is show by ID3 name instead of 
+ filename.
+-When decoding mp3s as wavs, decoding will be aborted with a warning
+ when samplerate/speed/stereo-mode changes.
+-ID3tags in ID3 displaying mode are now charset-recoded as well.
+
 V3.1.0 2002/03/08
 =================
 -Implemented 'next group' feature; It's similar to changing to the next CD on

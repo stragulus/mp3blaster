@@ -4,7 +4,7 @@
 
 #ifndef _MP3BLASTER_
 #define _MP3BLASTER_
-
+#include <stdarg.h>
 #include <config.h>
 
 /* NCURSES is the location of the ncurses headerfile 
@@ -21,6 +21,7 @@
 #define NCURSES <curses.h>
 #else
 #error "?Ncurses include files not found  error"
+//#define NCURSES <ncurses.h>
 #endif 
 
 #ifdef LIBPTH
@@ -33,7 +34,8 @@
 /* Do not change anything below this line! */
 /* --------------------------------------- */
 
-enum playstatus { PS_NORMAL, PS_PLAYING, PS_STOPPED, PS_PAUSED };
+enum playstatus_t { PS_PLAY, PS_PAUSE, PS_REWIND, PS_FORWARD, PS_PREV,
+                    PS_NEXT, PS_STOP, PS_RECORD, PS_NONE };
 enum command_t { 
 	CMD_SELECT_FILES, CMD_ADD_GROUP, CMD_LOAD_PLAYLIST, CMD_WRITE_PLAYLIST,
 	CMD_SET_GROUP_TITLE, CMD_TOGGLE_REPEAT, CMD_TOGGLE_SHUFFLE, CMD_ENTER,
@@ -48,7 +50,8 @@ enum command_t {
 	CMD_FILE_SELECT, CMD_HELP_PREV, CMD_HELP_NEXT, CMD_FILE_MARK_BAD,
 	CMD_CLEAR_PLAYLIST, CMD_DEL_MARK, CMD_FILE_TOGGLE_SORT,
 	CMD_FILE_DELETE, CMD_PLAY_SKIPEND, CMD_PLAY_NEXTGROUP, CMD_PLAY_PREVGROUP,
-	CMD_SELECT_ITEMS, CMD_DESELECT_ITEMS, CMD_FILE_RENAME, CMD_TOGGLE_DISPLAY
+	CMD_SELECT_ITEMS, CMD_DESELECT_ITEMS, CMD_FILE_RENAME, CMD_TOGGLE_DISPLAY,
+	CMD_JUMP_TOP, CMD_JUMP_BOT, CMD_TOGGLE_WRAP, CMD_LEFT, CMD_RIGHT
 };
 
 /* how to sort files in dirs ? */
@@ -77,11 +80,13 @@ struct keybind_t {
 	char desc[20]; //textlength is 19 max, 1 for terminating \0
 };
 
+#ifndef NEWINTERFACE
 struct keylabel_t
 {
 	int key;
 	char desc[4];
 };
+#endif
 
 /* Structure with global variables used by multiple objects */
 struct _globalopts /* global options, exported for other classes */
@@ -116,7 +121,7 @@ struct _globalopts /* global options, exported for other classes */
 	char **extensions; /* list of regexps that match audiofilenames */
 	char **plist_exts; /* list of regexps that list playlistfilenames */
 	char *playlist_dir;
-	char *recode_table_name;
+	unsigned char *recode_table;
 #if defined(PTHREADEDMPEG)
 	int threads;
 #endif
@@ -125,6 +130,8 @@ struct _globalopts /* global options, exported for other classes */
 	short selectitems_searchusingregexp;
 	short selectitems_caseinsensitive;
 	short scan_mp3s;
+	bool wraplist;	// non-zero if user wants scrollwins to wrap on scrolling
+	short pan_size;
 };
 
 enum keydescs { Main_SelectFiles, Fileman_AddFiles, Playwin_Previous };
@@ -154,7 +161,7 @@ void debug(const char*,...);
 #endif
 
 //void popupWindow(const char*, int, int, int);
-void warning(const char*); /* for use with the play-interface */
+void warning(const char*, ... ); /* for use with the play-interface */
 void Error(const char*); /* for use with the selection-interface */
 //void messageBox(const char*);
 

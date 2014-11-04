@@ -111,11 +111,7 @@ expand_path(const char *org_path)
 	else if (org_path[0] == '~')
 		mode = 2;
 	else /* no ~ to expand */
-	{
-		new_path = (char*)malloc((strlen(org_path)+1) * sizeof(char));
-		strcpy(new_path, org_path);
-		return new_path;
-	}
+		return strdup(org_path);
 
 	if (mode == 1)
 	{
@@ -123,7 +119,7 @@ expand_path(const char *org_path)
 		if (!hd)
 			return NULL;
 
-		new_path = (char*)malloc((strlen(hd) + strlen(org_path) + 1) *
+		new_path = (char*)malloc((strlen(hd) + strlen(org_path) + 2) *
 			sizeof(char));
 		strcpy(new_path, hd);
 		strcat(new_path, "/");
@@ -145,9 +141,7 @@ expand_path(const char *org_path)
 
 		if (!(hd = get_homedir(user))) //perhaps a filename was meant..
 		{
-			new_path = (char*)malloc((strlen(org_path)+1)*sizeof(char));
-			strcpy(new_path, org_path);
-			return new_path;
+			return strdup(org_path);
 		}
 		if (scanval == 2)
 		{
@@ -409,11 +403,12 @@ is_audiofile(const char *filename)
 	if (globalopts.extensions)
 	{
 		int i = 0;
+		int regflags = REG_EXTENDED | REG_ICASE;
 		while (globalopts.extensions[i] != NULL)
 		{
 			int doesmatch = 0;
 			regex_t dum;
-			regcomp(&dum, globalopts.extensions[i], 0);
+			regcomp(&dum, globalopts.extensions[i], regflags);
 			doesmatch = regexec(&dum, filename, 0, 0, 0);
 			regfree(&dum);
 			if (!doesmatch) //regexec returns 0 for a match.
@@ -456,7 +451,7 @@ is_playlist(const char *filename)
 		}
 
 		regex_t dum;
-		regcomp(&dum, ext, 0);
+		regcomp(&dum, ext, REG_EXTENDED | REG_ICASE);
 		doesmatch = regexec(&dum, filename, 0, 0, 0);
 		regfree(&dum);
 		if (!doesmatch) //regexec returns 0 for a match.
@@ -517,6 +512,22 @@ read_file(const char *filename, char ***lines, int *linecount)
 	return 1;
 }
 
+//charset stuff
+void
+recode_string(char *string)
+{
+	int c;
+
+	if (string != NULL)
+	{
+		for( ; *string != '\000'; string++ )
+		{
+			c=((int)*string)&0xFF;
+			*string = globalopts.recode_table[c];
+		}
+	}
+}
+
 //returns a filename built from id3tag info. Returned string is malloc()'d!
 char *
 id3_filename(const char *filename)
@@ -536,23 +547,33 @@ id3_filename(const char *filename)
 		return NULL;
 	}
 
-	const char 
-		*artist = hdr->artist,
-		*song = hdr->songname;
 	
-	if (!strlen(artist) && !strlen(song)) //not enough info
+	if (!strlen(hdr->artist) && !strlen(hdr->songname)) //not enough info
 	{
 		delete id3;
 		return NULL;
 	}
 
-	if (!strlen(artist))
-		artist = "Unknown Artist";
-	if (!strlen(song))
-		song = "Unknown Title";
+	char *artist = NULL, *song = NULL;
+
+	if (!strlen(hdr->artist))
+		artist = strdup("Unknown Artist");
+	else
+		artist = strdup(hdr->artist);
+
+	if (!strlen(hdr->songname))
+		song = strdup("Unknown Title");
+	else
+		song = strdup(hdr->songname);
 
 	artist = crop_whitespace(artist);
 	song = crop_whitespace(song);
+
+	if (globalopts.recode_table)
+	{
+		recode_string(artist);
+		recode_string(song);
+	}
 
 	id3name = (char*)malloc( (strlen(artist) + strlen(song) + 20) *
 		sizeof(char));
@@ -766,3 +787,5 @@ sort_files(char **files, int nrfiles)
 {
 	qsort(files, nrfiles, sizeof(char*), sort_files_fun);
 }
+
+

@@ -125,7 +125,7 @@ ADD URL (SHOUTCAST)
 	itself, *NOT* to a .pls file. Look inside the .pls file to 
 	find out what the stream is.
 
-START FILE SEARCH
+START SEARCH
   Starts search mode: In this mode, the scrollbar in the
   main window will jump to the first song it finds starting
   with the characters that you enter after starting file

@@ -426,7 +426,9 @@ bool
 Mpegfileplayer::ready()
 {
 #if !defined(NEWTHREAD) && defined(PTHREADEDMPEG)
-	if (use_threads && server && server->getframesaved())
+	if (use_threads && server && server->getframesaved() && 
+	(server->geterrorcode() == SOUND_ERROR_OK || server->geterrorcode() ==
+		SOUND_ERROR_FINISH))
 		return false;
 #endif
 

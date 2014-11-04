@@ -1446,10 +1446,15 @@ bool Mpegtoraw::run(int frames)
 			laststereo = outputstereo;
 		}
 
-		//TODO: AFMT_S16_NE => 8 / 16 bits depending on user settings
 		if (resetsound || frames < 0)
-			player->setsoundtype(outputstereo,AFMT_S16_NE,
-				frequencies[version][frequency]>>downfrequency);
+		{
+			if (!player->setsoundtype(outputstereo,AFMT_S16_NE,
+				frequencies[version][frequency]>>downfrequency))
+			{
+				debug("Error in (re)setting sound type.\n");
+				return seterrorcode(player->geterrorcode());
+			}
+		}
 
 		if(frames<0)
 		{

@@ -1,6 +1,8 @@
 /* The order in the help window in mp3blaster is determined by the order of
  * keys in this array
  */
+
+/* all program modes, defines instead of an enum so it can be logically OR'd */
 #define PM_NORMAL 1
 #define PM_FILESELECTION 2
 #define PM_HELP 4
@@ -24,7 +26,7 @@ keybind_t keys[] =
 	{ KEY_F(5), CMD_FILE_DIRS_AS_GROUPS, PM_FILESELECTION, "Add Dirs As Groups" },
 	{ KEY_F(6), CMD_FILE_MP3_TO_WAV, PM_FILESELECTION, "Convert MP3 To WAV" },
 	{ KEY_F(7), CMD_FILE_ADD_URL, PM_FILESELECTION, "Add URL(shoutcast)" },
-	{ '/', CMD_FILE_START_SEARCH, PM_FILESELECTION, "Start File Search" },
+	{ '/', CMD_FILE_START_SEARCH, PM_FILESELECTION | PM_NORMAL, "Start Search" },
 	{ 's', CMD_FILE_TOGGLE_SORT, PM_FILESELECTION, "Toggle File Sort" },
 	{ 'f', CMD_TOGGLE_DISPLAY, PM_NORMAL | PM_FILESELECTION, 
 		"Toggle File Display" },
@@ -56,6 +58,11 @@ keybind_t keys[] =
 	{ KEY_NPAGE, CMD_NEXT_PAGE, PM_ANY, "Next Page" },
 	{ KEY_UP, CMD_UP, PM_ANY, "Move Scrollbar Up" },
 	{ KEY_DOWN, CMD_DOWN, PM_ANY, "Move Scrolbar Down" },
+	{ KEY_HOME, CMD_JUMP_TOP, PM_ANY, "Start Of List" },
+	{ KEY_END, CMD_JUMP_BOT, PM_ANY, "End Of List" },
+	{ KEY_LEFT, CMD_LEFT, PM_ANY, "Pan Window Left" },
+	{ KEY_RIGHT, CMD_RIGHT, PM_ANY, "Pan Window Right" },
+	{ 'w', CMD_TOGGLE_WRAP, PM_ANY, "Toggle List Wrap" },
 	{ '4', CMD_PLAY_PREVIOUS, PM_ANY, "Previous Song" },
 	{ '5', CMD_PLAY_PLAY, PM_ANY, "Play Song" },
 	{ '6', CMD_PLAY_NEXT, PM_ANY, "Next Song" },
@@ -68,6 +75,7 @@ keybind_t keys[] =
 	{ 0, CMD_NONE, PM_ANY, "" } //this should *always* be the last struct here */
 };
 
+#ifndef NEWINTERFACE
 keylabel_t klabels[] = 
 {
 	{ KEY_C1, "kp1" },
@@ -91,3 +99,4 @@ keylabel_t klabels[] =
 	{ 12, " ^L" },
 	{ ERR, "" } //this must be the last entry!
 };
+#endif

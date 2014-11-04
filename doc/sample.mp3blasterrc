@@ -1,31 +1,22 @@
 #Read man mp3blaster, section MP3BLASTERRC, to get any keywords
-#and values not here.
+#and values not here. Items mentioned here that are not described, are
+#well described in the manual, so please use that as a reference!
+#All values shown here without description are the default values.
 
-#With DownFrequency, sound is downsampled to 22Khz. Default is No.
 #DownFrequency = No
-
-#The #threads determine the amount of buffering i/o to prevent hickups.
-#On my system, I don't want buffering. 0 <= threads <= 500, only multiples 
-#of 50 are accepted. Default is 100.
 #Threads=250
-
-#SoundDevice is the digital sound device in your system. Usually /dev/dsp
-#which is the default, except on OpenBSD and NetBSD, where it is /dev/audio.
 #SoundDevice = /dev/dsp
 
 #AudiofileMatching is a list of regular expressions that determine which file
 #is considered a valid audiofile. matching is done using default settings and
-#regexec(3). Beware that case-insensitiveness does not apply by default when
+#regexec(3). Extended, case-insensitive regular expression matchins is used 
+#(note: version prior to 3.1.1 used case-sensitive searching!)
 #using regexs!
 #This line would match any not-directory file:
 #AudiofileMatching = \\.*
-#This line would shell global (case insensitive) match *.mp3,*.sid,*.wav,
+#This line would shell global (case insensitive) match *.mp3,*.mp3,*.sid,*.wav,
 #http://*,*.ogg
-#AudiofileMatching = \\.[mM][pP][23]$, \\.[sS][iI][dD]$, \\.[wW][aA][vV]$, ^[hH][tT][tT][pP]://, \\.[oO][gG][gG]$
-
-#SkipFrames sets the number of seconds that should be skipped when fast
-#forwarding or rewinding during mp3 playback. Range: 1 to 1000 (10 = default).
-#SkipFrames = 10
+#AudiofileMatching = \\.mp[23]$, \\.sid$, \\.wav$, ^http://, \\.ogg$
 
 #Use PlaylistMatching to specify which files are considered to be playlists.
 #Files that are considered playlists, can be loaded by pressing enter over the
@@ -33,50 +24,28 @@
 #Default playlist files are *.lst/*.m3u,which could be written like this:
 #PlaylistMatching = \\.lst$, \\.m3u$
 
-#Directory path where playlists are stored (default: ~)
+#SkipLength = 10
+#PanSize = 5
+#WrapAround = Yes
 #PlaylistDir = ~/.mp3blaster_playlists
+#File.ID3Names = false
 
-#If enabled, the display mode in the file manager can be toggled to show mp3's
-#by their ID3-tag instead of their filename. It will increase directory loading
-#time because it has to search for the id3tags in all audio files.
-#Default is true.
-#File.ID3Names = true
-
-#Determines the default file sorting mode for the file manager. Valid modes
-#are: alpha (default), alpha-case, modify-new, modify-old, size-small,
-#size-big, none
+#Choose from: alpha, alpha-case, modify-new, modify-old, size-small, size-big,
+#             none
 #File.SortMode = alpha
 
-#If enabled, non-audio/playlist files will not be shown in the file manager.
-#Default is true.
 #HideOtherFiles = true.
-
-#If enabled, every mp3 file will be scanned to determine total file length.
-#Without it, mp3blaster will attempt to determine the filesize for VBR mp3's
-#by looking for a XING header, containing such info. Enabling it will
-#introduce pauses at the beginning of each new song if songs are played over
-#a slow connection. Default is disabled.
 #ScanMP3 = no
-
-#Options for selecting files.
-#This will unselect selected files when doing a new 'select files' query
-#(default = no)
 #SelectItems.UnselectFirst = no
-
-#This can set regular expression searching instead of the default shell-style
-#searching (default is no):
 #SelectItems.SearchRegex = no
-
-#This enables case insensitive file selecting (default = yes)
 #SelectItems.SearchCaseInsensitive = yes
 
-#If you want to map the characters in the song info texts to your local
-#charset (if they're different from the charset used in the id3tags), use
-#this to load another charset, and read the manual to see how to create a
-#translation table.
-#CharsetTable /usr/local/share/mp3blaster/charmap/win1251.map
+#If you want to display ID3 tags in another character set (in this case
+#koi8-r <= win1251):
+#CharsetTable /usr/local/share/mp3blaster/win2koi.tbl
 
 #Set a bunch of colours. Try and find out what they do; most should be obvious.
+#Currently, colour support is mostly broken and very inconsistent..
 #Colours: black, red, green, yellow, blue, magenta, cyan, white
 #Color.Default.fg = white
 #Color.Default.bg = black
@@ -167,5 +136,9 @@
 #Key.NextPage = pdn
 #Key.Up = up
 #Key.Down = dwn
+#Key.left = lft
+#Key.Right = rig
+#Key.Home = hom
+#Key.End = end
 #Key.HelpPrev = -
 #Key.HelpNext = +

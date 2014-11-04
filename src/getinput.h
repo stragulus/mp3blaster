@@ -4,7 +4,7 @@
 #elif defined(HAVE_NCURSES_H)
 #include <ncurses.h>
 #elif defined(HAVE_CURSES_H)
-#include <curses>
+#include <curses.h>
 #else
 #error No [n]curse, no glory
 #endif

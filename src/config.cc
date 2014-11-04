@@ -28,7 +28,6 @@
 #define MP3BLASTER_RCFILE "~/.mp3blasterrc"
 
 extern short set_warn_delay(unsigned int);
-extern short set_fpl(int);
 extern short set_audiofile_matching(const char**, int);
 extern void set_sound_device(const char*);
 extern void set_mixer_device(const char*);
@@ -39,6 +38,7 @@ extern short set_playlist_dir(const char*);
 extern short set_sort_mode(const char*);
 extern void bindkey(command_t,int);
 extern short set_charset_table(const char *);
+extern short set_pan_size(int);
 #ifdef PTHREADEDMPEG
 extern short set_threads(int);
 #endif
@@ -63,8 +63,8 @@ struct _confopts
 { "SoundDevice", 15 },
 { "AudiofileMatching", 31 },
 { "WarnDelay", 0 },             
-{ "SkipFrames", 0 },            //5
-{ "MiniMixer", 1 }, //obsolete
+{ "SkipLength", 0 },            //5
+{ "WrapAround", 1 },
 { "PlaylistMatching", 31 },
 { "Color.Default.fg", 3 },
 { "Color.Default.bg", 3 },
@@ -127,7 +127,7 @@ struct _confopts
 { "Key.File.DirsAsGroups", 2 },
 { "Key.File.Mp3ToWav", 2 },
 { "Key.File.AddURL", 2 },
-{ "Key.File.StartSearch", 2 },
+{ "Key.StartSearch", 2 },
 { "Key.File.UpDir", 2 },        //70
 { "Key.Play.Previous", 2 },
 { "Key.Play.Play", 2 },
@@ -157,6 +157,11 @@ struct _confopts
 { "CharsetTable", 15 }, 
 { "Key.ToggleSort", 2 },
 { "Key.ToggleDisplay", 2 },
+{ "Key.Left", 2 },
+{ "Key.Right", 2 },                 //100
+{ "Key.Home", 2 },
+{ "Key.End", 2 },
+{ "PanSize", 0 },
 { NULL, 0 }, /* last entry's keyword MUST be NULL */
 };
 
@@ -397,12 +402,8 @@ cf_add_keyword(int keyword, const char **values, int nrvals)
 			return 0;
 		}
 		break;
-	case 6: //MiniMixer
-		if (!set_mini_mixer(cf_type_yesno(values[0])))
-		{
-			error = BADVALUE;
-			return 0;
-		}
+	case 6: //WrapAround
+		globalopts.wraplist = (cf_type_yesno(values[0]) != 0);
 		break;
 	case 7: //PlaylistMatching
 		if (!set_playlist_matching(values, nrvals))
@@ -522,6 +523,17 @@ cf_add_keyword(int keyword, const char **values, int nrvals)
 		break;
 	case 97: bindkey(CMD_FILE_TOGGLE_SORT, cf_type_key(v)); break;
 	case 98: bindkey(CMD_TOGGLE_DISPLAY, cf_type_key(v)); break;
+	case 99: bindkey(CMD_LEFT, cf_type_key(v)); break;
+	case 100: bindkey(CMD_RIGHT, cf_type_key(v)); break;
+	case 101: bindkey(CMD_JUMP_TOP, cf_type_key(v)); break;
+	case 102: bindkey(CMD_JUMP_BOT, cf_type_key(v)); break;
+	case 103:
+		if (!set_pan_size(cf_type_number(v)))
+		{ 
+			error = BADVALUE;
+			return 0;
+		}
+		break;
 	}
 
 	return 1;

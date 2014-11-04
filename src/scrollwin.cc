@@ -77,6 +77,7 @@ scrollWin::scrollWin(int lines, int ncols, int begin_y, int begin_x,
 	shown_range[1] = MIN(height - 3, narr - 1);
 	if (shown_range[1] < 0)
 		shown_range[1] = 0;
+	panoffset = 0;
 }	
 
 scrollWin::~scrollWin()
@@ -134,6 +135,8 @@ void scrollWin::init(int lines, int ncols, int begin_y, int begin_x,
 	shown_range[0] = shown_range[1] = 0;
 	colour = color;
 	enable_updates = 1;
+	wrap = 1;
+	max_pan_offset = 1000;
 	//wbkgd(sw_win, COLOR_PAIR(colour)|A_BOLD);
 
 	/* create empty line */
@@ -257,11 +260,16 @@ void scrollWin::swRefresh(short scroll)
 		else
 			item_name = current->getName(tmp_dispindex);
 
-		int
-			maxdrawlen = width - (xoffset ? 2 : 0),
-			drawlen = MIN(strlen(item_name), maxdrawlen);
+		if ((int)strlen(item_name) <= panoffset)
+			item_name = sw_emptyline;
+		else
+			item_name += panoffset;
+
+		int maxdrawlen = width - (xoffset ? 2 : 0),
+		    drawlen = MIN(strlen(item_name), maxdrawlen);
 		char str[maxdrawlen + 1];
-		memset(str , ' ', maxdrawlen);
+
+		memset(str, ' ', maxdrawlen);
 		str[maxdrawlen] = '\0';
 		strncpy(str, item_name, drawlen);
 
@@ -272,7 +280,6 @@ void scrollWin::swRefresh(short scroll)
 			kleur = colour;
 		if (current->selected())
 			drawmode |= A_BOLD;
-		
 		//mvwaddnstr(sw_win, i, xoffset, item_name, drawlen);
 		attrset(drawmode|COLOR_PAIR(kleur));
 		move(by + i, bx + xoffset); addnstr(str, maxdrawlen);
@@ -318,16 +325,25 @@ void scrollWin::changeSelection(int change)
 	if (!this->nitems || !change) /* empty itemlist or no change */
 		return;
 
+	if (new_selection >= this->nitems)
+	{
+		if (wrap)
+			new_selection = 0;
+		else
+			return;
+	}
+	if (new_selection < 0)
+	{
+		if (wrap)
+			new_selection = this->nitems - 1;
+		else
+			return;
+	}
 	/* remove the highlighted bar from the old selection */
 	kleur = ((tmp = getWinItem(sw_selection)) ?
 		tmp->getColour() : -1);
 	if (kleur == -1)
 		kleur = colour;
-
-	if (new_selection >= this->nitems)
-		new_selection = 0;
-	if (new_selection < 0)
-		new_selection = this->nitems - 1;
 
 	if (new_selection < this->shown_range[0])
 	{
@@ -502,7 +518,7 @@ scrollWin::addItem(winItem *newitem, int index, short before)
 	else
 	{
 		winItem *tmp = (index == -1 ? last : getWinItem(index));
-		if(index==-1)
+		if (index==-1)
 		    index=nitems;
 
 		if (!tmp)
@@ -550,7 +566,7 @@ scrollWin::addItem(winItem *newitem, int index, short before)
  *            : func      : (char *(*)(void *)) function to call to obtain the 
  *            :           : description to change to. The result of this
  *            :           : function must be allocated with new, not malloc!
- *            :           : It will be delete[]'d by this function.
+ *            :           : It will be delete[]'d by this class.
  *            : arg	      : argument to feed to the above function. This one
  *            :           : must be allocated with malloc() & friends!
  *            :           : It will be freed() by this class.
@@ -1294,7 +1310,7 @@ scrollWin::selectItems(const char *pattern, const char *type,
 			lowercase(local_pattern);
 		}
 	}
-	regcomp(&dum, local_pattern, REG_EXTENDED|REG_ICASE);
+	regcomp(&dum, local_pattern, regflags);
 	int doesmatch = 0;
 
 	tmp = first;
@@ -1326,4 +1342,95 @@ scrollWin::selectItems(const char *pattern, const char *type,
 	}
 	free(local_pattern);
 	regfree(&dum);
+}
+
+/* Function   : jumpTop
+ * Description: 'Jumps' the selection to the first item in the window.
+ * Parameters : None.
+ * Returns    : Nothing.
+ * SideEffects: The first item in the window will be selected.  
+ *            : Does not refresh.
+ */
+void scrollWin::jumpTop()
+{
+	changeSelection(-this->sw_selection);
+	return;
+}
+
+/* Function   : jumpBottom
+ * Description: 'Jumps' the selection to the last item in the window.
+ * Parameters : None.
+ * Returns    : Nothing.
+ * SideEffects: The last item in the window will be selected.  
+ *            : Does not refresh.
+ */
+void scrollWin::jumpBottom()
+{
+	changeSelection(this->nitems - this->sw_selection - 1);
+	return;
+}
+
+/* Function   : pan
+ * Description: Pans the contents of the window left or right to facilitate
+ *            : displaying long files/song names, etc.
+ * Parameters : num:
+ *            :   Signed number indicating direction and number of
+ *            :	  characters to pan. Negative numbers pan left, positive
+ *            :   numbers pan right.
+ * Returns    : Nothing.
+ * SideEffects: The contents of the window will be panned.  Currently restricts
+ *            : panning right no more than max_pan_offset characters.
+ *            : You cannot pan left past the start of the lines (duh).  Calls
+ *            : swRefresh.
+ */
+void scrollWin::pan(short num)
+{
+	int
+		maxoffset = 0, len = 0, maxdrawlen = width - (xoffset ? 2 : 0),
+		di = dispindex;
+	const char
+		*line;
+	winItem
+		*current = NULL;
+	
+	current = getWinItem(shown_range[0]);
+	for (int i = shown_range[0]; current && i < shown_range[1]; i++,
+		current=current->next)
+	{
+		while (di > -1 && !current->getName(di))
+			di--;
+
+		if (di < 0)
+			line = sw_emptyline;
+		else
+			line = current->getName(di);
+
+		len = strlen(line) - maxdrawlen;
+		if (len > maxoffset)
+			maxoffset = len;
+	}
+
+	panoffset += num;
+
+	if (panoffset < 0)
+		panoffset = 0;
+	else if (panoffset > maxoffset)
+		panoffset = maxoffset;
+
+	if (enable_updates)
+		swRefresh(1);
+	return;
+}
+
+/* Function   : resetPan
+ * Description: Resets the panning status to 0 (Not panned at all).  Used when
+ *            : loading new contents into window (changing directories, etc)
+ * Parameters : None.
+ * Returns    : Nothing.
+ * SideEffects: Does not refresh.  User should be doing that anyways ^_^
+ */
+void scrollWin::resetPan()
+{
+	panoffset = 0;
+	return;
 }

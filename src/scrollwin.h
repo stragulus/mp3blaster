@@ -62,9 +62,19 @@ public:
 	void drawTitleInBorder(int);
 	int itemWidth() { return width - (xoffset ? 2 : 0); }
 	void hideScrollbar() { hide_bar = 1; }
+	/* setWrap: if enabled, list will wrap at boundaries when moving the 
+	 * scrollbar with changeSelection */
+	void setWrap(bool want_wrap) { wrap = (want_wrap ? 1 : 0); }
 	void enableScreenUpdates() { enable_updates = 1; }
 	void disableScreenUpdates() { enable_updates = 0; }
 	int sw_selection;
+
+/* Added by Douglas Richard <fmluder@imsa.edu> - March 11, 2002 */
+	void resetPan();
+	void pan(short);
+	void jumpTop();
+	void jumpBottom();
+/* End Add */
 
 protected:
 	void init(int, int, int, int, short, short);
@@ -87,7 +97,9 @@ private:
 	int shown_range[2];
 	char *sw_emptyline;
 	short xoffset;
+	short wrap;
 	short want_border;
+	short max_pan_offset; /* maximum pansize */
 	short dispindex; //which of the NAMEDIM names of each item to show
 	short colour; //which (global) colourpair to use for drawing items
 	int selectID; //increases after each select, used to sort selected items
@@ -102,6 +114,8 @@ private:
 	 * addItems() in a loop, etc.
 	 */
 	short enable_updates; 
+
+	int panoffset;
 };
 
 #endif /* _SCROLLWIN_CLASS_ */
