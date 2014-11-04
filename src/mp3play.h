@@ -5,7 +5,9 @@
 #include "gstack.h"
 #include "scrollwin.h"
 #include "playwindow.h"
+#ifdef HAVE_BOOL_H
 #include <bool.h>
+#endif
 #include <mpegsound.h>
 
 class mp3Play

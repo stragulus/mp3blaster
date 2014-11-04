@@ -1,5 +1,5 @@
 /* MP3Blaster - An Mpeg Audio-file player for Linux
- * Copyright (C) 1997 Bram Avontuur (brama@stack.nl)
+ * Copyright (C) Bram Avontuur (brama@stack.nl)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -319,7 +319,7 @@ void scrollWin::changeSelection(int change)
 	short
 		need_to_scroll = 0;
 
-	if (!this->nitems) /* empty itemlist */
+	if (!this->nitems || !change) /* empty itemlist or no change */
 		return;
 
 	/* remove the highlighted bar from the old selection */

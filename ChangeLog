@@ -1,3 +1,24 @@
+V2.0b4: 1999/01/21
+==================
+
+-Option -l supported now
+-Warnings will not wait for a key to be pressed, but stay onscreen for 2
+ seconds instead.
+-default playmode changed to playing all songs in given order instead of
+ random order.
+-Redesigned structure of this package so it uses autoconf & automake to
+ the max. (if you code for some UNIX-flavour, use these programs! It's a bit
+ tough getting used to, but when you get the hang of it, it makes life so much
+ easier!!)
+-Fixed bug that caused screen to be blank after a warning-message about illegal
+ mp3 filenames.
+-There seems to be some nasty bug somewhere causing sigsegv. It seems to be
+ fixed, but I don't have a clue what has fixed it. If you run into segv's (and
+ not because you play some weird-format mp3's!!) please mention it to me and
+ what you did to get it. It could be that these segv's were caused because I
+ had 10 different distributions of ncurses scattered on my system but I'm just
+ not sure.
+
 V2.0b3: 1998/04/07
 ==================
 

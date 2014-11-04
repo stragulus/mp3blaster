@@ -5,11 +5,21 @@
 #ifndef _MP3BLASTER_
 #define _MP3BLASTER_
 
-/* NCURSES is the location of the ncurses headerfile */
+/* NCURSES is the location of the ncurses headerfile 
+ * I should use config.h that can be generated from autoconf for this
+ * hassle, but it's just this ncurses-file that's a known bugger.
+ */
+#ifdef HAVE_NCURSES_NCURSES_H
+#define NCURSES <ncurses/ncurses.h>
+#elif defined(HAVE_NCURSES_CURSES_H)
 #define NCURSES <ncurses/curses.h>
-/* #define NCURSES <ncurses.h> */
-/* or even: (those ncurses-people really can't make up their mind!) */
-/* #define NCURSES <ncurses/ncurses.h> */
+#elif defined(HAVE_NCURSES_H)
+#define NCURSES <ncurses.h>
+#elif defined(HAVE_CURSES_H)
+#define NCURSES <curses.h>
+#else
+#error "?Ncurses include files not found  error"
+#endif 
 
 /* DEBUG is only useful if you're programming this.. */
 #undef DEBUG
@@ -20,21 +30,18 @@
 /* SOUND_DEVICE is the digital sound processor-device on your box. */
 #define SOUND_DEVICE "/dev/dsp"
 
-/* define this if you have the pthread-lib installed (recommended!) */
-#define PTHREADEDMPEG
-
 /* --------------------------------------- */
 /* Do not change anything below this line! */
 /* --------------------------------------- */
 
-#define VERSION "2.0b2"
-
 /* bad hack to get things to work. I might figure out the autoconf package one
  * day though :-)
+ * 27 Oct. 1998: Which I did. No bad hack now, just pure cleverness..
+ * 19 Jan. 1999: configure.in handles this stuff now.
+ * #ifdef HAVE_LIBPTHREAD
+ * #define PTHREADEDMPEG
+ * #endif
  */
-#ifdef PTHREADEDMPEG
-#define HAVE_PTHREAD_H
-#endif
 
 enum playstatus { PS_NORMAL, PS_PLAYING, PS_STOPPED, PS_PAUSED };
 enum actiontype { AC_NONE, AC_NEXT, AC_PREV, AC_QUIT, AC_SAMESONG };

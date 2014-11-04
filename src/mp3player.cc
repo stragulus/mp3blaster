@@ -1,5 +1,5 @@
 /* MP3Blaster - An Mpeg Audio-file player for Linux
- * Copyright (C) 1997 Bram Avontuur (brama@stack.nl)
+ * Copyright (C) Bram Avontuur (brama@stack.nl)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@
  */
 #include "mp3blaster.h"
 #include NCURSES
-#include <mpegsound.h>
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
@@ -45,16 +44,16 @@ bool mp3Player::playing(int verbose)
 	interface->setStatus( (status = PS_PLAYING) );
 	interface->setProperties( server->getlayer(), server->getfrequency(),
 		server->getbitrate(), server->isstereo() );
-	if (server->getsongname())
-		interface->setSongName(server->getsongname());
-	if (server->getmusican())
-		interface->setArtist(server->getmusican());
-	if (server->getsongtype())
-		interface->setSongType(server->getsongtype());
-	if (server->getsongyear())
-		interface->setSongYear(server->getsongyear());
-	if (server->getsongetc())
-		interface->setSongInfo(server->getsongetc());
+	if (server->getname())
+		interface->setSongName(server->getname());
+	if (server->getartist())
+		interface->setArtist(server->getartist());
+	if (server->getalbum())
+		interface->setAlbum(server->getalbum());
+	if (server->getyear())
+		interface->setSongYear(server->getyear());
+	if (server->getcomment())
+		interface->setSongInfo(server->getcomment());
 #ifdef DEBUG
 	interface->setFrames(server->gettotalframe());
 #endif
@@ -183,16 +182,16 @@ bool mp3Player::playingwiththread(int verbose)
 	interface->setStatus( (status = PS_PLAYING) );
 	interface->setProperties( server->getlayer(), server->getfrequency(),
 		server->getbitrate(), server->isstereo() );
-	if (server->getsongname())
-		interface->setSongName(server->getsongname());
-	if (server->getmusican())
-		interface->setArtist(server->getmusican());
-	if (server->getsongtype())
-		interface->setSongType(server->getsongtype());
-	if (server->getsongyear())
-		interface->setSongYear(server->getsongyear());
-	if (server->getsongetc())
-		interface->setSongInfo(server->getsongetc());
+	if (server->getname())
+		interface->setSongName(server->getname());
+	if (server->getartist())
+		interface->setArtist(server->getartist());
+	if (server->getalbum())
+		interface->setAlbum(server->getalbum());
+	if (server->getyear())
+		interface->setSongYear(server->getyear());
+	if (server->getcomment())
+		interface->setSongInfo(server->getcomment());
 #ifdef DEBUG
 	interface->setFrames(server->gettotalframe());
 #endif

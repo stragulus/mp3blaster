@@ -17,7 +17,7 @@ public:
 	void setProgressBar(int percentage);
 	void setSongName(const char *sn);
 	void setArtist(const char *ar);
-	void setSongType(const char *tp);
+	void setAlbum(const char *tp);
 	void setSongYear(const char *yr);
 	void setSongInfo(const char *inf);
 #ifdef DEBUG

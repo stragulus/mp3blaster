@@ -1,5 +1,5 @@
 /* MP3Blaster - An Mpeg Audio-file player for Linux
- * Copyright (C) 1997 Bram Avontuur (brama@stack.nl)
+ * Copyright (C) Bram Avontuur (brama@stack.nl)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,11 +18,9 @@
  */
 #include "mp3blaster.h"
 #include NCURSES
-#include <mpegsound.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <bool.h>
 #include "mp3play.h"
 #include "mp3player.h"
 #include "playwindow.h"

@@ -1,5 +1,5 @@
 /* MP3Blaster - An Mpeg Audio-file player for Linux
- * Copyright (C) 1997 Bram Avontuur (brama@stack.nl)
+ * Copyright (C) Bram Avontuur (brama@stack.nl)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
  */
 #include "mp3blaster.h"
 #include NCURSES
+#include <unistd.h>
 
 /* Function Name: PopUpWindow
  * Description  : Pops up a window on a given part of the screen
@@ -50,10 +51,10 @@ void popupWindow(const char *txt, int colour_pair = 1, int ypos = -1,
 	leaveok(a, TRUE);
 	wbkgd(a, COLOR_PAIR(colour_pair));
 	mvwprintw(a, 2, (columns - strlen(txt)) / 2, txt); //write text in window
-	mvwprintw(a, 4, (columns - 27) / 2, "Press any key to continue..");
+	mvwprintw(a, 4, (columns - 28) / 2, "Program will auto-continue..");
 	box(a, 0, 0);
 	wrefresh(a);
-	wgetch(a);
+	sleep(2);
 	delwin(a);
 	refresh(); // update screen
 }

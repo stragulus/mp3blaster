@@ -1,5 +1,5 @@
 /* MP3Blaster - An Mpeg Audio-file player for Linux
- * Copyright (C) 1997 Bram Avontuur (brama@stack.nl)
+ * Copyright (C) Bram Avontuur (brama@stack.nl)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,7 +39,7 @@ playWindow::playWindow()
 	wbkgd(interface, COLOR_PAIR(4)|A_BOLD);
 	wborder(interface, 0, 0, 0, 0, 0, 0, 0, 0);
 	char header[100];
-	sprintf(header, "MP3Blaster V%s (C)1997 Bram Avontuur (brama@stack.nl)",
+	sprintf(header, "MP3Blaster V%s (C)1998 Bram Avontuur (brama@stack.nl)",
 		VERSION);
 	mvwaddch(interface, nrlines - 3, 0, ACS_LTEE|COLOR_PAIR(4)|A_BOLD);
 	mvwaddch(interface, nrlines - 3, nrcols -1, ACS_RTEE|COLOR_PAIR(4)|A_BOLD);
@@ -211,9 +211,9 @@ playWindow::setArtist(const char *ar)
 }
 
 void
-playWindow::setSongType(const char *tp)
+playWindow::setAlbum(const char *tp)
 {
-	mvwaddstr(interface, 8, 2, "Type    : ");
+	mvwaddstr(interface, 8, 2, "Album   : ");
 	mvwaddnstr(interface, 8, 12, "                              ", 30);
 	mvwaddnstr(interface, 8, 12, tp, 30);
 	wrefresh(interface);
@@ -223,16 +223,16 @@ void
 playWindow::setSongYear(const char *yr)
 {
 	mvwaddstr(interface, 6, 43, "Year  : ");
-	mvwaddnstr(interface, 6, 51, "       ", 7);
-	mvwaddnstr(interface, 6, 51, yr, 7);
+	mvwaddnstr(interface, 6, 51, "       ", 4);
+	mvwaddnstr(interface, 6, 51, yr, 4);
 }
 
 void
 playWindow::setSongInfo(const char *inf)
 {
 	mvwaddstr(interface, 9, 2, "Info    :");
-	mvwaddnstr(interface, 9, 12, "                              ", 25);
-	mvwaddnstr(interface, 9, 12, inf, 25);
+	mvwaddnstr(interface, 9, 12, "                              ", 30);
+	mvwaddnstr(interface, 9, 12, inf, 30);
 	wrefresh(interface);
 }
 

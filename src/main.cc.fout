@@ -1,5 +1,5 @@
 /* MP3Blaster - An Mpeg Audio-file player for Linux
- * Copyright (C) 1997 Bram Avontuur (brama@stack.nl)
+ * Copyright (C) Bram Avontuur (brama@stack.nl)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -88,7 +88,7 @@ void cw_toggle_group_mode(short notoggle);
 void cw_toggle_play_mode(short notoggle);
 void mw_clear();
 void mw_settxt(const char*);
-void read_playlist();
+void read_playlist(const char *);
 void write_playlist();
 #ifdef PTHREADEDMPEG
 void change_threads();
@@ -99,8 +99,6 @@ void play_one_mp3(const char*);
 
 /* global vars */
 
-short
-	bwterm = 0;
 playmode
 	play_mode = PLAY_SONGS;
 WINDOW
@@ -137,8 +135,7 @@ main(int argc, char *argv[])
 		key;
 	char
 		*grps[] = { "01" },
-		*dummy = NULL,
-		version_string[79];
+		*dummy = NULL;
 	scrollWin
 		*sw;
 
@@ -207,9 +204,6 @@ main(int argc, char *argv[])
 	wbkgd(message_window, ' '|COLOR_PAIR(1)|A_BOLD);
 	leaveok(message_window, TRUE);
 	wborder(message_window, 0, 0, ' ', 0, ACS_VLINE, ACS_VLINE, 0, 0);
-	sprintf(version_string, "MP3Blaster V%s (C)1997 Bram Avontuur "\
-		"(http://www.stack.nl/~brama/)", VERSION);
-	mw_settxt(version_string);
 	wrefresh(message_window);
 
 	/* display play-mode in command_window */
@@ -223,6 +217,7 @@ main(int argc, char *argv[])
 	change_threads(); /* display #threads in command_window */
 #endif
 
+#if 0
 	if (argc == 2) /* mp3file as argument? */
 	{
 		play_one_mp3(argv[1]);
@@ -238,10 +233,9 @@ main(int argc, char *argv[])
 			exit(1);
 		}
 		//argv[2] = filename of playlist
-		endwin();
-		fprintf(stderr, "Sorry, feature not yet implemented.\n");
-		exit(1);
+		read_playlist(argv[2]);
 	}
+#endif
 
 	/* read input from keyboard */
 	while ( (key = handle_input(0)) >= 0)
@@ -790,12 +784,20 @@ gettext()
 }
 
 void
-read_playlist()
+read_playlist(const char *filename)
 {
 	FILE
 		*f;
 	char 
-		*name = gettext();
+		*name;
+		
+	if(!filename)
+		name = gettext();
+	else
+	{	
+		name = (char*)malloc((strlen(filename)  + 1) * sizeof(char));
+		strcpy(name, filename);
+	}
 
 	f = fopen(name, "r");
 	free(name);
@@ -809,6 +811,22 @@ read_playlist()
 		;
 
 	mw_settxt("Added playlist!");
+
+#if 0
+	/* Why the F*CK did I ever add this crap??????????????? */
+	/* this code is ugly, because the way groups are added is ugly.. */
+	current_group = group_stack->stackSize();
+	group_stack->entry(current_group - 1)->swRefresh(2);
+	group_window->changeSelection(group_window->getNitems() - 1 - 
+		group_window->sw_selection);
+	group_window->swRefresh(2);
+	char *bla = group_stack->entry(current_group - 1)->getTitle();
+	char *title = new char[strlen(bla)+4];
+	sprintf(title, "%02d:%s", current_group, bla);
+	set_header_title(title);
+	delete[] bla;
+	delete[] title;
+#endif
 }
 
 void
@@ -944,6 +962,7 @@ play_list()
 
 	progmode = PM_MP3PLAYING;
 	set_default_fkeys(progmode);
+	mw_settxt("Use 'q' to return to the playlist-editor.");
 	mp3Play
 		*player = new mp3Play((const char**)mp3s, nmp3s);
 #ifdef PTHREADEDMPEG
@@ -974,6 +993,7 @@ play_one_mp3(const char *filename)
 	strcpy(mp3s[0], filename);
 	progmode = PM_MP3PLAYING;
 	set_default_fkeys(progmode);
+	mw_settxt("Use 'q' to return to the playlist-editor.");
 	mp3Play
 		*player = new mp3Play((const char **)mp3s, 1);
 #ifdef PTHREADEDMPEG
@@ -983,7 +1003,6 @@ play_one_mp3(const char *filename)
 	progmode = oldprogmode;
 	set_default_fkeys(progmode);
 	refresh_screen();
-fprintf(stderr, "mbwahaa\n");
 	return;
 }
 
@@ -1025,8 +1044,8 @@ set_default_fkeys(program_mode peem)
 		cw_set_fkey(12, "");
 		break;
 	case PM_MP3PLAYING:
-		cw_set_fkey(1, "Stop playing");
-		cw_set_fkey(2, "Pause/Continue");
+		cw_set_fkey(1, "");
+		cw_set_fkey(2, "");
 		cw_set_fkey(3, "");
 		cw_set_fkey(4, "");
 		cw_set_fkey(5, "");
@@ -1136,38 +1155,6 @@ recsel_files(const char *path)
 	}
 	
 	closedir(dir);
-}
-
-void
-read_playlist(const char *name)
-{
-	FILE
-		*f;
-
-	char *line = NULL;
-
-	if ( !(f = fopen(name, "r")) )
-	{
-		Error("Couldn't open playlist!");
-		return;
-	}
-	
-	while (f)
-	{
-		int
-			len;
-			
-		line = (char*)malloc(255 * sizeof(char));
-
-		if ( !(fgets(line, 255, f)) )
-		{
-			fclose(f);
-			f = NULL; /* just in case fclose fails */
-			continue;
-		}
-		
-		len = strlen(line);
-	}
 }
 
 #ifdef PTHREADEDMPEG
@@ -1283,7 +1270,7 @@ handle_input(short no_delay)
 			case KEY_F(4): case '4':
 				set_group_name(sw); break; // change groupname
 			case KEY_F(5): case '5':
-				read_playlist(); break; // read playlist
+				read_playlist((const char*)NULL); break; // read playlist
 			case KEY_F(6): case '6':
 				write_playlist(); break; // write playlist
 			case KEY_F(7): case '7':
