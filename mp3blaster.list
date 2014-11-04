@@ -11,12 +11,12 @@ $srcdir=.
 # Product information
 %product MP3blaster
 %copyright GPL
-%vendor Bram Avontuur <brama@stack.nl>
+%vendor Bram Avontuur <bram@avontuur.org>
 %license ${srcdir}/COPYING
 %readme ${srcdir}/README
 %description mp3blaster - An interactive text-console based mp3 player. 
-%version 3.2.0
-%packager Bram Avontuur <bram@mp3blaster.avontuur.org>
+%version 3.2.1
+%packager Bram Avontuur <bram@avontuur.org>
 
 # Manpage extensions...
 $MAN1EXT=1
@@ -43,5 +43,5 @@ f 0444 root sys ${mandir}/mp3blaster.$MAN1EXT $srcdir/mp3blaster.1
 f 0444 root sys ${mandir}/nmixer.$MAN1EXT $srcdir/nmixer.1
 
 #
-# End of "$Id: mp3blaster.list,v 1.4.2.3 2003/11/28 20:06:04 brama Exp $".
+# End of "$Id: mp3blaster.list,v 1.4.2.3.2.1 2005-12-06 21:58:16 brama Exp $".
 #

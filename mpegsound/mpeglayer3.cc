@@ -828,451 +828,465 @@ inline REAL Mpegtoraw::layer3twopow2_1(int a,int b,int c)
 }
 
 void Mpegtoraw::layer3dequantizesample(int ch,int gr,
-				       int   in[SBLIMIT][SSLIMIT],
-				       REAL out[SBLIMIT][SSLIMIT])
+	int	 in[SBLIMIT][SSLIMIT], REAL out[SBLIMIT][SSLIMIT])
 {
-  layer3grinfo *gi=&(sideinfo.ch[ch].gr[gr]);
-  SFBANDINDEX *sfBandIndex=&(sfBandIndextable[version][frequency]);
-  REAL globalgain=POW2[gi->global_gain];
-  REAL *TO_FOUR_THIRDS=TO_FOUR_THIRDSTABLE+FOURTHIRDSTABLENUMBER;
+	layer3grinfo *gi=&(sideinfo.ch[ch].gr[gr]);
+	SFBANDINDEX *sfBandIndex=&(sfBandIndextable[version][frequency]);
+	REAL globalgain=POW2[gi->global_gain];
+	REAL *TO_FOUR_THIRDS=TO_FOUR_THIRDSTABLE+FOURTHIRDSTABLENUMBER;
 
-  /* choose correct scalefactor band per block type, initalize boundary */
-  /* and apply formula per block type */
-  
-  if(!gi->generalflag)
-  {                                          /* LONG blocks: 0,1,3 */
-    int next_cb_boundary;
-    int cb=-1,index=0;
-    REAL factor;
+	/* choose correct scalefactor band per block type, initalize boundary */
+	/* and apply formula per block type */
+	
+	if(!gi->generalflag)
+	{																					 /* LONG blocks: 0,1,3 */
+		int next_cb_boundary;
+		int cb=-1,index=0;
+		REAL factor;
 
-    do
-    {
-      next_cb_boundary=sfBandIndex->l[(++cb)+1];
-      factor=globalgain*
-	     layer3twopow2(gi->scalefac_scale,gi->preflag,
-			   pretab[cb],scalefactors[ch].l[cb]);
-      for(;index<next_cb_boundary;)
-      {
-	out[0][index]=factor*TO_FOUR_THIRDS[in[0][index]];index++;
-	out[0][index]=factor*TO_FOUR_THIRDS[in[0][index]];index++;
-      }
-    }while(index<ARRAYSIZE);
-  }
-  else if(!gi->mixed_block_flag)
-  {
-    int cb=0,index=0;
-    int cb_width;
+		do
+		{
+			next_cb_boundary=sfBandIndex->l[(++cb)+1];
+			factor=globalgain*
+				layer3twopow2(gi->scalefac_scale,gi->preflag,
+				pretab[cb],scalefactors[ch].l[cb]);
 
-    do
-    {
-      cb_width=(sfBandIndex->s[cb+1]-sfBandIndex->s[cb])>>1;
-
-      for(register int k=0;k<3;k++)
-      {
-	register REAL factor;
-	register int count=cb_width;
-
-	factor=globalgain*
-	       layer3twopow2_1(gi->subblock_gain[k],gi->scalefac_scale,
-			       scalefactors[ch].s[k][cb]);
-	do{
-	  out[0][index]=factor*TO_FOUR_THIRDS[in[0][index]];index++;
-	  out[0][index]=factor*TO_FOUR_THIRDS[in[0][index]];index++;
-	}while(--count);
-      }
-      cb++;
-    }while(index<ARRAYSIZE);
-  }
-  else
-  {
-    int cb_begin=0,cb_width=0;
-    int cb=0;
-    int next_cb_boundary=sfBandIndex->l[1]; /* LONG blocks: 0,1,3 */
-    int index;
-
-    /* Compute overall (global) scaling. */
-    {
-      for(int sb=0;sb<SBLIMIT;sb++)
-      {
-	int *i=in[sb];
-	REAL *o=out[sb];
-
-	o[ 0]=globalgain*TO_FOUR_THIRDS[i[ 0]];o[ 1]=globalgain*TO_FOUR_THIRDS[i[ 1]];
-	o[ 2]=globalgain*TO_FOUR_THIRDS[i[ 2]];o[ 3]=globalgain*TO_FOUR_THIRDS[i[ 3]];
-	o[ 4]=globalgain*TO_FOUR_THIRDS[i[ 4]];o[ 5]=globalgain*TO_FOUR_THIRDS[i[ 5]];
-	o[ 6]=globalgain*TO_FOUR_THIRDS[i[ 6]];o[ 7]=globalgain*TO_FOUR_THIRDS[i[ 7]];
-	o[ 8]=globalgain*TO_FOUR_THIRDS[i[ 8]];o[ 9]=globalgain*TO_FOUR_THIRDS[i[ 9]];
-	o[10]=globalgain*TO_FOUR_THIRDS[i[10]];o[11]=globalgain*TO_FOUR_THIRDS[i[11]];
-	o[12]=globalgain*TO_FOUR_THIRDS[i[12]];o[13]=globalgain*TO_FOUR_THIRDS[i[13]];
-	o[14]=globalgain*TO_FOUR_THIRDS[i[14]];o[15]=globalgain*TO_FOUR_THIRDS[i[15]];
-	o[16]=globalgain*TO_FOUR_THIRDS[i[16]];o[17]=globalgain*TO_FOUR_THIRDS[i[17]];
-      }
-    }
-
-    for(index=0;index<SSLIMIT*2;index++)
-    {
-      if(index==next_cb_boundary)
-      {
-	if(index==sfBandIndex->l[8])
-	{
-	  next_cb_boundary=sfBandIndex->s[4];
-	  next_cb_boundary=MUL3(next_cb_boundary);
-	  cb=3;
-	  cb_width=sfBandIndex->s[4]-sfBandIndex->s[3];
-	  cb_begin=sfBandIndex->s[3];
-	  cb_begin=MUL3(cb_begin);
+			for(;index<next_cb_boundary;)
+			{
+				out[0][index]=factor*TO_FOUR_THIRDS[in[0][index]];index++;
+				out[0][index]=factor*TO_FOUR_THIRDS[in[0][index]];index++;
+			}
+		}while(index<ARRAYSIZE);
 	}
-	else if(index<sfBandIndex->l[8])
-	  next_cb_boundary=sfBandIndex->l[(++cb)+1];
-	else 
+	else if(!gi->mixed_block_flag)
 	{
-	  next_cb_boundary=sfBandIndex->s[(++cb)+1];
-	  next_cb_boundary=MUL3(next_cb_boundary);
-	  cb_begin=sfBandIndex->s[cb];
-	  cb_width=sfBandIndex->s[cb+1]-cb_begin;
-	  cb_begin=MUL3(cb_begin);
-	}
-      }
-      /* LONG block types 0,1,3 & 1st 2 subbands of switched blocks */
-      out[0][index]*=layer3twopow2(gi->scalefac_scale,gi->preflag,
-				   pretab[cb],scalefactors[ch].l[cb]);
-    }
+		int cb=0,index=0;
+		int cb_width;
 
-    for(;index<ARRAYSIZE;index++)
-    { 
-      if(index==next_cb_boundary)
-      {
-	if(index==sfBandIndex->l[8])
-	{
-	  next_cb_boundary=sfBandIndex->s[4];
-	  next_cb_boundary=MUL3(next_cb_boundary);
-	  cb=3;
-	  cb_width=sfBandIndex->s[4]-sfBandIndex->s[3];
-	  cb_begin=sfBandIndex->s[3];
-	  cb_begin=(cb_begin<<2)-cb_begin;
+		do
+		{
+			cb_width=(sfBandIndex->s[cb+1]-sfBandIndex->s[cb])>>1;
+
+			for(register int k=0;k<3;k++)
+			{
+				register REAL factor;
+				register int count=cb_width;
+
+				factor=globalgain*
+					layer3twopow2_1(gi->subblock_gain[k],gi->scalefac_scale,
+					scalefactors[ch].s[k][cb]);
+				do{
+					out[0][index]=factor*TO_FOUR_THIRDS[in[0][index]];index++;
+					out[0][index]=factor*TO_FOUR_THIRDS[in[0][index]];index++;
+				}while(--count);
+			}
+			cb++;
+		}while(index<ARRAYSIZE);
 	}
-	else if(index<sfBandIndex->l[8])
-	  next_cb_boundary=sfBandIndex->l[(++cb)+1];
-	else 
+	else
 	{
-	  next_cb_boundary=sfBandIndex->s[(++cb)+1];
-	  next_cb_boundary=MUL3(next_cb_boundary);
-	  cb_begin=sfBandIndex->s[cb];
-	  cb_width=sfBandIndex->s[cb+1]-cb_begin;
-	  cb_begin=MUL3(cb_begin);
+		int cb_begin=0,cb_width=0;
+		int cb=0;
+		int next_cb_boundary=sfBandIndex->l[1]; /* LONG blocks: 0,1,3 */
+		int index;
+
+		/* Compute overall (global) scaling. */
+		{
+			for(int sb=0;sb<SBLIMIT;sb++)
+			{
+				int *i=in[sb];
+				REAL *o=out[sb];
+
+				o[ 0]=globalgain*TO_FOUR_THIRDS[i[ 0]];o[ 1]=globalgain*TO_FOUR_THIRDS[i[ 1]];
+				o[ 2]=globalgain*TO_FOUR_THIRDS[i[ 2]];o[ 3]=globalgain*TO_FOUR_THIRDS[i[ 3]];
+				o[ 4]=globalgain*TO_FOUR_THIRDS[i[ 4]];o[ 5]=globalgain*TO_FOUR_THIRDS[i[ 5]];
+				o[ 6]=globalgain*TO_FOUR_THIRDS[i[ 6]];o[ 7]=globalgain*TO_FOUR_THIRDS[i[ 7]];
+				o[ 8]=globalgain*TO_FOUR_THIRDS[i[ 8]];o[ 9]=globalgain*TO_FOUR_THIRDS[i[ 9]];
+				o[10]=globalgain*TO_FOUR_THIRDS[i[10]];o[11]=globalgain*TO_FOUR_THIRDS[i[11]];
+				o[12]=globalgain*TO_FOUR_THIRDS[i[12]];o[13]=globalgain*TO_FOUR_THIRDS[i[13]];
+				o[14]=globalgain*TO_FOUR_THIRDS[i[14]];o[15]=globalgain*TO_FOUR_THIRDS[i[15]];
+				o[16]=globalgain*TO_FOUR_THIRDS[i[16]];o[17]=globalgain*TO_FOUR_THIRDS[i[17]];
+			}
+		}
+
+		for(index=0;index<SSLIMIT*2;index++)
+		{
+			if(index==next_cb_boundary)
+			{
+				if(index==sfBandIndex->l[8])
+				{
+					next_cb_boundary=sfBandIndex->s[4];
+					next_cb_boundary=MUL3(next_cb_boundary);
+					cb=3;
+					cb_width=sfBandIndex->s[4]-sfBandIndex->s[3];
+					cb_begin=sfBandIndex->s[3];
+					cb_begin=MUL3(cb_begin);
+				}
+				else if(index<sfBandIndex->l[8])
+					next_cb_boundary=sfBandIndex->l[(++cb)+1];
+				else 
+				{
+					next_cb_boundary=sfBandIndex->s[(++cb)+1];
+					next_cb_boundary=MUL3(next_cb_boundary);
+					cb_begin=sfBandIndex->s[cb];
+					cb_width=sfBandIndex->s[cb+1]-cb_begin;
+					cb_begin=MUL3(cb_begin);
+				}
+			}
+			/* LONG block types 0,1,3 & 1st 2 subbands of switched blocks */
+			out[0][index]*=layer3twopow2(gi->scalefac_scale,gi->preflag,
+				pretab[cb],scalefactors[ch].l[cb]);
+		}
+
+		for(;index<ARRAYSIZE;index++)
+		{ 
+			if(index==next_cb_boundary)
+			{
+				if(index==sfBandIndex->l[8])
+				{
+					next_cb_boundary=sfBandIndex->s[4];
+					next_cb_boundary=MUL3(next_cb_boundary);
+					cb=3;
+					cb_width=sfBandIndex->s[4]-sfBandIndex->s[3];
+					cb_begin=sfBandIndex->s[3];
+					cb_begin=(cb_begin<<2)-cb_begin;
+				}
+				else if(index<sfBandIndex->l[8])
+					next_cb_boundary=sfBandIndex->l[(++cb)+1];
+				else 
+				{
+					next_cb_boundary=sfBandIndex->s[(++cb)+1];
+					next_cb_boundary=MUL3(next_cb_boundary);
+					cb_begin=sfBandIndex->s[cb];
+					cb_width=sfBandIndex->s[cb+1]-cb_begin;
+					cb_begin=MUL3(cb_begin);
+				}
+			}
+			{
+				int t_index = 0;
+				if (cb_width)
+				{
+					t_index=(index-cb_begin)/cb_width;
+					if (t_index > 2)
+						t_index = 0;
+				}
+				else
+				{
+					debug("Very bad mp3 data\n");
+				}
+
+				out[0][index]*=layer3twopow2_1(gi->subblock_gain[t_index],
+					gi->scalefac_scale, scalefactors[ch].s[t_index][cb]);
+			}
+		}
 	}
-      }
-      {
-        int t_index = 0;
-        if (cb_width)
-        {
-	  t_index=(index-cb_begin)/cb_width;
-          if (t_index > 2)
-	    t_index = 0;
-        }
-        else
-          debug("Very bad mp3 data\n");
-	out[0][index]*=layer3twopow2_1(gi->subblock_gain[t_index],
-				       gi->scalefac_scale,
-				       scalefactors[ch].s[t_index][cb]);
-      }
-    }
-  }
 }
 
 inline void Mpegtoraw::layer3fixtostereo(int gr,REAL in[2][SBLIMIT][SSLIMIT])
 {
-  layer3grinfo *gi=&(sideinfo.ch[0].gr[gr]);
-  SFBANDINDEX *sfBandIndex=&(sfBandIndextable[version][frequency]);
-  
-  int ms_stereo=(mode==joint) && (extendedmode & 0x2);
-  int i_stereo =(mode==joint) && (extendedmode & 0x1);
+	layer3grinfo *gi=&(sideinfo.ch[0].gr[gr]);
+	SFBANDINDEX *sfBandIndex=&(sfBandIndextable[version][frequency]);
+	
+	int ms_stereo=(mode==joint) && (extendedmode & 0x2);
+	int i_stereo =(mode==joint) && (extendedmode & 0x1);
 
-  if(!inputstereo)
-  { /* mono , bypass xr[0][][] to lr[0][][]*/
-    // memcpy(out[0][0],in[0][0],ARRAYSIZE*REALSIZE);
-    return;
-  } 
-    
-  if(i_stereo)
-  {
-    int i;
-    int    is_pos[ARRAYSIZE];
-    RATIOS is_ratio[ARRAYSIZE];
-    RATIOS *ratios;
-
-    if(version)ratios=rat_2[gi->scalefac_compress%2];
-    else ratios=rat_1;
-
-    /* initialization */
-    for(i=0;i<ARRAYSIZE;i+=2)is_pos[i]=is_pos[i+1]=7;
-
-    if(gi->generalflag)
-    {
-      if(gi->mixed_block_flag)           // Part I
-      {
-	int max_sfb=0;
-
-	for(int j=0;j<3;j++)
+	if(!inputstereo)
+	{ /* mono , bypass xr[0][][] to lr[0][][]*/
+		// memcpy(out[0][0],in[0][0],ARRAYSIZE*REALSIZE);
+		return;
+	} 
+		
+	if(i_stereo)
 	{
-	  int sfb,sfbcnt=2;
+		int i;
+		int		 is_pos[ARRAYSIZE];
+		RATIOS is_ratio[ARRAYSIZE];
+		RATIOS *ratios;
 
-	  for(sfb=12;sfb>=3;sfb--)
-	  {
-	    int lines;
+		if(version)ratios=rat_2[gi->scalefac_compress%2];
+		else ratios=rat_1;
 
-	    i=sfBandIndex->s[sfb];
-	    lines=sfBandIndex->s[sfb+1]-i;
-	    i=MUL3(i)+(j+1)*lines-1;
-	    for(;lines>0;lines--,i--)
-	      if(in[1][0][i]!=0.0f)
-	      {
-		sfbcnt=sfb;
-		sfb=0;break;        // quit loop
-	      }
-	  }
-	  sfb=sfbcnt+1;
-	    
-	  if(sfb>max_sfb)max_sfb=sfb;
-	    
-	  for(;sfb<12;sfb++)
-	  {
-	    int k,t;
+		/* initialization */
+		for(i=0;i<ARRAYSIZE;i+=2)is_pos[i]=is_pos[i+1]=7;
 
-	    t=sfBandIndex->s[sfb];
-	    k=sfBandIndex->s[sfb+1]-t;
-	    i=MUL3(t)+j*k;
+		if(gi->generalflag)
+		{
+			if(gi->mixed_block_flag)					 // Part I
+			{
+				int max_sfb=0;
 
-	    t=scalefactors[1].s[j][sfb];
-	    if(t!=7)
-	    {
-	      RATIOS r=ratios[t];
+				for(int j=0;j<3;j++)
+				{
+					int sfb,sfbcnt=2;
 
-	      for(;k>0;k--,i++){
-		is_pos[i]=t;is_ratio[i]=r;}
-	    }
-	    else
-	      for(;k>0;k--,i++)is_pos[i]=t;
-	  }
-	  sfb=sfBandIndex->s[10];
-	  sfb=MUL3(sfb)+j*(sfBandIndex->s[11]-sfb);
+					for(sfb=12;sfb>=3;sfb--)
+					{
+						int lines;
 
-	  {
-	    int k,t;
+						i=sfBandIndex->s[sfb];
+						lines=sfBandIndex->s[sfb+1]-i;
+						i=MUL3(i)+(j+1)*lines-1;
+						for(;lines>0;lines--,i--)
+							if(in[1][0][i]!=0.0f)
+							{
+								sfbcnt=sfb;
+								sfb=0;break;				// quit loop
+							}
+					}
+					sfb=sfbcnt+1;
+						
+					if(sfb>max_sfb)max_sfb=sfb;
+						
+					for(;sfb<12;sfb++)
+					{
+						int k,t;
 
-	    t=sfBandIndex->s[11];
-	    k=sfBandIndex->s[12]-t;
-	    i=MUL3(t)+j*k;
+						t=sfBandIndex->s[sfb];
+						k=sfBandIndex->s[sfb+1]-t;
+						i=MUL3(t)+j*k;
 
-	    t=is_pos[sfb];
-	    if(t!=7)
-	    {
-	      RATIOS r=is_ratio[sfb];
+						t=scalefactors[1].s[j][sfb];
+						if(t!=7)
+						{
+							RATIOS r=ratios[t];
 
-	      for(;k>0;k--,i++){
-		is_pos[i]=t;is_ratio[i]=r;}
-	    }
-	    else
-	      for(;k>0;k--,i++)is_pos[i]=t;
-	  }
-	}
+							for(;k>0;k--,i++){
+								is_pos[i]=t;is_ratio[i]=r;}
+						}
+						else
+							for(;k>0;k--,i++)is_pos[i]=t;
+					}
+					sfb=sfBandIndex->s[10];
+					sfb=MUL3(sfb)+j*(sfBandIndex->s[11]-sfb);
 
-	if(max_sfb<=3)
-	{
-	  {
-	    REAL temp;
-	    int k;
+					{
+						int k,t;
 
-	    temp=in[1][0][0];in[1][0][0]=1.0;
-	    for(k=3*SSLIMIT-1;in[1][0][k]==0.0;k--);
-	    in[1][0][0]=temp;
-	    for(i=0;sfBandIndex->l[i]<=k;i++);
-	  }
-	  {
-	    int sfb=i;
+						t=sfBandIndex->s[11];
+						k=sfBandIndex->s[12]-t;
+						i=MUL3(t)+j*k;
 
-	    i=sfBandIndex->l[i];
-	    for(;sfb<8;sfb++)
-	    {
-	      int t=scalefactors[1].l[sfb];
-	      int k=sfBandIndex->l[sfb+1]-sfBandIndex->l[sfb];
+						t=is_pos[sfb];
+						if(t!=7)
+						{
+							RATIOS r=is_ratio[sfb];
 
-	      if(t!=7)
-	      {
-		RATIOS r=ratios[t];
+							for(;k>0;k--,i++){
+								is_pos[i]=t;is_ratio[i]=r;}
+						}
+						else
+							for(;k>0;k--,i++)is_pos[i]=t;
+					}
+				}
 
-		for(;k>0;k--,i++){
-		  is_pos[i]=t;is_ratio[i]=r;}
-	      }
-	      else for(;k>0;k--,i++)is_pos[i]=t;
-	    }
-	  }
-	}
-      }
-      else                                // Part II
-      {
-	for(int j=0;j<3;j++)
-	{
-	  int sfbcnt=-1;
+				if(max_sfb<=3)
+				{
+					{
+						REAL temp;
+						int k;
 
-	  for(int sfb=12;sfb>=0;sfb--)
-	  {
-	    int lines;
+						temp=in[1][0][0];in[1][0][0]=1.0;
+						for(k=3*SSLIMIT-1;in[1][0][k]==0.0;k--);
+						in[1][0][0]=temp;
+						for(i=0;sfBandIndex->l[i]<=k;i++);
+					}
+					{
+						int sfb=i;
 
-	    {
-	      int t;
+						i=sfBandIndex->l[i];
+						for(;sfb<8;sfb++)
+						{
+							int t=scalefactors[1].l[sfb];
+							int k=sfBandIndex->l[sfb+1]-sfBandIndex->l[sfb];
 
-	      t=sfBandIndex->s[sfb];
-	      lines=sfBandIndex->s[sfb+1]-t;
-	      i=MUL3(t)+(j+1)*lines-1;
-	    }
-		  
-	    for(;lines>0;lines--,i--)
-	      if(in[1][0][i]!=0.0f)
-	      {
-		sfbcnt=sfb;
-		sfb=0;break;       // quit loop
-	      }
-	  }
+							if(t!=7)
+							{
+								RATIOS r=ratios[t];
 
-	  for(int sfb=sfbcnt+1;sfb<12;sfb++)
-	  {
-	    int k,t;
+								for(;k>0;k--,i++){
+									is_pos[i]=t;is_ratio[i]=r;}
+							}
+							else for(;k>0;k--,i++)is_pos[i]=t;
+						}
+					}
+				}
+			}
+			else																// Part II
+			{
+				for(int j=0;j<3;j++)
+				{
+					int sfbcnt=-1;
 
-	    t=sfBandIndex->s[sfb];
-	    k=sfBandIndex->s[sfb+1]-t;
-	    i=MUL3(t)+j*k;
+					for(int sfb=12;sfb>=0;sfb--)
+					{
+						int lines;
 
-	    t=scalefactors[1].s[j][sfb];
-	    if(t!=7)
-	    {
-	      RATIOS r=ratios[t];
+						{
+							int t;
 
-	      for(;k>0;k--,i++){
-		is_pos[i]=t;is_ratio[i]=r;}
-	    }
-	    else for(;k>0;k--,i++)is_pos[i]=t;
-	  }
+							t=sfBandIndex->s[sfb];
+							lines=sfBandIndex->s[sfb+1]-t;
+							i=MUL3(t)+(j+1)*lines-1;
+						}
+									
+						for(;lines>0;lines--,i--)
+							if(in[1][0][i]!=0.0f)
+							{
+								sfbcnt=sfb;
+								sfb=0;break;			 // quit loop
+							}
+					}
 
-	  {
-	    int t1=sfBandIndex->s[10],
-	        t2=sfBandIndex->s[11];
-	    int k,tt;
+					for(int sfb=sfbcnt+1;sfb<12;sfb++)
+					{
+						int k,t;
 
-	    tt=MUL3(t1)+j*(t2-t1);
-	    k =sfBandIndex->s[12]-t2;
-	    if(is_pos[tt]!=7)
-	    {
-	      RATIOS r=is_ratio[tt];
-	      int  t=is_pos[tt];
+						t=sfBandIndex->s[sfb];
+						k=sfBandIndex->s[sfb+1]-t;
+						i=MUL3(t)+j*k;
 
-	      i   =MUL3(t1)+j*k;
-	      for(;k>0;k--,i++){
-		is_pos[i]=t;is_ratio[i]=r;}
-	    }
-	    else
-	      for(;k>0;k--,i++)is_pos[i]=7;
-	  }
-	}
-      }
-    }
-    else // ms-stereo (Part III)
-    {
-      {
-	REAL temp;
-	int k;
+						t=scalefactors[1].s[j][sfb];
+						if(t!=7)
+						{
+							RATIOS r=ratios[t];
 
-	temp=in[1][0][0];in[1][0][0]=1.0;
-	for(k=ARRAYSIZE-1;in[1][0][k]==0.0;k--);
-	in[1][0][0]=temp;
-	for(i=0;sfBandIndex->l[i]<=k;i++);
-      }
+							for(;k>0;k--,i++){
+								is_pos[i]=t;is_ratio[i]=r;}
+						}
+						else for(;k>0;k--,i++)is_pos[i]=t;
+					}
 
-      {
-	int sfb;
+					{
+						int t1=sfBandIndex->s[10],
+								t2=sfBandIndex->s[11];
+						int k,tt;
 
-	sfb=i;
-	i=sfBandIndex->l[i];
-	for(;sfb<21;sfb++)
-        {
-	  int k,t;
+						tt=MUL3(t1)+j*(t2-t1);
+						k =sfBandIndex->s[12]-t2;
+						if(is_pos[tt]!=7)
+						{
+							RATIOS r=is_ratio[tt];
+							int  t=is_pos[tt];
 
-	  k=sfBandIndex->l[sfb+1]-sfBandIndex->l[sfb];
-	  t=scalefactors[1].l[sfb];
-	  if(t!=7)
-	  {
-	    RATIOS r=ratios[t];
+							i		=MUL3(t1)+j*k;
+							for(;k>0;k--,i++){
+								is_pos[i]=t;is_ratio[i]=r;}
+						}
+						else
+							for(;k>0;k--,i++)is_pos[i]=7;
+					}
+				}
+			}
+		}
+		else // ms-stereo (Part III)
+		{
+			{
+				REAL temp;
+				int k;
 
-	    for(;k>0;k--,i++){
-	      is_pos[i]=t;is_ratio[i]=r;}
-	  }
-	  else
-	    for(;k>0;k--,i++)is_pos[i]=t;
-	}
-      }
+				temp=in[1][0][0];in[1][0][0]=1.0;
+				for(k=ARRAYSIZE-1;in[1][0][k]==0.0;k--);
+				in[1][0][0]=temp;
+				for(i=0;sfBandIndex->l[i]<=k;i++);
+			}
 
-      {
-	int k,t,tt;
+			{
+				int sfb;
 
-	tt=sfBandIndex->l[20];
-	k=576-sfBandIndex->l[21];
-	t=is_pos[tt];
-	if(t!=7)
-	{
-	  RATIOS r=is_ratio[tt];
+				sfb=i;
+				i=sfBandIndex->l[i];
+				for(;sfb<21;sfb++)
+				{
+					int k,t;
 
-	  for(;k>0;k--,i++){
-	    is_pos[i]=t;is_ratio[i]=r;}
+					k=sfBandIndex->l[sfb+1]-sfBandIndex->l[sfb];
+					t=scalefactors[1].l[sfb];
+					if(t!=7)
+					{
+						RATIOS r=ratios[t];
+
+						for(;k>0;k--,i++){
+							is_pos[i]=t;is_ratio[i]=r;}
+					}
+					else
+						for(;k>0;k--,i++)is_pos[i]=t;
+				}
+			}
+
+			{
+				int k,t,tt;
+
+				tt=sfBandIndex->l[20];
+				k=576-sfBandIndex->l[21];
+				t=is_pos[tt];
+				if(t!=7)
+				{
+					RATIOS r=is_ratio[tt];
+
+					for(;k>0;k--,i++){
+						is_pos[i]=t;is_ratio[i]=r;}
+				}
+				else
+				{
+					for(;k>0;k--,i++)
+					{
+						if (i >= ARRAYSIZE)
+						{
+							debug("Broken mp3 data!\n");
+						}
+						else
+						{
+							is_pos[i]=t;
+						}
+					}
+				}
+			}
+		}
+
+		if(ms_stereo)
+		{
+			i=ARRAYSIZE-1;
+			do{
+				if(is_pos[i]==7)
+				{
+					register REAL t=in[LS][0][i];
+					in[LS][0][i]=(t+in[RS][0][i])*0.7071068f;
+					in[RS][0][i]=(t-in[RS][0][i])*0.7071068f;
+				}
+				else
+				{
+					in[RS][0][i]=in[LS][0][i]*is_ratio[i].r;
+					in[LS][0][i]*=is_ratio[i].l;
+				}
+			}while(i--);
+		}
+		else
+		{
+			i=ARRAYSIZE-1;
+			do{
+				if(is_pos[i]!=7)
+				{
+					in[RS][0][i]=in[LS][0][i]*is_ratio[i].r;
+					in[LS][0][i]*=is_ratio[i].l;
+				}
+			}while(i--);
+		}
 	}
 	else
-	  for(;k>0;k--,i++)is_pos[i]=t;
-      }
-    }
-
-    if(ms_stereo)
-    {
-      i=ARRAYSIZE-1;
-      do{
-	if(is_pos[i]==7)
 	{
-	  register REAL t=in[LS][0][i];
-	  in[LS][0][i]=(t+in[RS][0][i])*0.7071068f;
-	  in[RS][0][i]=(t-in[RS][0][i])*0.7071068f;
-	}
-	else
-	{
-	  in[RS][0][i]=in[LS][0][i]*is_ratio[i].r;
-	  in[LS][0][i]*=is_ratio[i].l;
-	}
-      }while(i--);
-    }
-    else
-    {
-      i=ARRAYSIZE-1;
-      do{
-	if(is_pos[i]!=7)
-	{
-	  in[RS][0][i]=in[LS][0][i]*is_ratio[i].r;
-	  in[LS][0][i]*=is_ratio[i].l;
-	}
-      }while(i--);
-    }
-  }
-  else
-  {
-    if(ms_stereo)
-    {
-      int i=ARRAYSIZE-1;
-      do{
-	register REAL t=in[LS][0][i];
+		if(ms_stereo)
+		{
+			int i=ARRAYSIZE-1;
+			do{
+				register REAL t=in[LS][0][i];
 
-	in[LS][0][i]=(t+in[RS][0][i])*0.7071068f;
-	in[RS][0][i]=(t-in[RS][0][i])*0.7071068f;
-      }while(i--);
-    }
-  }
+				in[LS][0][i]=(t+in[RS][0][i])*0.7071068f;
+				in[RS][0][i]=(t-in[RS][0][i])*0.7071068f;
+			}while(i--);
+		}
+	}
 
-  // channels==2
+	// channels==2
 }
 
 inline void layer3reorder_1(int version,int frequency,
@@ -1691,119 +1705,133 @@ void Mpegtoraw::layer3hybrid(int ch,int gr,REAL in[SBLIMIT][SSLIMIT],
 
 void Mpegtoraw::extractlayer3(void)
 {
-  if(version)
-  {
-    extractlayer3_2();
-    return;
-  }
+	if(version)
+	{
+		extractlayer3_2();
+		return;
+	}
 
-  {
-    int main_data_end,flush_main;
-    int bytes_to_discard;
+	{
+		int main_data_end,flush_main;
+		int bytes_to_discard;
 
-    layer3getsideinfo();
-	 
-    if(issync())
-    {
-      for(register int i=layer3slots;i>0;i--)  // read main data.
-	bitwindow.putbyte(getbyte());
-    }
-    else
-    {
-      for(register int i=layer3slots;i>0;i--)  // read main data.
-	bitwindow.putbyte(getbits8());
-    }
+		layer3getsideinfo();
+				 
+		if(issync())
+		{
+			for(register int i=layer3slots;i>0;i--)  // read main data.
+			{
+				bitwindow.putbyte(getbyte());
+			}
+		}
+		else
+		{
+			for(register int i=layer3slots;i>0;i--)  // read main data.
+			{
+				bitwindow.putbyte(getbits8());
+			}
+		}
 
-    main_data_end=bitwindow.gettotalbit()>>3;// of previous frame
+		main_data_end=bitwindow.gettotalbit()>>3;// of previous frame
 
-    if((flush_main=(bitwindow.gettotalbit() & 0x7)))
-    {
-      bitwindow.forward(8-flush_main);
-      main_data_end++;
-    }
+		if((flush_main=(bitwindow.gettotalbit() & 0x7)))
+		{
+			bitwindow.forward(8-flush_main);
+			main_data_end++;
+		}
 
-    bytes_to_discard=layer3framestart-(main_data_end+sideinfo.main_data_begin);
-    if(main_data_end>WINDOWSIZE)
-    {
-      layer3framestart-=WINDOWSIZE;
-      bitwindow.rewind(WINDOWSIZE*8);
-    }
-  
-    layer3framestart+=layer3slots;
-  
-    bitwindow.wrap();
+		bytes_to_discard=layer3framestart-(main_data_end+sideinfo.main_data_begin);
+		if(main_data_end>WINDOWSIZE)
+		{
+			layer3framestart-=WINDOWSIZE;
+			bitwindow.rewind(WINDOWSIZE*8);
+		}
+	
+		layer3framestart+=layer3slots;
+	
+		bitwindow.wrap();
 
-    if(bytes_to_discard<0)return;
-    bitwindow.forward(bytes_to_discard<<3);
-  }
+		if(bytes_to_discard<0)
+		{
+			return;
+		}
 
-  for(int gr=0;gr<2;gr++)
-  {
-    union
-    {
-      int  is      [SBLIMIT][SSLIMIT];
-      REAL hin  [2][SBLIMIT][SSLIMIT];
-    }b1;
-    union
-    {
-      REAL ro   [2][SBLIMIT][SSLIMIT];
-      REAL lr   [2][SBLIMIT][SSLIMIT];
-      REAL hout [2][SSLIMIT][SBLIMIT];
-    }b2;
+		bitwindow.forward(bytes_to_discard<<3);
+	}
+
+	for(int gr=0;gr<2;gr++)
+	{
+		union
+		{
+			int  is			 [SBLIMIT][SSLIMIT];
+			REAL hin	[2][SBLIMIT][SSLIMIT];
+		}b1;
+
+		union
+		{
+			REAL ro		[2][SBLIMIT][SSLIMIT];
+			REAL lr		[2][SBLIMIT][SSLIMIT];
+			REAL hout [2][SSLIMIT][SBLIMIT];
+		}b2;
 
 
-      layer3part2start=bitwindow.gettotalbit();
-      layer3getscalefactors (LS,gr);
-      layer3huffmandecode   (LS,gr      ,b1.is);
-      layer3dequantizesample(LS,gr,b1.is,b2.ro[LS]);
-    if(inputstereo)
-    {
-      layer3part2start=bitwindow.gettotalbit();
-      layer3getscalefactors (RS,gr);
-      layer3huffmandecode   (RS,gr      ,b1.is);
-      layer3dequantizesample(RS,gr,b1.is,b2.ro[RS]);
-    }
+		layer3part2start=bitwindow.gettotalbit();
+		layer3getscalefactors (LS,gr);
+		layer3huffmandecode		(LS,gr			,b1.is);
+		layer3dequantizesample(LS,gr,b1.is,b2.ro[LS]);
 
-    layer3fixtostereo(gr,b2.ro);   // b2.ro -> b2.lr
-    
-    currentprevblock^=1;
-      layer3reorderandantialias(LS,gr,b2.lr[LS],b1.hin[LS]);
-      layer3hybrid (LS,gr,b1.hin[LS],b2.hout[LS]);
-    if(outputstereo)
-    {
-      layer3reorderandantialias(RS,gr,b2.lr[RS],b1.hin[RS]);
-      layer3hybrid (RS,gr,b1.hin[RS],b2.hout[RS]);
+		if(inputstereo)
+		{
+			layer3part2start=bitwindow.gettotalbit();
+			layer3getscalefactors (RS,gr);
+			layer3huffmandecode		(RS,gr			,b1.is);
+			layer3dequantizesample(RS,gr,b1.is,b2.ro[RS]);
+		}
 
-      register int i=2*SSLIMIT*SBLIMIT-1;
-      do{
-	NEG(b2.hout[0][0][i   ]);NEG(b2.hout[0][0][i- 2]);
-	NEG(b2.hout[0][0][i- 4]);NEG(b2.hout[0][0][i- 6]);
-	NEG(b2.hout[0][0][i- 8]);NEG(b2.hout[0][0][i-10]);
-	NEG(b2.hout[0][0][i-12]);NEG(b2.hout[0][0][i-14]);
-	NEG(b2.hout[0][0][i-16]);NEG(b2.hout[0][0][i-18]);
-	NEG(b2.hout[0][0][i-20]);NEG(b2.hout[0][0][i-22]);
-	NEG(b2.hout[0][0][i-24]);NEG(b2.hout[0][0][i-26]);
-	NEG(b2.hout[0][0][i-28]);NEG(b2.hout[0][0][i-30]);
-      }while((i-=2*SBLIMIT)>0);
-    }
-    else
-    {
-      register int i=SSLIMIT*SBLIMIT-1;
-      do{
-	NEG(b2.hout[0][0][i   ]);NEG(b2.hout[0][0][i- 2]);
-	NEG(b2.hout[0][0][i- 4]);NEG(b2.hout[0][0][i- 6]);
-	NEG(b2.hout[0][0][i- 8]);NEG(b2.hout[0][0][i-10]);
-	NEG(b2.hout[0][0][i-12]);NEG(b2.hout[0][0][i-14]);
-	NEG(b2.hout[0][0][i-16]);NEG(b2.hout[0][0][i-18]);
-	NEG(b2.hout[0][0][i-20]);NEG(b2.hout[0][0][i-22]);
-	NEG(b2.hout[0][0][i-24]);NEG(b2.hout[0][0][i-26]);
-	NEG(b2.hout[0][0][i-28]);NEG(b2.hout[0][0][i-30]);
-      }while((i-=2*SBLIMIT)>0);
-    }
+		layer3fixtostereo(gr,b2.ro);	 // b2.ro -> b2.lr
+		
+		currentprevblock^=1;
+		layer3reorderandantialias(LS,gr,b2.lr[LS],b1.hin[LS]);
+		layer3hybrid (LS,gr,b1.hin[LS],b2.hout[LS]);
 
-    for(int ss=0;ss<SSLIMIT;ss++)
-      subbandsynthesis(b2.hout[LS][ss],b2.hout[RS][ss]);
-  }
+		if(outputstereo)
+		{
+			layer3reorderandantialias(RS,gr,b2.lr[RS],b1.hin[RS]);
+			layer3hybrid (RS,gr,b1.hin[RS],b2.hout[RS]);
+
+			register int i=2*SSLIMIT*SBLIMIT-1;
+
+			do{
+				NEG(b2.hout[0][0][i		]);NEG(b2.hout[0][0][i- 2]);
+				NEG(b2.hout[0][0][i- 4]);NEG(b2.hout[0][0][i- 6]);
+				NEG(b2.hout[0][0][i- 8]);NEG(b2.hout[0][0][i-10]);
+				NEG(b2.hout[0][0][i-12]);NEG(b2.hout[0][0][i-14]);
+				NEG(b2.hout[0][0][i-16]);NEG(b2.hout[0][0][i-18]);
+				NEG(b2.hout[0][0][i-20]);NEG(b2.hout[0][0][i-22]);
+				NEG(b2.hout[0][0][i-24]);NEG(b2.hout[0][0][i-26]);
+				NEG(b2.hout[0][0][i-28]);NEG(b2.hout[0][0][i-30]);
+			}while((i-=2*SBLIMIT)>0);
+		}
+		else
+		{
+			register int i=SSLIMIT*SBLIMIT-1;
+			do{
+				NEG(b2.hout[0][0][i		]);NEG(b2.hout[0][0][i- 2]);
+				NEG(b2.hout[0][0][i- 4]);NEG(b2.hout[0][0][i- 6]);
+				NEG(b2.hout[0][0][i- 8]);NEG(b2.hout[0][0][i-10]);
+				NEG(b2.hout[0][0][i-12]);NEG(b2.hout[0][0][i-14]);
+				NEG(b2.hout[0][0][i-16]);NEG(b2.hout[0][0][i-18]);
+				NEG(b2.hout[0][0][i-20]);NEG(b2.hout[0][0][i-22]);
+				NEG(b2.hout[0][0][i-24]);NEG(b2.hout[0][0][i-26]);
+				NEG(b2.hout[0][0][i-28]);NEG(b2.hout[0][0][i-30]);
+			}while((i-=2*SBLIMIT)>0);
+		}
+
+		for(int ss=0;ss<SSLIMIT;ss++)
+		{
+			subbandsynthesis(b2.hout[LS][ss],b2.hout[RS][ss]);
+		}
+	}
 }
 
 void Mpegtoraw::extractlayer3_2(void)

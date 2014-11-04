@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(src/main.cc)
-AM_INIT_AUTOMAKE(mp3blaster, 3.2.0)
+AM_INIT_AUTOMAKE(mp3blaster, 3.2.1)
 
 AM_CONFIG_HEADER(config.h)
 
@@ -52,7 +52,7 @@ dnl Check for additional paths to include-files and directories first
 AC_ARG_WITH(cxxflags,
   [  --with-cxxflags         Override default compiler flags],
 	[ CXXFLAGS="$withval " ],
-	[ CXXFLAGS="-O2 -Wall -Wstrict-prototypes -W -fno-strength-reduce " ])
+	[ CXXFLAGS="-O2 -Wall -W -fno-strength-reduce " ])
 AC_ARG_WITH(mysql-includes,
   [  --with-mysql-includes   Specify location of MySQL headers],
   [ CPPFLAGS="$CPPFLAGS -I$withval" ])
@@ -380,7 +380,6 @@ nas                $HAVE_NAS
 sidplayer          $HAVE_SID
 
 *****************************************************************************
-* Questions? Read ./FAQ or http://www.stack.nl/~brama/mp3blaster/?page=faq  *
-* Mail bugs/development issues to mp3blaster-devel@stack.nl.                *
+* Questions? Bug reports? Read ./FAQ or go to http://mp3blaster.sf.net/     *
 *****************************************************************************
 ])

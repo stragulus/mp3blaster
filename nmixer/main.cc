@@ -1,5 +1,5 @@
 /* A soundmixer for linux with a nice text-interface for those non-X-ers.
- * (C)1999 Bram Avontuur (brama@stack.nl)
+ * (C)1999 Bram Avontuur (bram@avontuur.org)
  */
 #include "nmixer.h"
 #include <string.h>

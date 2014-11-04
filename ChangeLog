@@ -1,3 +1,10 @@
+V3.2.1 2005/12/06
+=================
+-Made cursor follow the highlighted bar in playlist/filemanager, to aid
+ blind people
+-Fixed a bug in mpegsound library that could cause mp3blaster to crash. Thanks
+ go to Serge van den Boom for reporting the problem.
+
 V3.2.0 2003/09/08
 =================
 -Updated source to compile with recent gcc compilers

@@ -1,4 +1,4 @@
-/* Copyright (C) Bram Avontuur (brama@stack.nl)
+/* Copyright (C) Bram Avontuur (bram@avontuur.org)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,8 +15,8 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
  * If you like this program, or if you have any comments, tips for improve-
- * ment, money, etc, you can e-mail me at brama@stack.nl or visit my
- * homepage (http://www.stack.nl/~brama/).
+ * ment, money, etc, please do so on the sourceforge project page :
+ * http://mp3blaster.sourceforge.net/
  *
  * May 21 2000: removed all calls to attr_get() since not all [n]curses 
  *            : versions use the same paramaters (sigh)
@@ -504,7 +504,7 @@ main(int argc, char *argv[], char *envp[])
 #endif
 			break;
 		case 'v': /* version info */
-			printf("%s version %s - http://www.stack.nl/~brama/mp3blaster.html\n",
+			printf("%s version %s - http://mp3blaster.sourceforge.net/\n",
 				argv[0], VERSION);
 			exit(0);
 			break;
@@ -1444,6 +1444,7 @@ popup_win
 		move(by+height-2, bx+1);
 		echo();
 		leaveok(stdscr, FALSE);
+		curs_set(1);
 		refresh();
 #if 0
 		text = new char[MIN(width-2,maxlen)+1];
@@ -3821,7 +3822,7 @@ end_help()
 {
 	//simpy 'hide' bighelpwin..
 	mp3_curwin->swRefresh(2);
-	mw_settxt("Visit http://www.stack.nl/~brama/mp3blaster.html");
+	mw_settxt("Visit http://mp3blaster.sourceforge.net/");
 }
 
 void
@@ -5480,7 +5481,8 @@ set_inout_opts()
 	nonl();
 	intrflush(stdscr, FALSE);
 	keypad(stdscr, TRUE);
-	leaveok(stdscr, TRUE);
+	leaveok(stdscr, FALSE);
+	curs_set(0);
 }
 
 /* Function   : select_files_by_pattern

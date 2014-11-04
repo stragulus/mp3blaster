@@ -1,11 +1,11 @@
 Name: mp3blaster
 Summary: Mp3blaster is a text console audio player with an interactive interface
-Version: 3.2.0
+Version: 3.2.1
 Release: 1
 Group: Applications/Multimedia
 Copyright: GPL
-Url: http://www.stack.nl/~brama/mp3blaster/
-Packager: Bram Avontuur <bram@mp3blaster.avontuur.org>
+Url: http://mp3blaster.sourceforge.net/
+Packager: Bram Avontuur <bram@avontuur.org>
 Distribution: N/A 
 Source: http://www.stack.nl/~brama/mp3blaster/src/%{name}-%{version}.tar.gz
 Buildroot: /var/tmp/%{name}-%{version}-%{release}-root

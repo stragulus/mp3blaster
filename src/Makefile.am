@@ -25,9 +25,7 @@ mp3blaster_SOURCES	= fileman.cc \
 				history.cc \
 				history.h \
 				getinput.cc \
-				getinput.h \
-				interface.cc \
-				interface.h
+				getinput.h
 			  @MP3B_MODULES@
 splay_SOURCES = splay.cc splay.h splay_common.cc
 splay_DEPENDENCIES = ../mpegsound/libmpegsound.a

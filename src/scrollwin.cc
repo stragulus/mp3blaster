@@ -1,5 +1,5 @@
 /* MP3Blaster - An Mpeg Audio-file player for Linux
- * Copyright (C) Bram Avontuur (brama@stack.nl)
+ * Copyright (C) Bram Avontuur (bram@avontuur.org)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -213,6 +213,7 @@ scrollWin::setTitle(const char *tmp)
 void scrollWin::swRefresh(short scroll)
 {
 	int i;
+	int barpos;
 	winItem *current = NULL;
 
 	if (scroll >= 1)
@@ -241,10 +242,15 @@ void scrollWin::swRefresh(short scroll)
 		//whipe items first, when content highlighted bar is on
 		//this line (for scrolled/changed content, the window has been
 		//cleared already).
-		if (!scroll && item_index == sw_selection)
+		if (item_index == sw_selection)
 		{
-			move(by + i,bx + xoffset);
-			addstr(sw_emptyline);
+			barpos = i;
+
+			if (!scroll)
+			{
+				move(by + i,bx + xoffset);
+				addstr(sw_emptyline);
+			}
 		}
 
 		//determine which itemname to choose.
@@ -285,8 +291,14 @@ void scrollWin::swRefresh(short scroll)
 		move(by + i, bx + xoffset); addnstr(str, maxdrawlen);
 		attrset(COLOR_PAIR(CP_DEFAULT)|A_NORMAL);
 	}
-	if (scroll)
-		touchwin(stdscr);
+
+	if (barpos > -1)
+	{
+		debug("moving cursor to line %d\n", barpos);
+
+		/* move cursor to selection bar to aid the blind */
+		move(by + barpos, bx + xoffset);
+	}
 
 	refresh();
 }

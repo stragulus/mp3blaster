@@ -1,5 +1,5 @@
 /* A soundmixer for linux with a nice text-interface for those non-X-ers.
- * (C)1998 Bram Avontuur (brama@stack.nl)
+ * (C)1998 Bram Avontuur (bram@avontuur.org)
  */
 #ifndef _LIBMIXER_H
 #define _LIBMIXER_H

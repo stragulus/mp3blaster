@@ -116,11 +116,7 @@ all available settings possible in the file.
 
 MP3Blaster can be downloaded from:
 
-    http://www.stack.nl/~brama/mp3blaster/ (most up-to-date)
-    ftp://mud.stack.nl/pub/mp3blaster/
-    ftp://ftp.ibiblio.org/pub/Linux/apps/sound/players/mp3/
-    http://linux.tucows.com/
-
+    http://mp3blaster.sourceforge.net/
 
 8.  Bugs
 -------------------------
@@ -137,10 +133,7 @@ them (see section 'Developer Information')
 9.  Frequently Asked Questions
 ----------------------------------
 
-Read the "FAQ" file, or surf to:
-
-    http://www.stack.nl/~brama/mp3blaster/?page=faq
-
+Read the "FAQ" on the sourceforge project page.
 
 10.  Developer Information
 ----------------------------------
@@ -148,22 +141,12 @@ Read the "FAQ" file, or surf to:
 All code used by and written for MP3Blaster is GPL'd. Read the "COPYING"
 file for more information about the GPL license.
 If you want to report bugs, ask development-related questions, or just
-want a taste of celebrity, mail to this address:
-
-    mp3blaster-devel@stack.nl
-
-If you want to be kept up-to-date on new mp3blaster releases, surf to
-
-    http://lists.stack.nl/
-
-And click on 'mp3blaster-announce'. You can subscribe yourself on the 
-mailinglist there. Same goes for 'mp3blaster-devel'.
-
+want a taste of celebrity, surf to the sourceforge project page.
 
 11.  Links
 ----------------------------------
 
-    MP3Blaster    http://www.stack.nl/~brama/mp3blaster/
+    MP3Blaster    http://mp3blaster.sourceforge.net/
     libpth        http://www.gnu.org/software/pth/pth.html 
     
 
