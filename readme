@@ -1,0 +1,8 @@
+in elke groep selecteren songs in random order of achter elkaar
+(play mode: random / normal)
+Dit dus per groep instellen (default: normal)
+Dan volgende afspeelmodes:
+-current group
+-all groups in normal order
+-all groups in random order
+-all songs in random order
