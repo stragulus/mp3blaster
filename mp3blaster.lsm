@@ -1,7 +1,7 @@
 Begin3
 Title:          mp3blaster
-Version:        2.0b6
-Entered-date:   25MAR99
+Version:        2.0b12
+Entered-date:   11NOV99
 Description:    mp3blaster is an interactive text-based mp3player. One of
 		the unique features of this player is the ability to divide
 		a playlist into groups (albums). Therefore, the play order
@@ -10,9 +10,9 @@ Keywords:       mp3 mpeg3 mpeg audio music sound player
 Author:         brama@stack.nl (Bram Avontuur)
 Maintained-by:  brama@stack.nl (Bram Avontuur)
 Primary-site:   sunsite.unc.edu /pub/Linux/apps/sound/players
-                135kb mp3blaster-2.0b6.tar.gz
+                182kb mp3blaster-2.0b12.tar.gz
 Alternate-site: mud.stack.nl /pub/mp3blaster
-                135kb mp3blaster-2.0b6.tar.gz
+                182kb mp3blaster-2.0b12.tar.gz
 Original-site:  
 Platforms:      Linux/i386,Linux/alpha,OpenBSD/alpha,FreeBSD are tested.
 Copying-policy: GPL

@@ -224,6 +224,7 @@ NMixer::ProcessKey(int key)
 	switch(key)
 	{
 		case KEY_DOWN:
+		case 'j':
 			if (++currentbar >= nrbars) /* flip da dip, B! */
 			{ 
 				currentbar = 0;
@@ -247,6 +248,7 @@ NMixer::ProcessKey(int key)
 			}
 			break;
 		case KEY_UP:
+		case 'k':
 			if (--currentbar < 0)
 			{
 				currentbar = nrbars - 1;
@@ -270,9 +272,11 @@ NMixer::ProcessKey(int key)
 			}
 			break;
 		case KEY_RIGHT:
+		case 'l':
 			ChangeBar(currentbar,  2, 0, BOTH_CHANNELS);
 			break;
 		case KEY_LEFT:
+		case 'h':
 			ChangeBar(currentbar, -2, 0, BOTH_CHANNELS);
 			break;
 		case KEY_PPAGE:

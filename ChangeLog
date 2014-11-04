@@ -1,3 +1,25 @@
+V2.0b13: 1999/12/11
+===================
+-winnt/ section updated (mp3tag.exe from 2.0b11 with genre support)
+-all interesting global variables are now put in a struct, shared by some 
+ classes
+-downsampling possible with commandline options --downsample/-2 (might run
+ on a 486/66 now, bother to try this for me if you an antique 22Khz/8bit
+ soundcard!) NOTE: This is still broken (for 8bit cards); the next version
+ will support 8bit cards too.
+-besides just stereo/mono, the interface knows about joint stereo and dual
+ channel too now.
+-http streams in playlist are now considered to be valid audiofiles in the
+ playlist:)
+-Added "/ to search" in filemanager. 
+-Added vi-style keys to interface (h=dir up, j=down,k=up), and therefore
+ changed 'h' to '?' to get help
+-More userfriendly path handling (~'s are expanded so you can enter ~/bla
+ as path, f.e.)
+-configuration file support. Just the basics yet, only 4 options can currently
+ be set in this file. Read config.cc to know more. If you have suggestions
+ what to put as a configurable option, please email! 
+
 V2.0b12: 1999/08/05
 ===================
 -Fixed a bug in the genre support (char=>unsigned char). Bedankt Tjerk

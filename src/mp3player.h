@@ -1,10 +1,6 @@
 #ifndef _MP3PLAYER_CLASS_
 #define _MP3PLAYER_CLASS_
 
-/* I needed to patch the mpegsound lib becuz the server member-variable from
- * the Mpegfileplayer was private so I couldn't access it with my subclass.
- * Just a reminder so I won't forget to patch future new versions of this lib..
- */
 #include "mp3blaster.h"
 #include "mp3play.h"
 #include "playwindow.h"

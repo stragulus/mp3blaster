@@ -697,7 +697,7 @@ fi
 
 PACKAGE=mp3blaster
 
-VERSION=2.0b12
+VERSION=2.0b13
 
 if test "`cd $srcdir && pwd`" != "`pwd`" && test -f $srcdir/config.status; then
   { echo "configure: error: source directory already configured; run "make distclean" there first" 1>&2; exit 1; }
@@ -3063,10 +3063,11 @@ fi
 fi
 
     tmp_CPPFLAGS=$CPPFLAGS
+  echo "X_CFLAGSi: $X_CFLAGS"
   CPPFLAGS="$CPPFLAGS $X_CFLAGS"
   
     echo $ac_n "checking for AuOpenServer in -laudio""... $ac_c" 1>&6
-echo "configure:3070: checking for AuOpenServer in -laudio" >&5
+echo "configure:3071: checking for AuOpenServer in -laudio" >&5
 ac_lib_var=`echo audio'_'AuOpenServer | sed 'y%./+-%__p_%'`
 if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -3074,7 +3075,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-laudio $X_LIBS $X_PRE_LIBS $X_EXTRA_LIBS -lXt -lX11 -lm $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 3078 "configure"
+#line 3079 "configure"
 #include "confdefs.h"
 /* Override any gcc2 internal prototype to avoid an error.  */
 /* We use char because int might match the return type of a gcc2
@@ -3085,7 +3086,7 @@ int main() {
 AuOpenServer()
 ; return 0; }
 EOF
-if { (eval echo configure:3089: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:3090: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   eval "ac_cv_lib_$ac_lib_var=yes"
 else
@@ -3107,17 +3108,17 @@ fi
 
   ac_safe=`echo "audio/audiolib.h" | sed 'y%./+-%__p_%'`
 echo $ac_n "checking for audio/audiolib.h""... $ac_c" 1>&6
-echo "configure:3111: checking for audio/audiolib.h" >&5
+echo "configure:3112: checking for audio/audiolib.h" >&5
 if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 3116 "configure"
+#line 3117 "configure"
 #include "confdefs.h"
 #include <audio/audiolib.h>
 EOF
 ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
-{ (eval echo configure:3121: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
+{ (eval echo configure:3122: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
 ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
 if test -z "$ac_err"; then
   rm -rf conftest*

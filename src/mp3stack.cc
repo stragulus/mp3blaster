@@ -21,7 +21,7 @@
 #include <time.h>
 #include "mp3stack.h"
 
-extern int current_group; /* from main.cc */
+extern struct _globalopts globalopts; /* from main.cc */
 
 /* returns a playlist of MP3's in an order defined by playmode pm (see 
  * mp3blaster.h for possible playmodes). The returned pointer is allocated
@@ -78,7 +78,7 @@ char** mp3Stack::getShuffledList(playmode pm, unsigned int *nmp3s)
 	else if (pm == PLAY_GROUP)
 	{
 		//OLD: sw_window *sw = group_stack[current_group - 1];
-		scrollWin *sw = this->entry(current_group - 1);
+		scrollWin *sw = this->entry(globalopts.current_group - 1);
 		
 		//OLD: playlist->song_id = (int *)malloc((sw->nitems) * sizeof(int));
 		//playlist->listsize = sw->nitems;
@@ -87,7 +87,7 @@ char** mp3Stack::getShuffledList(playmode pm, unsigned int *nmp3s)
 		song_id = new int[nsongs];
 
 		srandom(time(&t));
-		compose_group(current_group - 1, song_id, 0);
+		compose_group(globalopts.current_group - 1, song_id, 0);
 	}
 	else if (pm == PLAY_GROUPS)
 	{		

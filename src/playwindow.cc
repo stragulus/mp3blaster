@@ -20,13 +20,10 @@
 #include <string.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include "global.h"
 #include "playwindow.h"
 #include "genretab.h"
-
-extern int no_mixer; /* from main.cc */
-extern char *sound_device; /* from main.cc */
-
-extern void debug(const char*);
+extern struct _globalopts globalopts; /* from main.cc */
 
 playWindow::playWindow()
 {
@@ -71,10 +68,11 @@ playWindow::playWindow()
 
 	int color_pairs[4] = { 7,8,9,10 };
 	mixer = NULL;
-	if (!no_mixer)
+	if (!(globalopts.no_mixer))
 	{
-		mixer = new NMixer(interface, (sound_device && strrchr(sound_device,
-			':') ? "NAS" : (const char*)NULL), 7, nrlines - 7 - 5, color_pairs,
+		mixer = new NMixer(interface, (globalopts.sound_device &&
+			strrchr(globalopts.sound_device, ':') ? "NAS" :
+			(const char*)NULL), 7, nrlines - 7 - 5, color_pairs,
 			COLOR_BLUE);
 		if (!(mixer->NMixerInit()))
 		{
@@ -169,10 +167,12 @@ playWindow::getInput()
 
 void
 playWindow::setProperties(int mpeg_version, int layer, int freq, int bitrate,
-	bool stereo)
+	const char *stereo)
 {
-	mvwprintw(interface, 1, 2, "Mpeg-%d layer %d at %dhz, %d kb/s (%s)",
-		mpeg_version, layer, freq, bitrate, (stereo ? "stereo" : "mono"));
+	mvwprintw(interface, 1, 2, "Mpeg-%d layer %d at %dhz, %d kb/s (%s)%s",
+		//mpeg_version, layer, freq, bitrate, (stereo ? "stereo" : "mono"),
+		mpeg_version, layer, freq, bitrate, stereo,
+		(globalopts.downsample ? " (downsampled)" : ""));
 	wrefresh(interface);
 }
 

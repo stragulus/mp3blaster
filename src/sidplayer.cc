@@ -23,11 +23,11 @@
 #include <time.h>
 #include <stdio.h>
 #include <sys/ioctl.h>
+#include "global.h"
 #include "playwindow.h"
 #include "sidplayer.h"
 
-extern void debug(const char *txt);
-extern int fpl; /* frames per loop to run */
+extern struct _globalopts globalopts /* from main.cc */
 
 // SIDPlayer constructor
 SIDPlayer::SIDPlayer(mp3Play *calling, playWindow *interface, int threads)
@@ -63,8 +63,8 @@ bool SIDPlayer::playing(int verbose)
 	{
 		if (status == PS_PLAYING)
 		{
-			should_play = (run(fpl));
-			init_count += fpl;
+			should_play = (run(globalopts.fpl));
+			init_count += globalopts.fpl;
 		}
 		else
 			usleep(100); //cause a little delay to reduce system overhead

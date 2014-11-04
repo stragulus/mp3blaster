@@ -1,6 +1,5 @@
 bin_PROGRAMS		= mp3blaster mp3tag
-mp3blaster_SOURCES	= debug.cc \
-			  fileman.cc \
+mp3blaster_SOURCES	= fileman.cc \
 			  gstack.cc \
 			  main.cc \
 			  mp3play.cc \
@@ -23,6 +22,9 @@ mp3blaster_SOURCES	= debug.cc \
 			  sidplayer.h \
 			  mp3stack.h \
 			  playwindow.h \
+			  global.cc \
+			  global.h \
+			  config.cc \
 			  scrollwin.h
 mp3tag_SOURCES = id3parse.cc mp3tag.cc
 mp3blaster_DEPENDENCIES = @LIBMPEGSOUND@ @LIBNMIXER@

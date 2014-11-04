@@ -10,6 +10,8 @@
 #include <string.h>
 #include "id3parse.h"
 
+extern char *genre_table[];
+
 void
 usage(const char *bla)
 {
@@ -23,7 +25,8 @@ usage(const char *bla)
 		"\tSongname : 30 characters\n"\
 		"\tAlbum    : 30 characters\n"\
 		"\tYear     :  4 characters\n"\
-		"\tEtcetera : 30 characters\n\n"\
+		"\tComment  : 30 characters\n"\
+		"\tGenre    : 1 integer [0..254]\n\n"\
 		"If you don't specify any of the id3-tag fields, the file's id3tag"\
 		" will be shown only.\n", bla);
 	exit(1);
@@ -48,7 +51,8 @@ main(int argc, char *argv[])
 	memset(hdr->type, 0, 31 * sizeof (char));
 	memset(hdr->year, 0, 5 * sizeof (char));
 	memset(hdr->etc, 0, 31 * sizeof (char));
-	hdr->genre = '\0';
+	hdr->genre = 255;
+	//memset(hdr->genre_txt, 0, 41 * sizeof (char));
 
 	while ( (c =  getopt(argc, argv, "f:a:s:t:y:e:rg:")) != EOF)
 	{
@@ -89,7 +93,15 @@ main(int argc, char *argv[])
 				mergeID3 = 1;
 				break;
 			case 'g': //genres
-				printf("Feature not supported *yet*.\n");
+				if (!strcmp(optarg, "list"))
+				{
+					for (int i = 0; i < 255; i++)
+						printf("%03d %s\n", i, genre_table[i]);
+					exit(0);
+				}
+				hdr->genre = (unsigned char)atoi(optarg);
+				change = 1;
+				//printf("Feature not supported *yet*.\n");
 				break;
 		}
 	}
@@ -115,7 +127,7 @@ main(int argc, char *argv[])
 			copystring(hdr->year, oldtag->year, 4);
 		if (!strlen(hdr->etc))
 			copystring(hdr->etc, oldtag->etc, 30);
-		if (!(hdr->genre))
+		if (hdr->genre == 255)
 			hdr->genre = oldtag->genre;
 	}
 
@@ -138,12 +150,11 @@ main(int argc, char *argv[])
 			"Album     : %-30s  Year: %-4s\n"\
 			"Etcetera  : %-30s\n"\
 			"Genre     : %-40s\n", hdr->artist, hdr->songname, hdr->type,
-			hdr->year, hdr->etc, "Not supported yet!");
+			hdr->year, hdr->etc, genre_table[hdr->genre]);
 	}
 	else
-         printf(
-            "No MP3 tags found\n" );
-           
+		printf("This file does not contain an ID3 tag.\n");
+	
 	delete mp3tje;
 
 	return 0;

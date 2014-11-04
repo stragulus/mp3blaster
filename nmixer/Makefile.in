@@ -239,7 +239,7 @@ distdir: $(DISTFILES)
 	done
 main.o: main.cc nmixer.h
 mixers.o: mixers.cc nmixer.h
-nasmixer.o: nasmixer.cc
+nasmixer.o: nasmixer.cc nmixer.h
 nmixer.o: nmixer.cc nmixer.h
 ossmixer.o: ossmixer.cc nmixer.h
 

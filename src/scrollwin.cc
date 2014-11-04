@@ -20,9 +20,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include "global.h"
 #include "scrollwin.h"
-
-extern void debug(const char *);
 
 /* Function Name: scrollWin::scrollWin
  * Description  : Creates a new selection-window, setting width and
@@ -230,7 +229,8 @@ void scrollWin::swRefresh(short scroll)
 		if (scroll != 2 && ((item_index == this->sw_selection) || scroll))
 			mvwaddstr(this->sw_win, i, this->xoffset, this->sw_emptyline);
 
-		if (this->showpath)
+		if (this->showpath || !strncasecmp(this->items[item_index],
+			"http://", 7))
 			item_name = this->items[item_index];
 		else
 		{

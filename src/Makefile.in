@@ -72,7 +72,7 @@ SRCDIRS = @SRCDIRS@
 VERSION = @VERSION@
 
 bin_PROGRAMS = mp3blaster mp3tag
-mp3blaster_SOURCES = debug.cc 			  fileman.cc 			  gstack.cc 			  main.cc 			  mp3play.cc 			  mp3player.cc 			  sidplayer.cc 			  mp3stack.cc 			  playwindow.cc 			  scrollwin.cc 			  windows.cc 			  getopt.c 			  getopt1.c 			  fileman.h 			  genretab.h 			  getopt.h 			  gstack.h 			  id3parse.h 			  mp3blaster.h 			  mp3play.h 			  mp3player.h 			  sidplayer.h 			  mp3stack.h 			  playwindow.h 			  scrollwin.h
+mp3blaster_SOURCES = fileman.cc 			  gstack.cc 			  main.cc 			  mp3play.cc 			  mp3player.cc 			  sidplayer.cc 			  mp3stack.cc 			  playwindow.cc 			  scrollwin.cc 			  windows.cc 			  getopt.c 			  getopt1.c 			  fileman.h 			  genretab.h 			  getopt.h 			  gstack.h 			  id3parse.h 			  mp3blaster.h 			  mp3play.h 			  mp3player.h 			  sidplayer.h 			  mp3stack.h 			  playwindow.h 			  global.cc 			  global.h 			  config.cc 			  scrollwin.h
 
 mp3tag_SOURCES = id3parse.cc mp3tag.cc
 mp3blaster_DEPENDENCIES = @LIBMPEGSOUND@ @LIBNMIXER@
@@ -95,9 +95,9 @@ X_CFLAGS = @X_CFLAGS@
 X_LIBS = @X_LIBS@
 X_EXTRA_LIBS = @X_EXTRA_LIBS@
 X_PRE_LIBS = @X_PRE_LIBS@
-mp3blaster_OBJECTS =  debug.o fileman.o gstack.o main.o mp3play.o \
-mp3player.o sidplayer.o mp3stack.o playwindow.o scrollwin.o windows.o \
-getopt.o getopt1.o
+mp3blaster_OBJECTS =  fileman.o gstack.o main.o mp3play.o mp3player.o \
+sidplayer.o mp3stack.o playwindow.o scrollwin.o windows.o getopt.o \
+getopt1.o global.o config.o
 mp3blaster_LDFLAGS = 
 mp3tag_OBJECTS =  id3parse.o mp3tag.o
 mp3tag_LDADD = $(LDADD)
@@ -229,26 +229,27 @@ distdir: $(DISTFILES)
 	    || cp -p $$d/$$file $(distdir)/$$file || :; \
 	  fi; \
 	done
-debug.o: debug.cc
+config.o: config.cc mp3blaster.h global.h
 fileman.o: fileman.cc mp3blaster.h getopt.h fileman.h scrollwin.h
 getopt.o: getopt.c
 getopt1.o: getopt1.c
+global.o: global.cc getopt.h
 gstack.o: gstack.cc mp3blaster.h gstack.h scrollwin.h
 id3parse.o: id3parse.cc id3parse.h genretab.h
-main.o: main.cc mp3blaster.h getopt.h scrollwin.h gstack.h mp3stack.h \
-	fileman.h mp3play.h playwindow.h ../nmixer/nmixer.h \
+main.o: main.cc mp3blaster.h getopt.h global.h scrollwin.h gstack.h \
+	mp3stack.h fileman.h mp3play.h playwindow.h ../nmixer/nmixer.h \
 	../mpegsound/mpegsound.h
 mp3play.o: mp3play.cc mp3blaster.h getopt.h mp3play.h gstack.h \
 	scrollwin.h playwindow.h ../nmixer/nmixer.h \
-	../mpegsound/mpegsound.h mp3player.h
-mp3player.o: mp3player.cc mp3blaster.h getopt.h playwindow.h \
+	../mpegsound/mpegsound.h mp3player.h global.h
+mp3player.o: mp3player.cc mp3blaster.h getopt.h global.h playwindow.h \
 	../nmixer/nmixer.h mp3player.h mp3play.h gstack.h scrollwin.h \
 	../mpegsound/mpegsound.h
 mp3stack.o: mp3stack.cc mp3blaster.h mp3stack.h gstack.h scrollwin.h
 mp3tag.o: mp3tag.cc getopt.h id3parse.h
-playwindow.o: playwindow.cc mp3blaster.h getopt.h playwindow.h \
+playwindow.o: playwindow.cc mp3blaster.h getopt.h global.h playwindow.h \
 	../nmixer/nmixer.h genretab.h
-scrollwin.o: scrollwin.cc mp3blaster.h scrollwin.h
+scrollwin.o: scrollwin.cc mp3blaster.h global.h scrollwin.h
 sidplayer.o: sidplayer.cc mp3blaster.h
 windows.o: windows.cc mp3blaster.h getopt.h
 

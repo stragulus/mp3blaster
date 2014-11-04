@@ -1,0 +1,34 @@
+-downfrequency
+-threads
+-keybindings
+-colours
+-extensions (mp[23],wav,sid,mpg,*)
+
+In human readable form:
+Each line consists of a keyword and one or more values, separated by a '=':
+
+Keyword = Value[, Value...].
+
+"Value" can only contain a , or space if it's preceded with a backslash (\). To
+get an actual \, use \\.
+
+Syntax: 
+
+CHAR := [\[\]A-Za-z0-9,.<>/?;:'"{}`~!@#$%^&*()-_=+\\|]
+TOETS := {CHAR} | 'space' | 'enter' | 'kpd_[0-9]' | 'ins' | 'home' | 'del' | 'end' | 'pgup' | 'pgdn' | 'f[1..12]' | 'scancode_[0-9]+'
+VALUE := ({CHAR}|\,|\ |\\)+
+VALUES := {VALUE}({WHITESPACE},{WHITESPACE}{VALUE})*
+KEYWORD := ^[A-Za-z][-A-Za-z0-9_.]*
+WHITESPACE = [ \t]
+YESNO := ([yY][eE][sS]|[Nn][oO])
+EOL := \n|<<EOF>>
+CONFIG_LINE := KEYWORD [WHITESPACE]* '=' [WHITESPACE]* VALUES EOL
+
+Possible lines:
+
+DownFrequency = YESNO
+Threads = [0,50,..,450,500]
+Key.Playwin.Play = TOETS
+Fileman.Sortmode = CaseSensitive | CaseInsensitive
+Fileman.MP3ListMode = Filename | ID3Tag
+Fileman.ID3TagString = %a - %s (%i=info,%l=album,%g=genre,%y=year)

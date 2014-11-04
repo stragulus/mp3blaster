@@ -26,7 +26,7 @@ consists of three main parts: A playlist editor, a file manager and a
 playing mode. By default, you start with the playlist editor (note that
 most common mp3 players start with the playing mode section instead). 
 
-.B Playlist Editor
+.SH Playlist Editor
 
 The playlist consists of one or more \fBgroups\fR. Each group can have
 its own \fBgroupname\fR and can contain supported audio files. You can
@@ -42,9 +42,9 @@ orders will take it into account.
 .PP
 By default, an empty playlist with one empty group is created at startup,
 to which you can start adding files. To find out what keys you can use,
-press \fBh\fR. 
+press \fB?\fR. 
 
-.B File Manager
+.SH File Manager
 
 You can enter the file manager by pressing F1 or 1 from the \fBplaylist
 editor\fR. The interface is almost identical to that of the playlist
@@ -67,11 +67,35 @@ directory is by selection none and then press F2 or 2 (invert selection).
 .br
 The recursive selection can be done in two ways: By F3 or 3, you add all
 mp3's that are found in the current directory and all directories in it,
-to the current group. By using F4 or 4, you do the same thing. However,
+to the current group. By using F5 or 5, you do the same thing. However,
 for each subdir in which mp3 files are found, a new group is added with the
 name of the subdir and the mp3's in it will be added to this group. This is
-an ultimately fast way of making a playlist grouped by albums!
+an ultimately fast way of making a playlist grouped by albums! 
+An overview of other less frequently used keys:
+.TP 5
+.B F4
+Directly enter a pathname to change to.
+.TP 5
+.B F6
+Convert the currently selected mp3 to a wave(.wav) file.
+.TP 5
+.B F7
+Add a HTTP stream to the playlist.
+.TP 5
+.B Backspace or h
+Change up one directory (..)
+.TP 5
+.B /
+Starts searchmode which times out when no keys have been pressed for 2
+seconds. During searchmode, the selection bar jumps to the first matching
+name that matches with the input that's being typed. When there's no match,
+a bell (or flash) is sounded. Besides changing into a new dir or playing
+a soundfile, \fBenter\fR also stops the search.
+.TP 5
+.B j,k
+VI-style keys. j, k act like the down and up arrow keys.
 
+.TP 0
 .B Playing Mode
 
 This is a conventional cd-player style window where you can control the
@@ -80,19 +104,21 @@ it from the command-line.
 All cd-style controls (previous track, rewind, play, fast forward, next track,
 pause and stop) are available under the numerical keys 1 to 7. Their functions
 should be obvious and don't differ from your average cd/tape player.
-The mixer can be controlled using the arrow keys. Left/Right changes the
-highlighted device; up/down selects another mixer device. You can control
-any mixer device that has been detected by your sound driver, which may vary
-on different systems. 
-The path to the mp3-file that's currently being played is in the upper border
-of the screen. Directly below you see some information about the soundfile
-being played. For mp3 files with an ID3-tag extra information like the
-songname, artist, etc. will be shown as well. If an mp3 does not have an
-id3tag (or no songname in it), the songname will be the filename.
-There is also a progress bar onscreen that shows how long a file is being
-played and when it's finished playing. There's also a time indicator next
-to the scrollbar, which displays elapsed time, total time and remaining time.
-You can leave the playlist editor by pressing 'q'.
+The mixer can be controlled using the arrow (or vi-style) keys.
+Left/Right changes the highlighted device; up/down selects another
+mixer device. You can control any mixer device that has been detected
+by your sound driver, which may vary on different systems.  The path
+to the mp3-file that's currently being played is in the upper border
+of the screen. Directly below you see some information about the
+soundfile being played. For mp3 files with an ID3-tag extra
+information like the songname, artist, etc. will be shown as well. If
+an mp3 does not have an id3tag (or no songname in it), the songname
+will be the filename.  There is also a progress bar onscreen that
+shows how long a file is being played and when it's finished playing.
+There's also a time indicator next to the scrollbar, which displays
+elapsed time, total time and remaining time.  You can leave the
+playlist editor by pressing 'q'.
+
 .SH OPTIONS
 .TP
 .B --chroot=rootdir, -c=rootdir
@@ -134,7 +160,7 @@ If you find bugs, please send reports to brama@stack.nl.
 .PP
 .SH AUTHOR
 .I mp3blaster
-was written by 
+has been written written and performed by 
 .B Bram Avontuur <brama@stack.nl> <http://www.stack.nl/~brama/>
 .PP
 Please send comments, suggestions, complaints, bug fixes, coffee and porting

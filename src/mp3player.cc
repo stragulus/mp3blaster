@@ -22,6 +22,7 @@
 #include <time.h>
 #include <stdio.h>
 #include <sys/ioctl.h>
+#include "global.h"
 #include "playwindow.h"
 #include "mp3player.h"
 
@@ -33,8 +34,7 @@
 #include <soundcard.h>
 #endif
 
-extern void debug(const char *txt);
-extern int fpl; /* frames per loop to run */
+extern struct _globalopts globalopts; /* from main.cc */
 
 // mp3Player constructor
 mp3Player::mp3Player(mp3Play *calling, playWindow *interface, int threads)
@@ -71,7 +71,7 @@ bool mp3Player::playing(int verbose)
 
 	interface->setStatus( (status = PS_PLAYING) );
 	interface->setProperties( server->getversion()+1, server->getlayer(),
-		server->getfrequency(), server->getbitrate(), server->isstereo() );
+		server->getfrequency(), server->getbitrate(), server->getmodestring() );
 	if (server->getname())
 		interface->setSongName(server->getname());
 	if (server->getartist())
@@ -103,8 +103,8 @@ bool mp3Player::playing(int verbose)
 	{
 		if (status == PS_PLAYING)
 		{
-			should_play = (server->run(fpl));
-			init_count += fpl;
+			should_play = (server->run(globalopts.fpl));
+			init_count += globalopts.fpl;
 			/* restore volume? */
 			if (mixer > -1 && (init_count > 4))
 			{
@@ -154,7 +154,7 @@ bool mp3Player::playing(int verbose)
 					
 				server->setframe(curframe);
 			}
-			break;
+				break;
 			case '3': /* play/resume */
 				if (status == PS_PAUSED)
 					interface->setStatus( (status = PS_PLAYING) );
@@ -163,6 +163,16 @@ bool mp3Player::playing(int verbose)
 					caller->setAction(AC_SAMESONG);
 					should_play = 0;
 				}
+				break;
+			case 'e': /* quick undoc'd hack */
+			{
+				if (status != PS_PLAYING)
+					break;
+				int end_of_song = server->gettotalframe()-100;
+				if (end_of_song < 0)
+					end_of_song = 0;
+				server->setframe(end_of_song);
+			}
 				break;
 			case '4':
 			{
@@ -177,7 +187,7 @@ bool mp3Player::playing(int verbose)
 
 				server->setframe(curframe);
 			}
-			break;
+				break;
 			case '5': /* next mp3 */
 			case ' ':
 				/* the program automagically choses the next MP3 in the play-
@@ -251,7 +261,7 @@ bool mp3Player::playingwiththread(int verbose)
 
 	interface->setStatus( (status = PS_PLAYING) );
 	interface->setProperties( server->getversion()+1, server->getlayer(),
-		server->getfrequency(), server->getbitrate(), server->isstereo() );
+		server->getfrequency(), server->getbitrate(), server->getmodestring() );
 	if (server->getname())
 		interface->setSongName(server->getname());
 	if (server->getartist())
@@ -294,8 +304,8 @@ framesaveloop=0;
 char blub[100];sprintf(blub, "Framesaved: %d\n", server->getframesaved());
 debug(blub);
 }
-			should_play = (server->run(fpl));
-			init_count += fpl;
+			should_play = (server->run(globalopts.fpl));
+			init_count += globalopts.fpl;
 			/* restore volume? */
 			if (mixer > -1 && (init_count > 4))
 			{
@@ -364,6 +374,17 @@ debug(blub);
 					should_play = 0;
 				}
 				break;
+			case 'e': /* quick undoc'd hack */
+			{
+				if (status != PS_PLAYING)
+					break;
+				int end_of_song = server->gettotalframe()-100;
+				if (end_of_song < 0)
+					end_of_song = 0;
+				server->setframe(end_of_song);
+			}
+				break;
+
 			case '4':
 			{
 				if (status != PS_PLAYING)

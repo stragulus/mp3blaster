@@ -216,7 +216,7 @@ mpeglayer2.o: mpeglayer2.cc mpegsound.h
 mpeglayer3.o: mpeglayer3.cc mpegsound.h mpegsound_locals.h
 mpegtable.o: mpegtable.cc mpegsound.h
 mpegtoraw.o: mpegtoraw.cc mpegsound.h mpegsound_locals.h
-nasplayer.o: nasplayer.cc
+nasplayer.o: nasplayer.cc mpegsound.h
 rawplayer.o: rawplayer.cc mpegsound.h
 rawtofile.o: rawtofile.cc mpegsound.h
 sidplayer.o: sidplayer.cc mpegsound.h

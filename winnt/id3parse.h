@@ -11,13 +11,14 @@ struct id3header
 	char type[31];
 	char year[5];
 	char etc[31];
-	char genre;
+	unsigned char genre;
+	//char genre_txt[41]; 
 };
 
 class id3Parse
 {
 public:
-	
+
 	id3Parse(const char *filename);
 	~id3Parse();
 
@@ -27,6 +28,7 @@ public:
 private:
 	int search_header(FILE *);
 	int appendNewID3Header(FILE *);
+	char *getGenre(const char);
 
 	char *flnam;
 	id3header *song;

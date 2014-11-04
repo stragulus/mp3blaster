@@ -495,6 +495,9 @@ public:
   bool getcrccheck(void)  const {return (!protection);};
   // Stereo or not
   int  getmode(void)      const {return mode;};
+  const char *getmodestring(void) const { return (mode == fullstereo ?
+  	"stereo" : (mode == joint ? "joint stereo" : (mode == dual ?
+	"dual channel" : "mono"))); };
   bool isstereo(void)     const {return (getmode()!=single);};
   // Frequency and bitrate
   int  getfrequency(void) const {return frequencies[version][frequency];};

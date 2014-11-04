@@ -1,6 +1,7 @@
--NAS dumps core on my system..
 -dir as argument recursively adds all files in it
--add files on alf. order i/o creation order
+-make interface control independant of physical interface 
+-loop playback
+-add remote control option (mp3blaster listens to a socket for commands)
 -add record enable/disable to nmixer
 -mp3blasterrc file (with support for adjustable keybindings)
 -esd (enlightenment sound daemon) support
@@ -8,19 +9,14 @@
  directory where all playlists are stored)
 -When a directory is selected (with spacebar) in the filemanager, add this
  as a separate group to the playlist
--'/' to search in scrollwin
 -(downmix to 22Khz)
 -(compatible with WinAmp playlist)
 -(``cold start'' option)
 -(add browsable playlist in playwindow)
--(add wav/http support)
 -Allowing user to change group-order (and mp3-order afterwards)
 -when paused, show this on the interface.
 -InfraRed support! (lirc)
--plugin support 
--better chrooted environment
 -"multiple del"
--NAS (Network Audio System) support!!
 -refresh_screen() that actually works at all times.
 -fix a memory-leak. After each played song, 4kb is lost(oops) (but 
  regained if you leave the playlist by F1 :) So far I can't find anything
@@ -28,7 +24,4 @@
 -update border in refresh_screen() too
 -Save playing status when program is interrupted, so the playlist can be 
  resumed when mp3blaster is restarted (useful for *big* playlists)
--On my cleanly-installed debian-2.0 linux box the blue play-window's layout
- is messed up. Probably due to the ncurses-lib on it (and perhaps because
- I do some unsupported tricks with ncurses, to work around `features' *cough*)
- Gotta look into that.. (appears to be an ncurses ``feature'')
+-better chrooted environment

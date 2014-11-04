@@ -24,6 +24,8 @@
 #include <dirent.h>
 #include "fileman.h"
 
+extern struct _globalopts globalopts;
+
 /* initialize filemanager. If path is NULL, the current working path will be
  * used.
  */
@@ -106,7 +108,10 @@ fileManager::changeDir(const char *newpath)
 int
 sortme(const void *a, const void *b)
 {
-	return (strcmp(*(char**)a, *(char**)b));
+	if (!globalopts.fw_sortingmode)
+		return (strcasecmp(*(char**)a, *(char**)b));
+	else
+		return (strcmp(*(char**)a, *(char**)b));
 }
 
 void

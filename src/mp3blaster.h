@@ -54,6 +54,25 @@ enum playmode {
 	                         group-order */
 	PLAY_SONGS };         /* play all songs from all groups in random order */
 
+/* Structure with global variables used by multiple objects */
+struct _globalopts /* global options, exported for other classes */
+{
+	int no_mixer; /* non-zero if no mixer is wanted */
+	int fpl; /* frames to be run in 1 loop: Higher -> less 'hicks' on slow
+              * CPU's. Lower -> interface (while playing) reacts faster.
+              * 1<=fpl<=10
+              */
+	int current_group; /* selected group (group_stack[current_group - 1]) */
+	short downsample; /* non-zero => downsampling */
+	char *sound_device;
+	short fw_sortingmode; /* 0: case-insensitive (default), 1: case sensitive */
+	playmode play_mode;
+
+#ifdef PTHREADEDMPEG
+	int threads;
+#endif
+};
+
 inline int MIN(int x, int y)
 {
 	return (x < y ? x : y);

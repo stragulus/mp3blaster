@@ -27,6 +27,6 @@
    gcc -o mp3tag.exe id3parse.cpp mp3tag.cpp getopt.c
 
 
-Steve <skx@tardis.ed.ac.uk>
+Steve
 ---
 http://www.tardis.ed.ac.uk/~skx/

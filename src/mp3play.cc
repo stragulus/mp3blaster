@@ -24,6 +24,7 @@
 #include <sys/ioctl.h>
 #include "mp3play.h"
 #include "mp3player.h"
+#include "global.h"
 #ifdef HAVE_SIDPLAYER
 #include "sidplayer.h"
 #endif /*\ HAVE_SIDPLAYER \*/
@@ -39,8 +40,7 @@
 
 /* prototypes */
 //extern int handle_input(short);
-extern void debug(const char*);
-extern char *sound_device;
+extern struct _globalopts globalopts;
 
 inline void mp3Play::error(int n)
 {
@@ -129,31 +129,27 @@ mp3Play::~mp3Play()
 int mp3Play::playMp3List()
 {
 	int
-		retval = 1,
-		mp3play_downfrequency = 0;
+		retval = 1;
 	unsigned int
 		next_to_play = 0;
 	short
 		play = 1;
-	genPlayer *player;
+	genPlayer
+		*player;
 	char
 		*snddev;
 
 	if (!nmp3s) /* nothing to play. Whaaah. */
 		return -1;
 
-	if (sound_device)
+	if (globalopts.sound_device)
 	{
-		snddev = new char[strlen(sound_device)+1];
-		strcpy(snddev, sound_device);
+		snddev = new char[strlen(globalopts.sound_device)+1];
+		strcpy(snddev, globalopts.sound_device);
 	}
 	else
 	{
-		snddev = NULL; /*\ let the lib handle it \*/
-		/*\
-		snddev = new char[strlen(SOUND_DEVICE)+1];
-		strcpy(snddev, SOUND_DEVICE);
-		\*/
+		snddev = NULL; /* let the lib handle it */
 	}
 
 	interface = new playWindow();
@@ -186,10 +182,11 @@ int mp3Play::playMp3List()
 		action = AC_NEXT; //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 		int is_sid(const char*);
 
-		player = &mp3p;
 #ifdef HAVE_SIDPLAYER
 		if (is_sid(filename)) player = &sidp;
+		else
 #endif
+		player = &mp3p;
 
 		if( !(player->openfile(filename, snddev)) )
 		{
@@ -202,7 +199,7 @@ int mp3Play::playMp3List()
 		else
 		{
 			interface->setFileName(filename);
-			player->setdownfrequency(mp3play_downfrequency);
+			player->setdownfrequency(globalopts.downsample);
 
 
 #ifdef PTHREADEDMPEG

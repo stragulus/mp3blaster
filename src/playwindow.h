@@ -14,7 +14,7 @@ public:
 	void setFileName(const char *flname);
 	void setStatus(playstatus ps);
 	void setProperties(int mpeg_version, int layer, int freq, int bitrate,
-		bool stereo);
+		const char *stereo);
 	playstatus getStatus(void) { return status; }
 	chtype getInput();
 	WINDOW *getCursesWindow() { return interface; }

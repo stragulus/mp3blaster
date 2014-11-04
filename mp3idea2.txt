@@ -77,3 +77,9 @@ Class _PlayWindow()
 	virtual SetMixerPercentage(short vol);
 }
 
+//determine next (random) song
+//2 groups, first group=5 songs, 2nd group=10 songs. Order is all songs
+//random.
+//weight of 1st group: 5  - (#played songs for this group)
+//weight of 2nd group: 10 - (#played songs for this group)
+//random (sum of weights) => song to play.
