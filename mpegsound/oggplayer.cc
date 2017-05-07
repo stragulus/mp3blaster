@@ -6,9 +6,6 @@
 
 #ifdef INCLUDE_OGG
 
-#ifdef HAVE_BOOL_H
-//#include <bool.h>
-#endif
 #include <vorbis/codec.h>
 #include <vorbis/vorbisfile.h>
 #include <stdio.h>
@@ -55,10 +52,10 @@ bool Oggplayer::openfile(const char *filename, const char *device, soundtype wri
 	//initialize player object that writes to sound device/file
 	if (!opendevice(device, write2file))
 		return seterrorcode(SOUND_ERROR_DEVOPENFAIL);
-	
+
 	if (!(f = fopen(filename, "r")))
 		return seterrorcode(SOUND_ERROR_FILEOPENFAIL);
-	
+
 	of = new OggVorbis_File;
 
 	//initialize OggVorbis structure
@@ -172,14 +169,14 @@ bool Oggplayer::run(int sec)
 		return seterrorcode(SOUND_ERROR_BAD);
 	if (!bytes_read)
 		return seterrorcode(SOUND_ERROR_FINISH);
-	
+
 	vorbis_info *vi = ov_info(of, bitstream);
 
 	if (channels != vi->channels)
 		channels = vi->channels, resetsound++;
 	if (srate != vi->rate)
 		srate = vi->rate, resetsound++;
-		
+
 	if (resetsound)
 	{
 		debug("OggVorbis channels/samplerate changed.\n");
@@ -234,50 +231,50 @@ bool Oggplayer::initialize(void *data)
 	if (data);
 	return true;
 }
- 
+
 bool Oggplayer::forward(int sec)
 {
 	skip(sec);
 	return true;
 }
- 
+
 bool Oggplayer::rewind(int sec)
 {
 	skip(-sec);
 	return true;
 }
- 
+
 bool Oggplayer::pause()
 {
 	player->releasedevice();
 	return true;
 }
- 
+
 bool Oggplayer::unpause()
 {
 	return player->attachdevice();
 }
- 
+
 bool Oggplayer::stop()
 {
 	return true;
 }
- 
+
 bool Oggplayer::ready()
 {
 	return true;
 }
- 
+
 int Oggplayer::elapsed_time()
 {
 	double elapsed = ov_time_tell(of);
 
 	return (int)elapsed;
 }
- 
+
 int Oggplayer::remaining_time()
 {
 	return info.totaltime - elapsed_time();
 }
- 
+
 #endif /* INCLUDE_OGG */

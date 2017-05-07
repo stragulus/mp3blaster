@@ -12,9 +12,6 @@
 #include <config.h>
 #include <stdio.h>
 #include <sys/types.h>
-#ifdef HAVE_BOOL_H
-//#include <bool.h>
-#endif
 #ifdef LIBPTH
 # include <pth.h>
 #elif defined(PTHREADEDMPEG)
@@ -24,7 +21,7 @@
 #ifndef _L__SOUND__
 #define _L__SOUND__
 
-/* Not all OSS implementations define an endian-independant samplesize. 
+/* Not all OSS implementations define an endian-independant samplesize.
  * This code is taken from linux' <sys/soundcard.h, OSS version 0x030802
  */
 #ifndef AFMT_S16_NE
@@ -355,7 +352,7 @@ public:
   virtual int  getblocksize(void);
 
   int geterrorcode(void) {return __errorcode;};
-  int audiohandle;  
+  int audiohandle;
   virtual int fix_samplesize(void *buffer, int size);
 protected:
   bool seterrorcode(int errorno) {__errorcode=errorno; return false;};
@@ -710,7 +707,7 @@ public:
 #ifdef NEWTHREAD
   int skip;
   unsigned char *sound_buf;
-  void continueplaying(void); 
+  void continueplaying(void);
   void createplayer(void);
   void abortplayer(void);
   void pauseplaying(void);
@@ -730,7 +727,7 @@ private:
   void makeroom(int size);
 
 public:
-	void real_alarm_handler(int bla); 
+	void real_alarm_handler(int bla);
 
   int getfreebuffers(void);
   /*******************************/
@@ -885,7 +882,7 @@ private:
 
   void layer3hybrid(int ch,int gr,REAL in[SBLIMIT][SSLIMIT],
 		                  REAL out[SSLIMIT][SBLIMIT]);
-  
+
   void huffmandecoder_1(const HUFFMANCODETABLE *h,int *x,int *y);
   void huffmandecoder_2(const HUFFMANCODETABLE *h,int *x,int *y,int *v,int *w);
 
@@ -982,7 +979,7 @@ public:
 	virtual bool ready()                               =0;
 	virtual int elapsed_time()                         =0;
 	virtual int remaining_time()                       =0;
-  
+
 protected:
   Fileplayer(); //thou shallt not instantiate fileplayer itself.
 
@@ -1013,7 +1010,7 @@ public:
   ~Wavefileplayer();
 
   bool openfile(const char *filename, const char *device, soundtype write2file=ST_NONE);
-  void closefile(void); 
+  void closefile(void);
   void setforcetomono(short flag);
 	void setdownfrequency(int value) { if (value); }
   void set8bitmode() { if(player) player->set8bitmode(); }
@@ -1029,7 +1026,7 @@ public:
 	int elapsed_time();
 	int remaining_time();
 	void skip(int);
-  
+
 private:
   Soundinputstream *loader;
 
