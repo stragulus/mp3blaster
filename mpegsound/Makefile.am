@@ -5,7 +5,7 @@ libmpegsound_a_SOURCES  = soundinputstream.cc fileinput.cc httpinput.cc \
 			  mpegtable.cc filter.cc filter_2.cc \
 			  mpegtoraw.cc mpeglayer1.cc mpeglayer2.cc \
 			  mpeglayer3.cc bitwindow.cc huffmantable.cc \
-			  wavetoraw.cc sidplayer.cc \
+			  wavetoraw.cc sidplayer.cc mikmodplayer.cc \
 			  fileplayer.cc nasplayer.cc oggplayer.cc \
 				xingheader.cc xingheader.h esdplayer.cc \
 				sdlplayer.cc cyclicbuffer.cc cyclicbuffer.h

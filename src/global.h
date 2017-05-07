@@ -19,6 +19,7 @@ int is_mp3(const char*);
 int is_wav(const char*);
 int is_ogg(const char*);
 int is_sid(const char*);
+int is_mikmod(const char*);
 int is_httpstream(const char*);
 int is_audiofile(const char *);
 int is_playlist(const char *);

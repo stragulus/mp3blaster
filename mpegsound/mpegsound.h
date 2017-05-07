@@ -1167,4 +1167,43 @@ private:
 
 #endif /*\ HAVE_SIDPLAYER \*/
 
+#ifdef HAVE_MIKMODPLAYER
+#include <mikmod.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <string.h>
+#include <errno.h>
+
+class MIKMODfileplayer : public Fileplayer
+{
+public:
+	MIKMODfileplayer(audiodriver_t driver);
+	~MIKMODfileplayer() {}
+
+	bool openfile(const char *filename, const char *device, soundtype write2file=NONE);
+	bool initialize(void*) { return true; }
+	void closefile(void);
+	void setforcetomono(short /*flag*/) {}
+	void setdownfrequency(int /*value*/) {}
+	void set8bitmode() {}
+	bool run(int frames);
+	bool playing();
+	bool ready() { return true; }
+	void skip(int);
+	int elapsed_time();
+	int remaining_time(){ return 0; }
+	bool forward(int sec) {skip(sec); return true;}
+	bool rewind(int sec) {skip(-sec); return true;}
+	bool pause();
+	bool unpause();
+	bool stop();
+protected:
+	static void init();
+	MODULE *module;
+	static bool initialized;
+};
+
+#endif /*\ HAVE_MIKMODPLAYER \*/
+
 #endif

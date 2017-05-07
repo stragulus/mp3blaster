@@ -5,7 +5,7 @@ AC_CONFIG_SRCDIR([src/mp3blaster.h])
 AM_INIT_AUTOMAKE
 
 #Custom C++ flags - later options override earlier ones
-if [ -z "$CXXFLAGS" ] ; then
+if test -z "$CXXFLAGS" ; then
 	CXXFLAGS="-O2 -Wall -W -fno-strength-reduce"
 fi
 
@@ -112,6 +112,11 @@ WANT_SID=1
 AC_ARG_WITH(sidplay,
   [  --with-sidplay          Sidplayer support [default=yes]],
   [ if test "$withval" = "yes" ; then WANT_SID=1; REQ_SID=1 ; else WANT_SID=0 ; fi ])
+
+WANT_MIKMOD=1
+AC_ARG_WITH(mikmod,
+  [  --with-mikmod           Mikmod support [default=yes]],
+  [ if test "$withval" = "yes" ; then WANT_MIKMOD=1; REQ_MIKMOD=1 ; else WANT_MIKMOD=0 ; fi ])
 
 WANT_ESD=0
 AC_ARG_WITH(esd,
@@ -407,6 +412,19 @@ if test "$WANT_SID" = 1 ; then
   fi
 fi
 
+dnl Check MIKMOD support
+HAVE_MIKMOD="no"
+if test "$WANT_MIKMOD" = 1 ; then
+  AC_CHECK_LIB(mikmod, main,HAVE_MIKMOD="yes",HAVE_MIKMOD="no")
+  if test "$HAVE_MIKMOD" = "yes" ; then
+    MIKMOD_LIBS="-lmikmod"
+    AC_DEFINE(HAVE_MIKMODPLAYER,1,[Mikmod Playback support])
+    AC_SUBST(MIKMOD_LIBS)
+	elif test "$REQ_MIKMOD" = "1" ; then
+		AC_MSG_ERROR([you requested MIKMOD playback, but libs/includes cannot be found])
+  fi
+fi
+
 dnl Check NAS support
 AC_LANG(C)
 
@@ -494,6 +512,7 @@ if test "$HAVE_PTH" = "yes" ; then PTHREADS_OR_PTH="pth" ; fi
 AUDIO_FORMATS="mp3 wav"
 if test "$HAVE_OGG" = "yes" ; then AUDIO_FORMATS="$AUDIO_FORMATS ogg" ; fi
 if test "$HAVE_SID" = "yes" ; then AUDIO_FORMATS="$AUDIO_FORMATS sid" ; fi
+if test "$HAVE_MIKMOD" = "yes" ; then AUDIO_FORMATS="$AUDIO_FORMATS mikmod" ; fi
 AUDIO_DRIVERS=""
 if test "$HAVE_OSS" = "yes" ; then AUDIO_DRIVERS="${AUDIO_DRIVERS}oss " ; fi
 if test "$HAVE_SDL" = "yes" ; then AUDIO_DRIVERS="${AUDIO_DRIVERS}sdl " ; fi

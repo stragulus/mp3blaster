@@ -2403,6 +2403,10 @@ start_song(short was_playing)
 	else if (is_sid(song))
 		playopts.player = new SIDfileplayer(audiodriver);
 #endif
+#ifdef HAVE_MIKMODPLAYER
+	else if (is_mikmod(song))
+		playopts.player = new MIKMODfileplayer(audiodriver);
+#endif
 #ifdef INCLUDE_OGG
 	else if (is_ogg(song))
 		playopts.player = new Oggplayer(audiodriver);

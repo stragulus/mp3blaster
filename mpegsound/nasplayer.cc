@@ -34,7 +34,7 @@ NASplayer::~NASplayer()
 	}
 }
 
-NASplayer *NASplayer::opendevice(char *server)
+NASplayer *NASplayer::opendevice(const char *server)
 {
 	AuServer *aud;
 	char *return_status;

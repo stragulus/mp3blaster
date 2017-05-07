@@ -386,6 +386,38 @@ is_sid(const char *filename)
 }
 
 int
+is_mikmod(const char *filename)
+{
+#ifdef HAVE_MIKMODPLAYER
+	const char *ext = strrchr(filename, '.');
+	if (ext) {
+		if (!strcasecmp(ext, ".669")) return 1;
+		if (!strcasecmp(ext, ".amf")) return 1;
+		if (!strcasecmp(ext, ".dsm")) return 1;
+		if (!strcasecmp(ext, ".far")) return 1;
+		if (!strcasecmp(ext, ".gdm")) return 1;
+		if (!strcasecmp(ext, ".imf")) return 1;
+		if (!strcasecmp(ext, ".it")) return 1;
+		if (!strcasecmp(ext, ".imf")) return 1;
+		if (!strcasecmp(ext, ".m15")) return 1;
+		if (!strcasecmp(ext, ".med")) return 1;
+		if (!strcasecmp(ext, ".mod")) return 1;
+		if (!strcasecmp(ext, ".mtm")) return 1;
+		if (!strcasecmp(ext, ".okt")) return 1;
+		if (!strcasecmp(ext, ".s3m")) return 1;
+		if (!strcasecmp(ext, ".stm")) return 1;
+		if (!strcasecmp(ext, ".stx")) return 1;
+		if (!strcasecmp(ext, ".ult")) return 1;
+		if (!strcasecmp(ext, ".uni")) return 1;
+		if (!strcasecmp(ext, ".xm")) return 1;
+	}
+#else
+	if(filename); //prevent warning
+#endif
+	return 0;
+}
+
+int
 is_httpstream(const char *filename)
 {
 	if (!strncasecmp(filename, "http://", 7))
