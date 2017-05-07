@@ -1904,7 +1904,7 @@ play_list(void *arg)
 						stop_song(); //status => AC_NONE
 					} else {
 						//output buffer full, wait a bit.
-						USLEEP(10000);
+						// USLEEP(10000);
 					}
 				} else {
 					/* TODO: different thread for status updates. Now, this function
@@ -1913,7 +1913,7 @@ play_list(void *arg)
 					 * costly as well..
 					 */
 					update_play_display();
-					USLEEP(10000);
+					// USLEEP(10000);
 				}
 			}
 
@@ -3644,7 +3644,7 @@ fw_convmp3(const char *tmp, void *args)
 
 			if (!(decoder = new Mpegfileplayer(Fileplayer::AUDIODRV_OSS)) ||
 				!decoder->openfile(file,
-				file2write, WAV) || !decoder->initialize(NULL))
+				file2write, ST_WAV) || !decoder->initialize(NULL))
 			{
 				sprintf(bla, "Decoding of %s failed.", selitems[i]);
 				warning(bla);

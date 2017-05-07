@@ -60,7 +60,7 @@ inline int HOST_TO_LE32(int x)
 // Rawplayer class
 Rawtofile::~Rawtofile()
 {
-	if (filetype == WAV)
+	if (filetype == ST_WAV)
 	{
 		off_t filelen = lseek(audiohandle, 0, SEEK_CUR);
 		lseek(audiohandle, 0, SEEK_SET);
@@ -110,10 +110,10 @@ bool Rawtofile::setsoundtype(int stereo,int samplesize,int speed)
 	return true;
 }
 
-/* set type of file to write. Default: RAW (no header) */
+/* set type of file to write. Default: ST_RAW (no header) */
 bool Rawtofile::setfiletype(soundtype filetype)
 {
-	if (filetype != RAW && filetype != WAV)
+	if (filetype != ST_RAW && filetype != ST_WAV)
 		return false;
 
 	this->filetype = filetype;	
@@ -121,13 +121,13 @@ bool Rawtofile::setfiletype(soundtype filetype)
 }
 int Rawtofile::putblock_nt(void *buffer, int size)
 {
-	if (init_putblock && filetype != RAW)
+	if (init_putblock && filetype != ST_RAW)
 	{
 		int wordsize;
 	
 		wordsize = rawsamplesize;
 
-		if (filetype == WAV)
+		if (filetype == ST_WAV)
 		{
 		//initial datasize = 0...when all data is written, determine filesize
 		//and rewrite the header.
