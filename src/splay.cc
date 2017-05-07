@@ -84,7 +84,7 @@ static void play(char *filename)
 
     player=new Mpegfileplayer(Fileplayer::AUDIODRV_OSS);
 		if (!strcmp(splay_devicename, "-"))
-			didopen = player->openfile(filename, "/dev/stdout", WAV);
+			didopen = player->openfile(filename, "/dev/stdout", ST_WAV);
 		else
 			didopen = player->openfile(filename, splay_devicename);
 

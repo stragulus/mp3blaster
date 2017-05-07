@@ -371,7 +371,7 @@ int
 is_sid(const char *filename)
 {
 #ifdef HAVE_SIDPLAYER
-	char *ext = strrchr(filename, '.');
+	const char *ext = strrchr(filename, '.');
 	if (ext) {
 		if (!strcasecmp(ext, ".psid")) return 1;
 		if (!strcasecmp(ext, ".sid")) return 1;

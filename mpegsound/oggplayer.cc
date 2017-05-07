@@ -7,7 +7,7 @@
 #ifdef INCLUDE_OGG
 
 #ifdef HAVE_BOOL_H
-#include <bool.h>
+//#include <bool.h>
 #endif
 #include <vorbis/codec.h>
 #include <vorbis/vorbisfile.h>
@@ -18,7 +18,11 @@ Oggplayer::Oggplayer(audiodriver_t driver)
 {
 	of = NULL;
 	wordsize = 2; //2 bytes
+#ifdef WORDS_BIGENDIAN
+	bigendian = 1;
+#else
 	bigendian = 0;
+#endif
 	signeddata = 1;
 	mono = 0;
 	downfreq = 0;
@@ -32,6 +36,7 @@ Oggplayer::~Oggplayer()
 	{
 		ov_clear(of);
 		delete of;
+		of = NULL;
 	}
 }
 
@@ -127,6 +132,8 @@ void Oggplayer::closefile()
 {
 	if (of)
 		ov_clear(of);
+		delete of;
+		of = NULL;
 }
 
 void Oggplayer::setforcetomono(short flag)
