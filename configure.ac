@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_PREREQ(2.59)
-AC_INIT(mp3blaster,3.2.5)
+AC_INIT(mp3blaster,3.2.6-dev)
 AC_CONFIG_SRCDIR([src/mp3blaster.h])
 AM_INIT_AUTOMAKE
 
