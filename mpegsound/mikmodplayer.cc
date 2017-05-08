@@ -8,6 +8,8 @@
 
 #ifdef HAVE_MIKMODPLAYER
 
+#include <mikmod.h>
+
 /* This excerpt is a modified version of /drivers/drv_nos.c of mikmod */
 /*	MikMod sound library
 	(c) 1998, 1999, 2000 Miodrag Vallat and others - see file AUTHORS for
@@ -133,7 +135,7 @@ MIKMODfileplayer::MIKMODfileplayer(audiodriver_t audiodriver)
 
 void MIKMODfileplayer::init() {
 
-	MikMod_RegisterDriver(&drv_nos);
+	MikMod_RegisterDriver(&drv_mikmod);
 	MikMod_RegisterAllLoaders();
 
 	md_mode |= DMODE_SOFT_MUSIC | DMODE_16BITS | DMODE_STEREO;
@@ -159,7 +161,7 @@ bool MIKMODfileplayer::openfile(const char* filename, const char* device, soundt
 	if (!opendevice(device, write2file))
 		return seterrorcode(SOUND_ERROR_DEVOPENFAIL);
 
-	module = Player_Load((char*)filename, 256, 0);
+	module = Player_Load((char*)filename, 128, 0);
 
 	if (!module) {
 		debug("Could not load module, reason: %s\n", MikMod_strerror(MikMod_errno));

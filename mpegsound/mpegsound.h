@@ -1168,12 +1168,13 @@ private:
 #endif /*\ HAVE_SIDPLAYER \*/
 
 #ifdef HAVE_MIKMODPLAYER
-#include <mikmod.h>
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <string.h>
 #include <errno.h>
+
+struct MODULE;
 
 class MIKMODfileplayer : public Fileplayer
 {
