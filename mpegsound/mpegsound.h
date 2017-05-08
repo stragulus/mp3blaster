@@ -1012,7 +1012,7 @@ public:
   bool openfile(const char *filename, const char *device, soundtype write2file=ST_NONE);
   void closefile(void);
   void setforcetomono(short flag);
-	void setdownfrequency(int value) { if (value); }
+	void setdownfrequency(int) {}
   void set8bitmode() { if(player) player->set8bitmode(); }
   bool playing();
 	bool run(int);
@@ -1138,7 +1138,7 @@ public:
 	~SIDfileplayer();
 
 	bool openfile(const char *filename, const char *device, soundtype write2file=ST_NONE);
-	bool initialize(void *data) { if(data); return true; }
+	bool initialize(void *) { return true; }
 	void closefile(void);
 	void setforcetomono(short flag);
 	void setdownfrequency(int value);
