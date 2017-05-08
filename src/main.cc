@@ -13,12 +13,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  * If you like this program, or if you have any comments, tips for improve-
  * ment, money, etc, please do so on the sourceforge project page :
  * http://mp3blaster.sourceforge.net/
  *
- * May 21 2000: removed all calls to attr_get() since not all [n]curses 
+ * May 21 2000: removed all calls to attr_get() since not all [n]curses
  *            : versions use the same paramaters (sigh)
  * Dec 31 2000: Applied a patch from Rob Funk to fix randomness bug
  * Newer dates: changes made are stored in CVS.
@@ -91,7 +91,7 @@ enum _action { AC_NONE, AC_REWIND, AC_FORWARD, AC_NEXT, AC_PREV,
 	AC_STOP, AC_ONE_MP3, AC_PLAY,
 	AC_STOP_LIST, AC_SKIPEND, AC_NEXTGRP, AC_PREVGRP } action;
 
-/* There are different types of input modes, e.g. searching for text, 
+/* There are different types of input modes, e.g. searching for text,
  * inputting text, ..
  */
 enum _input_mode { IM_DEFAULT, IM_SEARCH, IM_INPUT } input_mode;
@@ -166,7 +166,7 @@ mp3Win* newgroup();
 short fw_markfilebad(const char *file);
 void get_mainwin_size(int*, int*, int*, int*);
 void get_mainwin_borderchars(chtype*, chtype*, chtype*, chtype*,
-                             chtype*, chtype*, chtype*, chtype*); 
+                             chtype*, chtype*, chtype*, chtype*);
 void change_program_mode(unsigned short pm);
 void end_help();
 void update_songinfo(playstatus_t, short);
@@ -324,7 +324,7 @@ getInput
 void
 usage()
 {
-	fprintf(stderr, "Mp3blaster v%s (C)1997 - 2009 Bram Avontuur.\n%s", \
+	fprintf(stderr, "Mp3blaster v%s (C)1997 - 2017 Bram Avontuur.\n%s", \
 		VERSION, \
 		"Usage:\n" \
 		"\tmp3blaster [options]\n"\
@@ -387,7 +387,7 @@ calc_mainwindow_width(int termWidth) {
 	int result = termWidth - 12;
 	if (result < 1)
 		result = 1;
-	
+
 	return result;
 }
 
@@ -405,7 +405,7 @@ calc_mainwindow_height(int termHeight) {
 
 	if (result < 1)
 		result = 1;
-	
+
 	return result;
 }
 
@@ -443,7 +443,7 @@ fw_begin()
  * files into the currently used group. Finally, the selection-window of the
  * current group is put back on the screen and the title in the header-window
  * is set to match that of the current group. If files were selected in another
- * dir than the current dir, these will be added too (they're stored in 
+ * dir than the current dir, these will be added too (they're stored in
  * selected_files then). selected_files will be freed as well.
  */
 void
@@ -460,8 +460,8 @@ fw_end()
 	if (progmode != PM_FILESELECTION) /* or: !file_window */
 		return;
 
-	selitems = file_window->getSelectedItems(&nselected); 
-	
+	selitems = file_window->getSelectedItems(&nselected);
+
 	for ( i = 0; i < nselected; i++)
 	{
 		if (!is_audiofile(selitems[i]) || is_dir(selitems[i]))
@@ -474,7 +474,7 @@ fw_end()
 			sprintf(itemname, "%s/%s", path, selitems[i]);
 		else
 			sprintf(itemname, "%s%s", path, selitems[i]);
-	
+
 		add_selected_file(itemname);
 		free(itemname);
 	}
@@ -527,7 +527,7 @@ fw_changedir(const char *newpath = 0)
 
 	int
 		nselected = 0;
-	char 
+	char
 		**selitems;
 	const char
 		*path;
@@ -540,7 +540,7 @@ fw_changedir(const char *newpath = 0)
 	selitems = file_window->getSelectedItems(&nselected);
 
 	/* if not changed to current dir and files have been selected add them to
-	 * the selection list 
+	 * the selection list
 	 */
 	if (strcmp(path, ".") && nselected)
 	{
@@ -567,7 +567,7 @@ fw_changedir(const char *newpath = 0)
 		}
 		delete[] selitems;
 	}
-	
+
 	/* If the old dir is a directory in the new dir, set the current
 	 * selection to the entry for that dir. */
 	const char *oldPath = file_window->getPath();
@@ -613,13 +613,13 @@ fw_getpath(const char *npath, void *opts)
 		*dir = NULL;
 	char
 		*newpath;
-	
+
 	if (opts);
 
 	if (!npath || !(newpath = expand_path(npath)))
 		return;
 
-	if ( !(dir = opendir(newpath))) 
+	if ( !(dir = opendir(newpath)))
 	{
 		free(newpath);
 		return;
@@ -644,7 +644,7 @@ draw_play_key(short do_refresh)
 	attrset(COLOR_PAIR(CP_LABEL));
 
 	move(maxy-9,r+4);
-	
+
 	lock_playing_mutex();
 	if (!playopts.playing || (playopts.playing && playopts.song_played && playopts.pause))
 		addstr(" |>");
@@ -876,7 +876,7 @@ add_group(const char *newgroupname=0)
 }
 
 /* Function   : set_group_name
- * Description: Sets the group name of the currently highlighted group. 
+ * Description: Sets the group name of the currently highlighted group.
  *            : It is called from popup_win.
  * Parameters : name: Name to give to group. free() after use.
  *            : args: not used
@@ -907,7 +907,7 @@ set_group_name(const char *name, void *args)
 		return;
 	}
 	char tmpname[strlen(name)+3];
-	sprintf(tmpname, "[%s]", name);	
+	sprintf(tmpname, "[%s]", name);
 	sw->changeItem(index, tmpname);
 	mp3Win *gr = sw->getGroup(index);
 	if (gr)
@@ -965,13 +965,13 @@ read_group_from_file(FILE *f)
 			read_ok = 0;
 			continue;
 		}
-		
+
 		if (linecount == 0)
 		{
 			char
 				*tmp = (char*)malloc((strlen(line) + 1) * sizeof(char));
 			int
-				success = sscanf(line, "GROUPNAME: %[^\n]", tmp);	
+				success = sscanf(line, "GROUPNAME: %[^\n]", tmp);
 
 			if (success < 1) /* bad group-header! */
 				read_ok = 0;
@@ -987,7 +987,7 @@ read_group_from_file(FILE *f)
 				 * group will be read into that group.
 				 */
 				if (sw->getNitems())
-				{	
+				{
 					add_group();
 					sw = group_stack->entry(group_stack->stackSize() - 1);
 				}
@@ -1005,7 +1005,7 @@ read_group_from_file(FILE *f)
 			char
 				*tmp = new char[strlen(line) + 1];
 			int
-				success = sscanf(line, "PLAYMODE: %[^\n]", tmp);	
+				success = sscanf(line, "PLAYMODE: %[^\n]", tmp);
 
 			if (success < 1) /* bad group-header! */
 			{
@@ -1023,7 +1023,7 @@ read_group_from_file(FILE *f)
 			else
 			{
 				char *songname = new char[strlen(line) + 1];
-					
+
 				sscanf(line, "%[^\n]", songname);
 
 				if (is_audiofile(songname))
@@ -1062,7 +1062,7 @@ read_group_from_file(FILE *f)
 void
 popup_win
 (
-	const char **label, 
+	const char **label,
 	void (*func)(const char *, void *), void *func_args,
 	const char *init_str,
 	short want_input, int maxlen
@@ -1083,8 +1083,8 @@ popup_win
 	{
 		for (j = 0; j < width; j++)
 		{
-			//move(by+i, bx+j); addch('x'); 
-			move(by+i, bx+j); addch(' '); 
+			//move(by+i, bx+j); addch('x');
+			move(by+i, bx+j); addch(' ');
 		}
 	}
 	//write text
@@ -1161,7 +1161,7 @@ parse_playlist_token(const char *str)
 	if (!mystr || !strlen(mystr) || strlen(mystr) < 2 || mystr[0] != '<' ||
 		mystr[strlen(mystr)-1] != '>')
 		return badtag;
-	
+
 	last_token = '\0';
 	mystr[strlen(mystr)-1] = '\0';
 
@@ -1196,7 +1196,7 @@ parse_playlist_token(const char *str)
 				else
 					status = 2; //found keyword
 			}
-				
+
 
 			if (token == ' ' || token == '\t' || token == '=') //end of keyword
 			{
@@ -1278,7 +1278,7 @@ parse_playlist_token(const char *str)
 
 	if (status != 1) //not good.
 		return badtag;
-	
+
 	debug("Scanning done\n");
 	{
 		short i;
@@ -1328,7 +1328,7 @@ tag_keyword_value(const struct ptag_t * tag, const char *kword)
 
 /* Function   : read_playlist
  * Description: Reads a playlist from a file and adds the songs to the playlist
- * Parameters : filename: 
+ * Parameters : filename:
  *            :   Path to the playlist
  * Returns    : If succesful 1, else 0.
  * SideEffects: None.
@@ -1343,7 +1343,7 @@ read_playlist(const char *filename)
 	char
 		*tmpline, *line;
 
-	const char 
+	const char
 		*extension;
 
 	mp3Win
@@ -1356,7 +1356,7 @@ read_playlist(const char *filename)
 
 	if (!filename || !(f = fopen(filename, "r")))
 		return 0;
-	
+
 	if (strlen(filename)>=4)
 	{
 		extension = filename + (strlen(filename)-4);
@@ -1370,7 +1370,7 @@ read_playlist(const char *filename)
 		free(tmpline);
 
 		if (!strlen(line))
-		{	
+		{
 			free(line);
 			continue;
 		}
@@ -1388,7 +1388,7 @@ read_playlist(const char *filename)
 
 			if (!strcasecmp(ptag.tag, "global"))
 			{
-				keyval = tag_keyword_value(&ptag, "playmode"); 
+				keyval = tag_keyword_value(&ptag, "playmode");
 				if (keyval)
 				{
 					set_play_mode(keyval);
@@ -1437,7 +1437,7 @@ read_playlist(const char *filename)
 			free(line);
 			continue;
 		}
-		
+
 		const char *bla[4];
 		short foo[2] = { 0, 1 };
 		short idx;
@@ -1460,25 +1460,25 @@ read_playlist(const char *filename)
 			current_group->changeItem(idx,&id3_filename,strdup(bla[0]),2);
 		free(line);
 	}
-	
+
 	//refresh_screen();
 	return 1;
-}	
+}
 
 #if 0
 	FILE
 		*f;
-	char 
+	char
 		*name;
-		
+
 	if (!filename)
 		name = gettext("Enter filename:", 1);
 	else
-	{	
+	{
 		name = (char*)malloc((strlen(filename)  + 1) * sizeof(char));
 		strcpy(name, filename);
 	}
-	
+
 	/*append startup path if filename does not start with a slash */
 	if (strlen(name) && name[0] != '/')
 	{
@@ -1499,7 +1499,7 @@ read_playlist(const char *filename)
 		refresh_screen();
 		return;
 	}
-	
+
 	short header_ok = 1;
 	/* read global playmode from file */
 	{
@@ -1527,8 +1527,8 @@ read_playlist(const char *filename)
 		if (header_ok && old_mode != globalopts.play_mode)
 			cw_draw_play_mode();
 		free(line);
-	}	
-		
+	}
+
 	if (header_ok)
 	{
 		while (read_group_from_file(f))
@@ -1539,7 +1539,7 @@ read_playlist(const char *filename)
 	{
 		warning("No global playmode in playlist found.");
 		refresh_screen();
-	}	
+	}
 
 	fclose(f);
 	//mw_settxt("Added playlist!");
@@ -1551,13 +1551,13 @@ write_group(mp3Win *group, FILE *f, short indent_level)
 	int nitems = group->getNitems();
 	int itemcount = 0;
 	char *indent_string = new char[indent_level + 1];
-	
+
 	if (indent_level > 10)
 		return 0;
 
 	memset(indent_string, '\t', indent_level);
 	indent_string[indent_level] = '\0';
-	
+
 	while (itemcount < nitems)
 	{
 		char *itemname = NULL;
@@ -1604,7 +1604,7 @@ write_group(mp3Win *group, FILE *f, short indent_level)
 			tmpname = group->getItem(itemcount);
 			itemname = new char[strlen(indent_string) + strlen(tmpname) + 2];
 			sprintf(itemname, "%s%s\n", indent_string, tmpname);
-			if (fwrite(itemname, sizeof(char), strlen(itemname), f) < 
+			if (fwrite(itemname, sizeof(char), strlen(itemname), f) <
 				strlen(itemname) * sizeof(char))
 			{
 				delete[] itemname;
@@ -1629,7 +1629,7 @@ write_playlist(const char *filename)
 
 	if (!f)
 		return 0;
-	
+
 	switch(globalopts.play_mode)
 	{
 		case PLAY_GROUP: pmstr = "onegroup"; break;
@@ -1661,7 +1661,7 @@ write_playlist(const char *filename)
 
 #if 0
 	char *name = NULL;
-	
+
 	name = gettext("Enter filename", 1);
 	/*append startup path if filename does not start with a slash */
 	if (strlen(name) && name[0] != '/')
@@ -1687,7 +1687,7 @@ write_playlist(const char *filename)
 		Error("Error opening playlist for writing!");
 		return;
 	}
-	
+
 	for (i = 0; i < group_window->getNitems(); i++)
 	{
 		if ( !((group_stack->entry(i))->writeToFile(f)) ||
@@ -1698,7 +1698,7 @@ write_playlist(const char *filename)
 			return;
 		}
 	}
-	
+
 	fclose(f);
 #endif
 #endif
@@ -1888,9 +1888,9 @@ play_list(void *arg)
 				 * jump to song before current one
 				 */
 				history->previous();
-				history->previous(); 
+				history->previous();
 				debug ("Not at end of history, selecting older song.\n");
-				stop_song(); //status => AC_NONE 
+				stop_song(); //status => AC_NONE
 			}
 			//mw_settxt("Not implemented (yet).");
 			break;
@@ -2055,9 +2055,9 @@ lirc_loop(void *arg)
 			while ((ret = lirc_code2char(config, code, &name)) == 0 && name)
 			{
 				if (!strcasecmp(name, "PLAY"))
-					lirc_cmd = CMD_PLAY_PLAY; 	
+					lirc_cmd = CMD_PLAY_PLAY;
 				else if (!strcasecmp(name, "NEXT"))
-					lirc_cmd = CMD_PLAY_NEXT; 	
+					lirc_cmd = CMD_PLAY_NEXT;
 				else if (!strcasecmp(name, "PREVIOUS"))
 					lirc_cmd = CMD_PLAY_PREVIOUS;
 				else if (!strcasecmp(name, "REWIND"))
@@ -2139,7 +2139,7 @@ update_play_display()
 	}
 }
 
-void 
+void
 set_one_mp3(const char *mp3)
 {
 #ifdef PTHREADEDMPEG
@@ -2212,10 +2212,10 @@ get_error_string(int errcode)
 		"Sound device is busy.",
 		"Buffersize of sound device is wrong.",
 		"Sound device control error.",
-	
+
 		"Failed to open file for reading.",    // 5
-		"Failed to read file.",                
-	
+		"Failed to read file.",
+
 		"Unkown proxy.",
 		"Unkown host.",
 		"Socket error.",
@@ -2224,14 +2224,14 @@ get_error_string(int errcode)
 		"Http request failed.",
 		"Http write failed.",
 		"Too many relocations",
-		
+
 		"Out of memory.",               // 15
 		"Unexpected EOF.",
 		"Bad sound file format.",
-		
+
 		"Can't make thread.",
 		"Bad mpeg header.",
-		
+
 		"Unknown error."
 	};
 
@@ -2437,7 +2437,7 @@ start_song(short was_playing)
 		delete[] song;
 		return 0;
 	}
-		
+
 	if (!(playopts.player)->openfile(song, (globalopts.sound_device ?
 		globalopts.sound_device : NULL)))
 	{
@@ -2448,7 +2448,7 @@ start_song(short was_playing)
 		delete[] song;
 		return 0;
 	}
-		
+
 	if (globalopts.downsample)
 		(playopts.player)->setdownfrequency(1);
 	if (globalopts.eightbits)
@@ -2532,7 +2532,7 @@ add_selected_file(const char *file)
 	selected_files = (char **)realloc(selected_files, (nselfiles + 1) *
 		sizeof(char*) );
 	offset = nselfiles;
-	
+
 	selected_files[offset] = NULL;
 	selected_files[offset] = (char *)malloc((strlen(file) + 1) * sizeof(char));
 	strcpy(selected_files[offset], file);
@@ -2541,9 +2541,9 @@ add_selected_file(const char *file)
 
 /* Function   : add_selected_files
  * Description: Adds an array of files to the selected_files array.
- *            : It's much more efficient than repeatedly calling 
+ *            : It's much more efficient than repeatedly calling
  *            : add_selected_file.
- * Parameters : files: array of char-pointers, each of which must be 
+ * Parameters : files: array of char-pointers, each of which must be
  *            :        allocated with malloc() or friends. Don't free them!
  *            : filecount: Number of pointers in 'files' array
  * Returns    : Nothing.
@@ -2556,7 +2556,7 @@ add_selected_files(char **files, unsigned int fileCount)
 
 	if (!files || !fileCount)
 		return;
-	
+
 	selected_files = (char **)realloc(selected_files, (nselfiles + fileCount) *
 		sizeof(char*) );
 	offset = nselfiles;
@@ -2574,7 +2574,7 @@ is_symlink(const char *path)
 	struct stat
 		*buf = (struct stat*)malloc( 1 * sizeof(struct stat) );
 	int retval = 1;
-	
+
 	if (lstat(path, buf) < 0 || ((buf->st_mode) & S_IFMT) != S_IFLNK)
 		retval = 0;
 
@@ -2585,13 +2585,13 @@ is_symlink(const char *path)
 }
 
 /* This function adds all mp3s recursively found in ``path'' to the current
- * group when called by F3: recursively add mp3's. 
+ * group when called by F3: recursively add mp3's.
  * When called by F5: Add dirs as groups (d2g), and d2g_init is not set,
  * all mp3's found in this dir will be added to a group with the name of
  * the dir. When d2f is set, 'files' and 'fileCount' should be NULL.
  * Only when d2g is NOT set:
  *   'files' must be a pointer to a char** array, in which all
- *   found files will be stored. The char** array will be allocated with 
+ *   found files will be stored. The char** array will be allocated with
  *   (re/m)alloc(), as will its members.
  */
 void
@@ -2601,7 +2601,7 @@ recsel_files(const char *path, char ***files, unsigned int *fileCount, short d2g
 		*entry = NULL;
 	DIR
 		*dir = NULL;
-	short 
+	short
 		mp3_found = 0;
 	mp3Win*
 		d2g_groupindex = NULL;
@@ -2815,10 +2815,10 @@ get_current_working_path()
 	}
 
 	tmppwd = (char *)realloc(tmppwd, strlen(tmppwd) + 2);
-	
+
 	if (strcmp(tmppwd, "/")) /* pwd != "/" */
 		strcat(tmppwd, "/");
-	
+
 	return tmppwd;
 }
 
@@ -2839,7 +2839,7 @@ get_command(int kcode, unsigned short pm)
 	int i = 0;
 	command_t cmd = CMD_NONE;
 	struct keybind_t k = keys[i];
-	
+
 	while (k.cmd != CMD_NONE)
 	{
 		if (k.key == kcode && (pm & k.pm))
@@ -2866,7 +2866,7 @@ handle_input(short no_delay)
 	fd_set fdsr;
 	struct timeval tv;
 	command_t cmd;
-	mp3Win 
+	mp3Win
 		*sw = mp3_curwin;
 	fileManager
 		*fm = file_window;
@@ -2886,7 +2886,7 @@ handle_input(short no_delay)
 		tv.tv_sec = tv.tv_usec = 0;
 #ifdef INCLUDE_LIRC
 		if (lirc_cmd == CMD_NONE) {
-			if (select(FD_SETSIZE, &fdsr, NULL, NULL, &tv) == 1) 
+			if (select(FD_SETSIZE, &fdsr, NULL, NULL, &tv) == 1)
 				key = getch();
 			else
 			{
@@ -2894,7 +2894,7 @@ handle_input(short no_delay)
 			}
 		}
 #else
-		if (select(FD_SETSIZE, &fdsr, NULL, NULL, &tv) == 1) 
+		if (select(FD_SETSIZE, &fdsr, NULL, NULL, &tv) == 1)
 			key = getch();
 		else
 		{
@@ -2910,7 +2910,7 @@ handle_input(short no_delay)
 		if (lirc_cmd == CMD_NONE) key = getch();
 #else
 		key = getch();
-#endif 
+#endif
 		debug("THREAD main woke up!\n");
 	}
 
@@ -2921,7 +2921,7 @@ handle_input(short no_delay)
 		update_status_file();
 		update_ncurses(0);
 	}
-	
+
 	UNLOCK_NCURSES;
 
 	if (no_delay && key == ERR)
@@ -2969,7 +2969,7 @@ handle_input(short no_delay)
 		}
 		else if (key == 13)
 		{
-			fw_end_search();	
+			fw_end_search();
 			input_mode = IM_DEFAULT;
 		}
 		retval = 1;
@@ -2997,14 +2997,14 @@ handle_input(short no_delay)
 			break;
 		}
 		case KEY_BACKSPACE:
-			global_input->deleteChar(); 
+			global_input->deleteChar();
 			break;
 		case KEY_DC:
 			global_input->deleteChar(0);
 			break;
 		case KEY_HOME: global_input->moveToBegin(); break;
 		case KEY_END: global_input->moveToEnd(); break;
-		case 13: 
+		case 13:
 		{
 			void (*callback_fun)(const char *, void*);
 			//global_input->getCallbackFunction(&callback_fun);
@@ -3088,7 +3088,7 @@ handle_input(short no_delay)
 			else if (progmode == PM_HELP)
 				bighelpwin->changeSelection(-1);
 		break;
-		case CMD_DEL: 
+		case CMD_DEL:
 		case CMD_DEL_MARK:
 		{
 			mp3Win *tmpgroup;
@@ -3121,7 +3121,7 @@ handle_input(short no_delay)
 			if (cmd == CMD_DEL_MARK && is_audiofile(sw->getSelectedItem()))
 				fw_markfilebad(sw->getSelectedItem());
 
-			sw->delItem(sw->sw_selection);	
+			sw->delItem(sw->sw_selection);
 			reset_next_song();
 			unlock_playing_mutex();
 		}
@@ -3142,7 +3142,7 @@ handle_input(short no_delay)
 			else if (progmode == PM_HELP)
 				bighelpwin->pageUp();
 		break;
-		case CMD_SELECT: 
+		case CMD_SELECT:
 			if (!sw->isGroup(sw->sw_selection))
 			{
 				sw->selectItem();
@@ -3185,7 +3185,7 @@ handle_input(short no_delay)
 				if (dispmode > 2)
 					dispmode = 0;
 				sw->setDisplayMode(dispmode);
-				sw->swRefresh(2); 
+				sw->swRefresh(2);
 			}
 			else if (progmode == PM_FILESELECTION)
 			{
@@ -3245,8 +3245,8 @@ handle_input(short no_delay)
 			cw_draw_repeat();
 			refresh();
 		break;
-		case CMD_TOGGLE_SHUFFLE: cw_toggle_group_mode(); reset_next_song(); break; 
-		case CMD_TOGGLE_PLAYMODE: 
+		case CMD_TOGGLE_SHUFFLE: cw_toggle_group_mode(); reset_next_song(); break;
+		case CMD_TOGGLE_PLAYMODE:
 			lock_playing_mutex();
 			if (!playopts.playing)
 			{
@@ -3317,7 +3317,7 @@ handle_input(short no_delay)
 		case CMD_FILE_DELETE:
 			fw_delete();
 		break;
-		case CMD_FILE_ENTER: /* change into dir, play soundfile, load playlist, 
+		case CMD_FILE_ENTER: /* change into dir, play soundfile, load playlist,
 		                      * end search */
 			if (fm->isDir(fm->sw_selection))
 				fw_changedir();
@@ -3364,7 +3364,7 @@ handle_input(short no_delay)
 				"Enter path below",
 				NULL,
 			};
-			
+
 			popup_win(label, fw_getpath, NULL, NULL, 1, 1024);
 			break;
 		}
@@ -3372,7 +3372,7 @@ handle_input(short no_delay)
 		{
 			char
 				*tmppwd = get_current_working_path();
-			
+
 			mw_settxt("Adding groups..");
 			recsel_files(tmppwd, NULL, NULL, 1, 1);
 			free(tmppwd);
@@ -3414,7 +3414,7 @@ handle_input(short no_delay)
 			if (!fm->isDir(fm->sw_selection) &&
 				fm->getSelectedItem(0))
 			{
-				popup_win(label, fw_rename_file, NULL, 
+				popup_win(label, fw_rename_file, NULL,
 					chop_path(fm->getSelectedItem(0)), 1, 2048);
 			}
 		}
@@ -3455,7 +3455,7 @@ handle_input(short no_delay)
 			if (mixer)
 				mixer->ProcessKey(key);
 	}
-	
+
 	return retval;
 }
 
@@ -3658,13 +3658,13 @@ fw_convmp3(const char *tmp, void *args)
 			}
 			else
 			{
-				sprintf(bla, "Converting '%s' to wavefile, please wait.", 
+				sprintf(bla, "Converting '%s' to wavefile, please wait.",
 					selitems[i]);
 				mw_settxt(bla);
 				while (decoder->run(10));
 				int decode_error = decoder->geterrorcode();
 				decoder->stop();
-				if (decode_error != SOUND_ERROR_OK && 
+				if (decode_error != SOUND_ERROR_OK &&
 					decode_error != SOUND_ERROR_FINISH)
 				{
 					warning("Decode error: %s", get_error_string(decode_error));
@@ -3911,7 +3911,7 @@ set_warn_delay(unsigned int seconds)
 {
 	if (seconds > 60)
 		return 0;
-	
+
 	globalopts.warndelay = seconds;
 	return 1;
 }
@@ -3921,10 +3921,10 @@ set_skip_frames(unsigned int frames)
 {
 	if (frames > 1000 || frames < 1) /* get real */
 		return 0;
-	
+
 	globalopts.skipframes = frames;
 	return 1;
-}	
+}
 
 void
 set_default_colours()
@@ -3956,13 +3956,13 @@ newgroup()
 {
 	mp3Win *tmp;
 
-	tmp = new mp3Win(calc_mainwindow_height(LINES), 
+	tmp = new mp3Win(calc_mainwindow_height(LINES),
 		calc_mainwindow_width(COLS), 10, 0, NULL, 0, CP_DEFAULT, 1);
 
 	tmp->drawTitleInBorder(1);
 	tmp->setBorder(ACS_VLINE,ACS_VLINE,ACS_HLINE,ACS_HLINE,
 		ACS_LTEE, ACS_PLUS, ACS_LTEE, ACS_PLUS);
-	
+
 	tmp->setDisplayMode(globalopts.display_mode);
 	tmp->setWrap(globalopts.wraplist);
 	return tmp;
@@ -3992,7 +3992,7 @@ determine_song(short set_played)
 	total_songs = mp3_rootwin->getUnplayedSongs();
 	if (!total_songs)
 		return NULL;
-	
+
 	switch(globalopts.play_mode)
 	{
 	case PLAY_GROUPS_RANDOMLY:
@@ -4001,7 +4001,7 @@ determine_song(short set_played)
 	case PLAY_NONE:
 	break;
 	case PLAY_SONGS: //all songs in random order
-		if (next_song > -1)	
+		if (next_song > -1)
 			mysong = mp3_rootwin->getUnplayedSong(next_song, set_played);
 		else
 			mysong = mp3_rootwin->getUnplayedSong(myrand(total_songs), set_played);
@@ -4016,7 +4016,7 @@ determine_song(short set_played)
 			mp3_groupwin = mp3_curwin;
 			playing_group = NULL;
 		}
-			
+
 		while (!playing_group || !playing_group->getUnplayedSongs())
 		{
 			if (playing_group) //this means that there are no unplayed songs in it
@@ -4035,10 +4035,10 @@ determine_song(short set_played)
 					reset_playlist(0);
 					break;
 				}
-				
+
 				//getUnplayedGroups counts the group itself as well if it contains
 				//unplayed songs. Just so you know. I forgot this myself ;-)
-				int 
+				int
 					tg = mp3_groupwin->getUnplayedGroups();
 
 				if (!tg) //no more groups left to play!
@@ -4053,7 +4053,7 @@ determine_song(short set_played)
 					playing_group = mp3_groupwin->getUnplayedGroup(myrand(tg));
 				else
 					playing_group = mp3_groupwin->getUnplayedGroup(0);
-					
+
 				if (playing_group->getUnplayedSongs(0))
 				{
 					playing_group->setPlayed();
@@ -4148,7 +4148,7 @@ write_status_file()
 		case PS_RECORD: fprintf(file, "status recording\n"); break;
 		case PS_NONE: break;
 	}
-	
+
 	if (si.songname[0] != '\0')
 		fprintf(file, "title %s\n", si.songname);
 	if (si.artist[0] != '\0')
@@ -4175,7 +4175,7 @@ void
 set_next_song(int next_song)
 {
 	const char *ns = NULL;
-	
+
 	switch(globalopts.play_mode)
 	{
 	case PLAY_SONGS:
@@ -4218,7 +4218,7 @@ set_song_info(const char *fl, struct song_info si)
 		hours = si.totaltime / 3600,
 		minutes = (si.totaltime % 3600) / 60,
 		seconds  = si.totaltime % 60;
-	
+
 	draw_static();
 	getmaxyx(stdscr, maxy, maxx);
 	r = maxx - 12;
@@ -4268,10 +4268,10 @@ set_song_info(const char *fl, struct song_info si)
 		addnstr(fl, maxx - 18);
 	else
 		printw("%s - %s", (strlen(si.artist) ? si.artist :
-		"<Unknown Artist>"), (strlen(si.songname) ? si.songname : 
-		"<Unknown Songname>") );	
+		"<Unknown Artist>"), (strlen(si.songname) ? si.songname :
+		"<Unknown Songname>") );
 	sprintf(bla, "%s (%s)", (si.album && strlen(si.album) ? si.album :
-		"<Unknown Album>"), (si.comment && strlen(si.comment) ? si.comment : 
+		"<Unknown Album>"), (si.comment && strlen(si.comment) ? si.comment :
 		"no comments"));
 	mw_settxt(bla);
 	refresh();
@@ -4281,7 +4281,7 @@ void
 set_song_status(playstatus_t s)
 {
 	int maxy, maxx;
-	
+
 	getmaxyx(stdscr,maxy,maxx);
 	move(maxy-3,1);
 	switch(s)
@@ -4383,7 +4383,7 @@ cw_draw_repeat()
 	else
 		addch(' ');
 }
- 
+
 /* Function   : init_helpwin
  * Description: sets up the helpwin that's on top of the ncurses window.
  *            : Do this whenever you change program mode (normal mode to
@@ -4398,7 +4398,7 @@ init_helpwin()
 	int i = 0, item_count = 0;
 	char line[80], desc[27], keylabel[4];
 	struct keybind_t k = keys[i];
-	
+
 	if (helpwin)
 	{
 		delete helpwin;
@@ -4465,7 +4465,7 @@ get_label(command_t cmd, char *label)
 	{
 		k = keys[i++];
 	}
-	set_keylabel(k.key, label);	
+	set_keylabel(k.key, label);
 }
 
 /* label must be alloc'd with size 4.
@@ -4518,7 +4518,7 @@ repaint_help()
 {
 	int i, j;
 
-	/* Redhat 7.2 ships with a buggy ncurses version, which will crash on 
+	/* Redhat 7.2 ships with a buggy ncurses version, which will crash on
 	 * chgat. Therefore, they will not get funky colours in the help menu.
 	 */
 #if defined(NCURSES_VERSION_MAJOR) && (!defined(NCURSES_VERSION_PATCH) || !(NCURSES_VERSION_MAJOR == 5 && NCURSES_VERSION_MINOR == 2 && NCURSES_VERSION_PATCH == 20010714))
@@ -4526,7 +4526,7 @@ repaint_help()
 	{
 		for (j = 2; j < 55; j += 26)
 		{
-			move (i, j); 
+			move (i, j);
 			chgat(3, A_NORMAL, CP_BUTTON, NULL);
 		}
 	}
@@ -4551,7 +4551,7 @@ determine(short mode)
 		//there's a need to realloc the played_songs array?
 		if (current_song == nr_played_songs - 1)
 		{
-			played_songs = (char**)realloc(played_songs, ++nr_played_songs * 
+			played_songs = (char**)realloc(played_songs, ++nr_played_songs *
 				sizeof(char*));
 			played_songs[current_song + 1] = NULL;
 		}
@@ -4575,7 +4575,7 @@ determine(short mode)
 	{
 		if (current_song == nr_played_songs - 1)
 		{
-			played_songs = (char**)realloc(played_songs, ++nr_played_songs * 
+			played_songs = (char**)realloc(played_songs, ++nr_played_songs *
 				sizeof(char*));
 			played_songs[current_song + 1] = NULL;
 		}
@@ -4673,7 +4673,7 @@ draw_next_song(const char *ns)
 
 	if (!ns)
 		return;
-	
+
 	memset((void*)empty, ' ', mywidth * sizeof(char));
 	empty[mywidth] = '\0';
 
@@ -4689,7 +4689,7 @@ set_playlist_dir(const char *dirname)
 {
 	if (!dirname || !strlen(dirname))
 		return 0;
-	
+
 	if (globalopts.playlist_dir)
 	{
 		free(globalopts.playlist_dir);
@@ -4771,7 +4771,7 @@ if (file){ debug("FILE: ");debug(file);debug("\n");}
 	else
 		result = 1;
 	//warning("Failed to mark file as bad.\n");
-	
+
 	delete[] baddir;
 	delete[] oldpath;
 
@@ -4796,7 +4796,7 @@ get_mainwin_size(int *height, int *width, int *y, int *x)
 }
 
 void
-get_mainwin_borderchars(chtype *ls, chtype *rs, chtype *ts, chtype *bs, 
+get_mainwin_borderchars(chtype *ls, chtype *rs, chtype *ts, chtype *bs,
                         chtype *tl, chtype *tr, chtype *bl, chtype *br)
 {
 	*ls = ACS_VLINE;
@@ -4914,7 +4914,7 @@ fw_draw_sortmode(sortmodes_t sm)
 	short
 		idx = 0;
 	int maxlen = (COLS > 16 ? COLS - 16 : 1);
-	
+
 	char emptyline[maxlen + 1];
 	memset(emptyline, ' ', maxlen * sizeof(char));
 	emptyline[maxlen] = '\0';
@@ -4967,7 +4967,7 @@ set_sort_mode(const char *mstring)
 	}
 	if (found_it < 0)
 		return -1;
-	
+
 	sortmodes_t smode = globalopts.fw_sortingmode;
 
 	switch(found_it)
@@ -5006,7 +5006,7 @@ fw_delete()
 {
 	const char
 		*file = file_window->getSelectedItem();
-	
+
 	if (file && !is_dir(file))
 	{
 		if (unlink(file) < 0)
@@ -5058,7 +5058,7 @@ lock_playing_mutex()
 
 void
 wake_player()
-{	
+{
 	debug("wake_player\n");
 #ifdef PTHREADEDMPEG
 	pthread_cond_signal(&playing_cond);
@@ -5073,7 +5073,7 @@ add_init_opt(struct init_opts *myopts, const char *option, void *value)
 {
 	struct init_opts *tmp;
 
-	//find the last init_opts, and add a new one. Unless the first one's 
+	//find the last init_opts, and add a new one. Unless the first one's
 	//empty (!tmp->option[0])
 	tmp = myopts;
 	if (tmp->option[0])
@@ -5100,9 +5100,9 @@ get_input(
 		delete global_input;
 		global_input = NULL;
 	}
-	
+
 	global_input = new getInput(win, defval, size, maxlen, y, x);
-	
+
 	input_mode = IM_INPUT;
 	global_input->setCallbackFunction(got_input, args);
 	mw_settxt("Use up and down arrow keys to toggle insert mode");
@@ -5145,7 +5145,7 @@ select_files_by_pattern(const char *pattern, void *args)
 
 	mainwindow->selectItems(pattern,
 		(globalopts.selectitems_searchusingregexp ? "regex" : "global"),
-		(globalopts.selectitems_caseinsensitive ? SW_SEARCH_CASE_INSENSITIVE : 
+		(globalopts.selectitems_caseinsensitive ? SW_SEARCH_CASE_INSENSITIVE :
 		SW_SEARCH_NONE),
 		mainwindow->getDisplayMode());
 	mainwindow->swRefresh(0);
@@ -5197,7 +5197,7 @@ playlist_write(const char *playlistfile, void *args)
 
 	do {
 		if (!tmpDir) {
-			warning("Failed to change to playlist dir.");	
+			warning("Failed to change to playlist dir.");
 			break;
 		}
 
@@ -5218,7 +5218,7 @@ playlist_write(const char *playlistfile, void *args)
 	if (chdir(org_path) == -1) {
 		warning("Failed to change to original path.");
 	}
-		
+
 	free(org_path);
 	free(tmp_pfile);
 }
@@ -5252,7 +5252,7 @@ fw_rename_file(const char *newname, void *args)
 		warning("Cowardly refusing to overwrite existing file.");
 		return;
 	}
-	
+
 	int rename_result = rename(oldname, new_path);
 	delete[] new_path;
 
@@ -5429,13 +5429,13 @@ main(int argc, char *argv[], char *envp[])
 #ifdef LIBPTH
 	pth_init();
 #endif
-	
+
 	tmp.sound_device = NULL;
 	tmp.mixer_device = NULL;
 	tmp.play_mode = NULL;
 	tmp.fpl = 5;
 	tmp.threads = 10;
-	
+
 	environment = envp;
 
 	songinf.update = 0;
@@ -5461,7 +5461,7 @@ main(int argc, char *argv[], char *envp[])
 	/* parse arguments */
 	while (1)
 	{
-		static struct option long_options[] = 
+		static struct option long_options[] =
 		{
 			{ "downsample", 0, 0, '2'},
 			{ "8bits", 0, 0, '8'},
@@ -5483,13 +5483,13 @@ main(int argc, char *argv[], char *envp[])
 			{ "version", 0, 0, 'v'},
 			{ 0, 0, 0, 0}
 		};
-		
+
 		c = getopt_long(argc, argv, "28a:c:df:hl:m:no:p:qRr:s:t:v", long_options,
 			&long_index);
 
 		if (c == EOF)
 			break;
-		
+
 		switch(c)
 		{
 		case ':':
@@ -5587,7 +5587,7 @@ main(int argc, char *argv[], char *envp[])
 		}
 	}
 
-	if (options & OPT_DEBUG) 
+	if (options & OPT_DEBUG)
 	{
 		globalopts.debug = 1;
 		debug("Debugging of mp3blaster started.\n");
@@ -5621,12 +5621,12 @@ main(int argc, char *argv[], char *envp[])
 				fprintf(stderr, "%s is not a valid audio file!\n", argv[i]);
 				usage();
 			}
-			playmp3s[i - optind] = (char*)malloc((strlen(argv[i])+1) * 
+			playmp3s[i - optind] = (char*)malloc((strlen(argv[i])+1) *
 				sizeof(char));
 			strcpy(playmp3s[i - optind], argv[i]);
 		}
 		options |= OPT_PLAYMP3;
-	}	
+	}
 
 	//signal(SIGALRM, SIG_IGN);
 
@@ -5644,7 +5644,7 @@ main(int argc, char *argv[], char *envp[])
 		endwin();
 		exit(1);
 	}
-	
+
 	/* setup colours */
 	init_pair(CP_DEFAULT, globalopts.colours.default_fg,
 		globalopts.colours.default_bg);
@@ -5675,7 +5675,7 @@ main(int argc, char *argv[], char *envp[])
 	mp3_rootwin = newgroup();
 	mp3_rootwin->setTitle("[Default]");
 	mp3_rootwin->swRefresh(0);
-	mp3_rootwin->drawBorder(); //to get the title 
+	mp3_rootwin->drawBorder(); //to get the title
 	mp3_curwin = mp3_rootwin;
 
 	progmode = PM_NORMAL;
@@ -5762,7 +5762,7 @@ main(int argc, char *argv[], char *envp[])
 
 	/* All options from configfile and commandline have been read. */
 	draw_settings();
-	
+
 	/* Accept signal for redrawing the interface */
 	signal(SIGWINCH, handle_resize);
 
@@ -5773,7 +5773,7 @@ main(int argc, char *argv[], char *envp[])
 /*\
 |*|  EORH
 \*/
-	
+
 	action = AC_NONE;
 
 	if (options & OPT_PLAYMP3)
@@ -5832,7 +5832,7 @@ main(int argc, char *argv[], char *envp[])
 	while ( (key = handle_input(1)) >= 0)
 	{
 	}
-	
+
 	/* signal running threads to terminate themselves */
 	playopts.quit_program = 1;
 	wake_player();
