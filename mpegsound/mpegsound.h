@@ -1181,7 +1181,7 @@ public:
 	MIKMODfileplayer(audiodriver_t driver);
 	~MIKMODfileplayer() {}
 
-	bool openfile(const char *filename, const char *device, soundtype write2file=NONE);
+	bool openfile(const char *filename, const char *device, soundtype write2file=ST_NONE);
 	bool initialize(void*) { return true; }
 	void closefile(void);
 	void setforcetomono(short /*flag*/) {}

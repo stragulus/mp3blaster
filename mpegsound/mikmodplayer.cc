@@ -8,6 +8,7 @@
 
 #ifdef HAVE_MIKMODPLAYER
 
+#if 1
 /* This excerpt is a modified version of /drivers/drv_nos.c of mikmod */
 /*	MikMod sound library
 	(c) 1998, 1999, 2000 Miodrag Vallat and others - see file AUTHORS for
@@ -17,12 +18,12 @@
 	it under the terms of the GNU Library General Public License as
 	published by the Free Software Foundation; either version 2 of
 	the License, or (at your option) any later version.
- 
+
 	This program is distributed in the hope that it will be useful,
 	but WITHOUT ANY WARRANTY; without even the implied warranty of
 	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 	GNU Library General Public License for more details.
- 
+
 	You should have received a copy of the GNU Library General Public
 	License along with this library; if not, write to the Free Software
 	Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
@@ -85,10 +86,11 @@ MIKMODAPI MDRIVER drv_mikmod={
 	NULL,
 	"Mp3blaster Sound",
 	"Mp3Blaster Driver v1.0",
-	255,255,
-	"mp3blaster",
-
-	NULL,
+	(UBYTE)255, // hardware voice limit
+        (UBYTE)255, // software voice limit
+	"mp3blaster", // alias
+	NULL, //cmdline helper
+        NULL, //cmdline
 	MM_IsThere,
 	VC_SampleLoad,
 	VC_SampleUnload,
@@ -116,6 +118,7 @@ MIKMODAPI MDRIVER drv_mikmod={
 };
 /* END: This excerpt is a modified version of /drivers/drv_nos.c of mikmod */
 
+#endif // 0
 
 bool MIKMODfileplayer::initialized = false;
 
@@ -133,7 +136,7 @@ MIKMODfileplayer::MIKMODfileplayer(audiodriver_t audiodriver)
 
 void MIKMODfileplayer::init() {
 
-	MikMod_RegisterDriver(&drv_mikmod);
+	MikMod_RegisterDriver(&drv_nos);
 	MikMod_RegisterAllLoaders();
 
 	md_mode |= DMODE_SOFT_MUSIC | DMODE_16BITS | DMODE_STEREO;
@@ -142,7 +145,7 @@ void MIKMODfileplayer::init() {
 		debug("Could not initialize sound, reason: %s\n", MikMod_strerror(MikMod_errno));
 		return;
 	}
-	
+
 	atexit(MikMod_Exit);
 
 	initialized = true;
@@ -178,9 +181,9 @@ bool MIKMODfileplayer::openfile(const char* filename, const char* device, soundt
 		memset(info.artist, 0x0, 31);
 		strncpy(info.artist, module->modtype, 30);
 	}
-	
+
 	info.samplerate = 44100;	// TODO: check mikmod parameters if we rlly play with 44100Hz
-	
+
 	// TODO: check for md_mode & DMODE_16BITS resp. md_mode & DMODE_STEREO
 	player->setsoundtype(2, 16, md_mixfreq);
 
@@ -228,7 +231,7 @@ int MIKMODfileplayer::elapsed_time()
 	return module->sngtime/1024 + 1;
 }
 
-void MIKMODfileplayer::skip(int sec) 
+void MIKMODfileplayer::skip(int sec)
 {
 	if (!initialized || module == NULL || !Player_Active())
 		return;
@@ -241,7 +244,7 @@ void MIKMODfileplayer::skip(int sec)
 		Player_NextPosition();
 }
 
-bool MIKMODfileplayer::pause() 
+bool MIKMODfileplayer::pause()
 {
 	if (!initialized || module == NULL || !Player_Active())
 		return false;
@@ -266,3 +269,5 @@ bool MIKMODfileplayer::stop()
 	Player_Stop();
 	return true;
 }
+
+#endif // HAVE_MIKMODPLAYER
