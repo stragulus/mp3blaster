@@ -44,3 +44,7 @@ autom4te.cache
 
 # Editor temp files
 **/*.swp
+**/Makefile.in
+configure
+aclocal.m4
+config.h.in
