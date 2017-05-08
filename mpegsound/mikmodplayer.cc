@@ -8,7 +8,6 @@
 
 #ifdef HAVE_MIKMODPLAYER
 
-#if 1
 /* This excerpt is a modified version of /drivers/drv_nos.c of mikmod */
 /*	MikMod sound library
 	(c) 1998, 1999, 2000 Miodrag Vallat and others - see file AUTHORS for
@@ -117,8 +116,6 @@ MIKMODAPI MDRIVER drv_mikmod={
 	VC_VoiceRealVolume
 };
 /* END: This excerpt is a modified version of /drivers/drv_nos.c of mikmod */
-
-#endif // 0
 
 bool MIKMODfileplayer::initialized = false;
 
