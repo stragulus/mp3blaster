@@ -216,7 +216,7 @@ NMixer::DrawScrollbar(short i, int spos)
 		mvwprintw(mixwin, my_y + 1, my_x, (char*)empty_scrollbar);
 	
 		//draw new bar
-		mvwprintw(mixwin, my_y - 1, my_x, (char*)source);
+		mvwprintw(mixwin, my_y - 1, my_x, "%s", (char*)source);
 		if (i == currentbar)
 		{
 			mvwchgat(mixwin, my_y - 1, my_x, strlen(source), A_REVERSE, 
