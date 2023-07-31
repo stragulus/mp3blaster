@@ -326,8 +326,8 @@ int Rawplayer::fix_samplesize(void *buffer, int size)
 
 	if(forcetomono || forceto8)
 	{
-		register unsigned char modify=0;
-		register unsigned char *source,*dest;
+		unsigned char modify=0;
+		unsigned char *source,*dest;
 		int increment=0,c;
 
 		source=dest=(unsigned char *)buffer;
@@ -381,8 +381,8 @@ bool Rawplayer::putblock(void *buffer,int size)
 
 	if(forcetomono || forceto8)
 	{
-		register unsigned char modify=0;
-		register unsigned char *source,*dest;
+		unsigned char modify=0;
+		unsigned char *source,*dest;
 		int increment=0,c;
 
 		source=dest=(unsigned char *)buffer;
@@ -408,7 +408,7 @@ bool Rawplayer::putblock(void *buffer,int size)
 	}
 
 #if defined(AUDIO_NONBLOCKING) || defined(NEWTHREAD)
-	register ssize_t
+	ssize_t
 		wsize,
 		remainsize = modifiedsize;
 	char *wbuf = (char*)buffer;

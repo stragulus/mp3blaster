@@ -779,8 +779,8 @@ inline void parseID3(Soundinputstream *fp,ID3 *data)
 // Mpeg header class
 bool Mpegtoraw::initialize(const char *filename)
 {
-	register int i;
-	register REAL *s1,*s2;
+	int i;
+	REAL *s1,*s2;
 	REAL *s3,*s4;
 	static bool initialized=false;
 
@@ -1153,7 +1153,7 @@ void Mpegtoraw::clearbuffer(void)
 //header is not found at the exact location of the filepointer at call time.
 bool Mpegtoraw::loadheader(bool lookahead)
 {
-	register int c;
+	int c;
 	bool flag;
 	int bytes_read = 0;
 

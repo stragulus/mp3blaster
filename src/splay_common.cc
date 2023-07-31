@@ -66,7 +66,7 @@ const char *splay_Sounderrors[SOUND_ERROR_UNKNOWN]=
 static bool argsflag=false;
 void arglist(int argc,char *argv[],int start)
 {
-  register int i;
+  int i;
 
   argsflag=true;
   for(i=start;(i<argc) && (splay_listsize<MAXLISTSIZE); i++)

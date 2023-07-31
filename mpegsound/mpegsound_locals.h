@@ -8,6 +8,8 @@
 #ifndef _L__SOUND_LOCALS__
 #define _L__SOUND_LOCALS__
 
+#include "mpegsound.h"
+
 extern void debug(const char*, ... );
 // Inline functions
 inline int Mpegtoraw::getbyte(void)
@@ -20,7 +22,7 @@ inline int Mpegtoraw::getbyte(void)
 
 inline int Mpegtoraw::getbits9(int bits)
 {
-  register unsigned short a;
+  unsigned short a;
   int offset=bitindex>>3;
 
   a=(((unsigned char)buffer[offset])<<8) | ((unsigned char)buffer[offset+1]);
@@ -32,7 +34,7 @@ inline int Mpegtoraw::getbits9(int bits)
 
 inline int Mpegtoraw::getbits8(void)
 {
-  register unsigned short a;
+  unsigned short a;
   int offset=bitindex>>3;
 
   a=(((unsigned char)buffer[offset])<<8) | ((unsigned char)buffer[offset+1]);
@@ -44,7 +46,7 @@ inline int Mpegtoraw::getbits8(void)
 
 inline int Mpegtoraw::getbit(void)
 {
-  register int r=(buffer[bitindex>>3]>>(7-(bitindex&7)))&1;
+  int r=(buffer[bitindex>>3]>>(7-(bitindex&7)))&1;
 
   bitindex++;
   return r;
