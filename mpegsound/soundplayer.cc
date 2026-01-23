@@ -15,28 +15,21 @@
 /*********************/
 /* Soundplayer class */
 /*********************/
-Soundplayer::~Soundplayer()
-{
+Soundplayer::~Soundplayer() {
   // Nothing...
 }
 
-void Soundplayer::abort(void)
-{
+void Soundplayer::abort(void) {
   // Nothing....
 }
 
-bool Soundplayer::resetsoundtype(void)
-{
-  return true;
-}
+bool Soundplayer::resetsoundtype(void) { return true; }
 
-int Soundplayer::getblocksize(void)
-{
+int Soundplayer::getblocksize(void) {
   return 1024; // Default value
 }
 
-int Soundplayer::fix_samplesize(void *buffer, int size)
-{
-    buffer=buffer;
-    return size;
+int Soundplayer::fix_samplesize(void *buffer, int size) {
+  buffer = buffer;
+  return size;
 }

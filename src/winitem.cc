@@ -14,116 +14,91 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
+#include "winitem.h"
 #include "mp3blaster.h"
 #include "scrollwin.h"
-#include "winitem.h"
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
-extern void debug(const char*,...);
+extern void debug(const char *, ...);
 
-winItem::winItem()
-{
-	int j;
-	for (j = 0; j < NAMEDIM; j++)
-	{
-		names[j].value=NULL;
-		names[j].fetch=NULL;
-		names[j].arg=NULL;
-	}
-	object = NULL;
-	type = TEXT;
-	colour = -1; //-1: let global status (from scrollWin) decide.
-	prev = next = NULL;
-	selectID = 0;
+winItem::winItem() {
+  int j;
+  for (j = 0; j < NAMEDIM; j++) {
+    names[j].value = NULL;
+    names[j].fetch = NULL;
+    names[j].arg = NULL;
+  }
+  object = NULL;
+  type = TEXT;
+  colour = -1; //-1: let global status (from scrollWin) decide.
+  prev = next = NULL;
+  selectID = 0;
 }
 
-winItem::~winItem()
-{
-	int i;
-	for(i=0;i<NAMEDIM;i++)
-	{
-		if(names[i].value)
-			delete[] names[i].value;
-		if(names[i].arg)
-			free(names[i].arg);
-	}
-	//yes, if there's an object set, it's not deleted.
+winItem::~winItem() {
+  int i;
+  for (i = 0; i < NAMEDIM; i++) {
+    if (names[i].value)
+      delete[] names[i].value;
+    if (names[i].arg)
+      free(names[i].arg);
+  }
+  // yes, if there's an object set, it's not deleted.
 }
 
-void
-winItem::setName(const char *name, short index)
-{
-	if (index >= NAMEDIM || index < 0)
-		return;
+void winItem::setName(const char *name, short index) {
+  if (index >= NAMEDIM || index < 0)
+    return;
 
-	if (names[index].value)
-		delete[] names[index].value;
-	
-	names[index].value = new char[strlen(name)+1];
-	strcpy(names[index].value, name);
+  if (names[index].value)
+    delete[] names[index].value;
+
+  names[index].value = new char[strlen(name) + 1];
+  strcpy(names[index].value, name);
 }
 
-void
-winItem::setNameFun(char *(*func)(void *), void *arg, short index)
-{
-	if(index >=NAMEDIM || index < 0)
-		return;
-	names[index].value=NULL;
-	names[index].fetch=func;
-	names[index].arg=arg;
+void winItem::setNameFun(char *(*func)(void *), void *arg, short index) {
+  if (index >= NAMEDIM || index < 0)
+    return;
+  names[index].value = NULL;
+  names[index].fetch = func;
+  names[index].arg = arg;
 }
 
-const char *
-winItem::getName(short index)
-{
-	if (index >= NAMEDIM || index < 0)
-		return (const char *)NULL;
-	if(!names[index].value && names[index].fetch)
-	{
-		char *descr=names[index].fetch(names[index].arg);
-		if(descr)
-		{
-			names[index].value = descr;
-		}
-		else
-		{
-			names[index].value = new char[8];
-			strcpy(names[index].value, "no name");
-		}
-		names[index].fetch=NULL; /* Prevent from being run a second time */
-		if (names[index].arg)
-			free(names[index].arg);
-		names[index].arg = NULL;
-	}
-	return names[index].value;
+const char *winItem::getName(short index) {
+  if (index >= NAMEDIM || index < 0)
+    return (const char *)NULL;
+  if (!names[index].value && names[index].fetch) {
+    char *descr = names[index].fetch(names[index].arg);
+    if (descr) {
+      names[index].value = descr;
+    } else {
+      names[index].value = new char[8];
+      strcpy(names[index].value, "no name");
+    }
+    names[index].fetch = NULL; /* Prevent from being run a second time */
+    if (names[index].arg)
+      free(names[index].arg);
+    names[index].arg = NULL;
+  }
+  return names[index].value;
 }
 
-void
-winItem::setColour(short pair)
-{
-	colour = pair;
-}
+void winItem::setColour(short pair) { colour = pair; }
 
 /* Set this item to represent a subwin. Type is automatically set to
  * SUBWIN (a.o.t. TEXT)
  */
-void
-winItem::setObject(void *ob, itemtype tp)
-{
-	if (object)
-	{
-		if (type == SUBWIN)
-			delete (scrollWin*)object;
-	}
-		
-	object = ob;
-	type = tp;
+void winItem::setObject(void *ob, itemtype tp) {
+  if (object) {
+    if (type == SUBWIN)
+      delete (scrollWin *)object;
+  }
+
+  object = ob;
+  type = tp;
 }
 
-void
-winItem::setType(itemtype newtype)
-{
-	type = newtype;
-}
+void winItem::setType(itemtype newtype) { type = newtype; }

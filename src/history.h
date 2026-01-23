@@ -7,23 +7,22 @@
 
 #include <vector>
 
-class History
-{
+class History {
 public:
-	History();
-	~History();
+  History();
+  ~History();
 
-	short add(const char*);
-	short atEnd();
-	short atStart();
-	void previous();
-	void next();
-	const char *element();
+  short add(const char *);
+  short atEnd();
+  short atStart();
+  void previous();
+  void next();
+  const char *element();
 
 private:
-	std::vector<char *> v;
-	unsigned int curpos;
-	std::vector<char *>::iterator it;
+  std::vector<char *> v;
+  unsigned int curpos;
+  std::vector<char *>::iterator it;
 };
 
 #endif /* _MP3BLASTER_HISTORY_H */
